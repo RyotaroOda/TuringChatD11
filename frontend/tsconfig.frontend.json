@@ -1,0 +1,10 @@
+{
+    "extends": "../tsconfig.base.json",  // 共通設定を継承
+    "compilerOptions": {
+    "jsx": "react-jsx",               // ReactのJSXサポートを有効にする
+    "lib": ["dom", "dom.iterable", "esnext"],  // ブラウザ向けのAPIや最新のJS機能を使用
+    "baseUrl": "./src",               // ベースのディレクトリを`src`に設定
+  },
+    "include": ["src/**/*"],            // フロントエンドのソースコードを対象
+  "exclude": ["node_modules", "build"] // node_modulesとbuildディレクトリを除外
+}
