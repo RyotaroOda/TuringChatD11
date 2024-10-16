@@ -1,0 +1,30 @@
+.
+├── ./directory_structure.txt
+├── ./package-lock.json
+├── ./package.json
+├── ./public
+│   ├── ./public/favicon.ico
+│   ├── ./public/index.html
+│   ├── ./public/logo192.png
+│   ├── ./public/logo512.png
+│   ├── ./public/manifest.json
+│   └── ./public/robots.txt
+├── ./src
+│   ├── ./src/App.test.tsx
+│   ├── ./src/App.tsx
+│   ├── ./src/index.css
+│   ├── ./src/index.tsx
+│   ├── ./src/logo.svg
+│   ├── ./src/react-app-env.d.ts
+│   ├── ./src/reportWebVitals.ts
+│   ├── ./src/services
+│   │   ├── ./src/services/FRD.ts
+│   │   └── ./src/services/firebase.ts
+│   ├── ./src/setupTests.ts
+│   └── ./src/views
+│       ├── ./src/views/BattleView.tsx
+│       ├── ./src/views/HomeView.tsx
+│       └── ./src/views/ResultView.tsx
+└── ./tsconfig.frontend.json
+
+5 directories, 23 files
