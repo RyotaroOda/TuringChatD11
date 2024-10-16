@@ -1,15 +1,25 @@
-// src/components/Auth.tsx
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 import { auth } from "../services/firebase.ts";
+import { useNavigate } from "react-router-dom";
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isRegister, setIsRegister] = useState(false); // サインアップかログインかの状態
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // エラーメッセージ
+  const navigate = useNavigate(); // navigateフックの使用
 
+  // メールアドレスとパスワードでのログイン・サインアップ処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // パスワードが6文字以上であることを確認する
+    if (password.length < 6) {
+      setErrorMessage("パスワードは6文字以上である必要があります");
+      return;
+    }
+
     try {
       if (isRegister) {
         // サインアップ
@@ -20,15 +30,30 @@ const Auth: React.FC = () => {
         await signInWithEmailAndPassword(auth, email, password);
         alert("ログインに成功しました");
       }
+      navigate("/"); // ログイン後にホーム画面にリダイレクト
     } catch (error) {
       console.error(error);
-      alert("エラーが発生しました: " + error.message);
+      setErrorMessage("エラーが発生しました: " + error.message);
+    }
+  };
+
+  // 匿名ログイン処理
+  const handleAnonymousLogin = async () => {
+    try {
+      await signInAnonymously(auth);
+      alert("ゲストでログインしました");
+      navigate("/"); // ログイン後にホーム画面にリダイレクト
+    } catch (error) {
+      console.error("ゲストログインエラー:", error);
+      setErrorMessage("ゲストログイン中にエラーが発生しました");
     }
   };
 
   return (
     <div>
       <h1>{isRegister ? "サインアップ" : "ログイン"}</h1>
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>} {/* エラーメッセージの表示 */}
+
       <form onSubmit={handleSubmit}>
         <input
           type="email"
@@ -44,9 +69,15 @@ const Auth: React.FC = () => {
         />
         <button type="submit">{isRegister ? "登録" : "ログイン"}</button>
       </form>
+
       <button onClick={() => setIsRegister(!isRegister)}>
         {isRegister ? "既にアカウントをお持ちですか？ログイン" : "アカウントを作成"}
       </button>
+
+      <div style={{ marginTop: "20px" }}>
+        <h3>または</h3>
+        <button onClick={handleAnonymousLogin}>ゲストのままプレイ</button>
+      </div>
     </div>
   );
 };
