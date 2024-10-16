@@ -1,0 +1,20 @@
+{
+    "name": "backend",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "firebase-admin": "^12.6.0",
+        "tsx": "^4.19.1",
+        "uuid": "^10.0.0"
+    },
+    "scripts": {
+        "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
+        "tsc": "tsc --project tsconfig.backend.json",
+        "clean": "rimraf dist/*",
+        "build": "npm run clean && npm run tsc"
+    },
+    "devDependencies": {
+        "@types/uuid": "^10.0.0"
+    }
+}
