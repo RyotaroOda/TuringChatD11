@@ -18,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Realtime Databaseインスタンスを作成
-export const database = getDatabase(app);
+export const db = getDatabase(app);
 
 // Firebase Authenticationのインスタンスを作成
 export const auth = getAuth(app);

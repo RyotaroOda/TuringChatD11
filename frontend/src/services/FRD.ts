@@ -1,60 +1,82 @@
-// frontend/src/services/firebase.ts
 // FRD = Firebase Realtime Database
-import { ref, push, onValue, update, set } from "firebase/database";
-import { database } from "./firebase.ts"; 
+import { getDatabase, ref, push, update, onValue } from "firebase/database";
+import { db } from "./firebase.ts"; // Firebase初期化ファイルからデータベースをインポート
+import { auth } from "./firebase.ts"; // Firebaseの認証情報をインポート
 
-import { BattleLog } from "../../../shared/types.ts";
-
-// プレイヤー名を保存
-export const savePlayerName = async (playerId: string, playerName: string) => {
-  const playerRef = ref(database, 'players/' + playerId);
-  await set(playerRef, {
-    playerName,
-    status: "online",
-  });
-  console.log("Player name saved:", playerName);
+// プレイヤーネームの保存
+export const savePlayerName = async (playerName: string) => {
+  const user = auth.currentUser; // 現在のユーザーを取得
+  if (user) {
+    const userId = user.uid;
+    await update(ref(db, 'users/' + userId), { name: playerName });
+    return userId;
+  } else {
+    throw new Error("ユーザーがログインしていません");
+  }
 };
 
-export const requestMatch = async (playerId: string): Promise<string> => {
-  const matchRef = ref(database, 'matches');
-  const newMatchRef = await push(matchRef, {
-    playerId,
-    status: "waiting",
-  });
-
-  // マッチングが成功したらルームIDを返す（仮実装）
-  const roomId = newMatchRef.key;  // 新しいマッチのキーがルームIDとして使われる
-  await update(ref(database, 'rooms/' + roomId), {
-    player1: playerId,
-  });
-
-  return roomId!;
+// マッチングリクエスト
+export const requestMatch = async () => {
+  const user = auth.currentUser; // 現在のユーザーを取得
+  if (user) {
+    const userId = user.uid;
+    const matchRef = push(ref(db, 'matches'));
+    await update(matchRef, { player1: userId, status: 'waiting' });
+    return matchRef.key;
+  } else {
+    throw new Error("ユーザーがログインしていません");
+  }
 };
 
-// メッセージを送信
-export const sendMessage = async (roomId: string, message: string, playerId: string) => {
-  const messageRef = ref(database, `rooms/${roomId}/battleLog/messages`);
-  await push(messageRef, {
-    senderId: playerId,
-    message,
-    timestamp: Date.now(),
+// マッチング成功時のリスナー
+export const onMatchFound = (callback: (data: any) => void) => {
+  const matchRef = ref(db, 'matches');
+  onValue(matchRef, (snapshot) => {
+    const matches = snapshot.val();
+    if (matches) {
+      Object.keys(matches).forEach((key) => {
+        const match = matches[key];
+        if (match.status === 'waiting') {
+          // マッチング成立の処理を行う
+          callback({
+            roomId: key,
+            opponentId: match.player1,
+            battleConfig: match.battleConfig, // 必要なデータを追加
+          });
+        }
+      });
+    }
   });
+};
+
+// メッセージの送信
+export const sendMessage = async (roomId: string, message: string) => {
+  const user = auth.currentUser; // 現在のユーザーを取得
+  if (user) {
+    const messageRef = ref(db, 'rooms/' + roomId + '/messages');
+    await push(messageRef, { senderId: user.uid, message });
+  } else {
+    throw new Error("ユーザーがログインしていません");
+  }
 };
 
 // ターン更新リスナー
-export const onTurnUpdated = (roomId: string, callback: (data: { battleLog: BattleLog }) => void) => {
-  const turnRef = ref(database, `rooms/${roomId}/battleLog`);
-  onValue(turnRef, (snapshot) => {
+export const onTurnUpdated = (roomId: string, callback: (data: any) => void) => {
+  const logRef = ref(db, 'rooms/' + roomId + '/battleLog');
+  onValue(logRef, (snapshot) => {
     const battleLog = snapshot.val();
-    callback({ battleLog });
+    if (battleLog) {
+      callback(battleLog);
+    }
   });
 };
 
-// バトル終了を監視
+// バトル終了リスナー
 export const onBattleEnd = (roomId: string, callback: () => void) => {
-  const endRef = ref(database, `rooms/${roomId}/battleEnd`);
-  onValue(endRef, (snapshot) => {
-    if (snapshot.exists()) {
+  const roomRef = ref(db, 'rooms/' + roomId + '/status');
+  onValue(roomRef, (snapshot) => {
+    const status = snapshot.val();
+    if (status === 'ended') {
       callback();
     }
   });
