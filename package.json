@@ -10,17 +10,23 @@
     "@types/node": "^16.18.113",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
+    "firebase": "^10.14.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "5.0.1",
     "typescript": "^4.9.5",
+    "uuid": "^10.0.0",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
+    "start:front": "npm --prefix ./frontend run start",
+    "start:back": "npm --prefix ./backend run dev",
+    "build": "npm run build:back && npm run build:front",
+    "build:back": "npm --prefix ./backend run build",
+    "build:front": "npm --prefix ./frontend run build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install"
   },
   "eslintConfig": {
     "extends": [

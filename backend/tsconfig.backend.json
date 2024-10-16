@@ -1,0 +1,20 @@
+
+{
+    "extends": "../tsconfig.base.json",  // 共通設定を継承
+    "compilerOptions": {
+      "module": "ESNext",              // CommonJSモジュール方式を使用
+      "outDir": "./dist",                // コンパイルされたファイルの出力先
+      "lib": ["esnext"],                 // 最新のJavaScript機能を使用
+      "strict": true,
+      "esModuleInterop": true, // CommonJSとの互換性を有効にする
+      "skipLibCheck": true,
+      "moduleResolution": "node",        // Node.jsのモジュール解決方式を使用
+      "target": "ES2020",                // 出力するJavaScriptのバージョン
+      "allowSyntheticDefaultImports": true, // default importを許可
+      "resolveJsonModule": true,         // JSONファイルのインポートを許可
+      "diagnostics": true,  // エラー診断情報の出力
+    },
+      "include": ["src/**/*"],
+      "exclude": ["node_modules", "dist"] // node_modulesとdistディレクトリを除外
+    }
+    

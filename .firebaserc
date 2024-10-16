@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "TC11": "turingchat-d11"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}

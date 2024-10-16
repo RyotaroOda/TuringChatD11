@@ -1,0 +1,45 @@
+.
+├── ./README.md
+├── ./backend
+│   ├── ./backend/package-lock.json
+│   ├── ./backend/package.json
+│   ├── ./backend/services
+│   │   └── ./backend/services/firebase.ts
+│   ├── ./backend/src
+│   │   └── ./backend/src/index.ts
+│   └── ./backend/tsconfig.backend.json
+├── ./directory_structure.txt
+├── ./frontend
+│   ├── ./frontend/package-lock.json
+│   ├── ./frontend/package.json
+│   ├── ./frontend/public
+│   │   ├── ./frontend/public/favicon.ico
+│   │   ├── ./frontend/public/index.html
+│   │   ├── ./frontend/public/logo192.png
+│   │   ├── ./frontend/public/logo512.png
+│   │   ├── ./frontend/public/manifest.json
+│   │   └── ./frontend/public/robots.txt
+│   ├── ./frontend/src
+│   │   ├── ./frontend/src/App.test.tsx
+│   │   ├── ./frontend/src/App.tsx
+│   │   ├── ./frontend/src/index.css
+│   │   ├── ./frontend/src/index.tsx
+│   │   ├── ./frontend/src/logo.svg
+│   │   ├── ./frontend/src/react-app-env.d.ts
+│   │   ├── ./frontend/src/reportWebVitals.ts
+│   │   ├── ./frontend/src/services
+│   │   │   ├── ./frontend/src/services/FRD.ts
+│   │   │   └── ./frontend/src/services/firebase.ts
+│   │   ├── ./frontend/src/setupTests.ts
+│   │   └── ./frontend/src/views
+│   │       ├── ./frontend/src/views/BattleView.ts
+│   │       ├── ./frontend/src/views/HomeView.ts
+│   │       └── ./frontend/src/views/ResultView.ts
+│   └── ./frontend/tsconfig.frontend.json
+├── ./package-lock.json
+├── ./package.json
+├── ./shared
+│   └── ./shared/types.ts
+└── ./tsconfig.base.json
+
+10 directories, 33 files
