@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { sendMessage, onTurnUpdated, onBattleEnd } from "../services/FRD.ts";
+import { sendMessage, onTurnUpdated, onBattleEnd } from "../services/firebase-realtime-database.ts";
 import { BattleLog } from "../../../shared/types.ts";
 
 const BattleView: React.FC = () => {
@@ -82,7 +82,7 @@ useEffect(() => {
 
   const handleSendMessage = async () => {
     if (message.trim() && isMyTurn && roomId) {
-      await sendMessage(roomId, message, myId);
+      await sendMessage(roomId, message);
       setMessage("送信中...");
       setIsMyTurn(false);
     }
