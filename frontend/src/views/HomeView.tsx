@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { requestRandomMatch, requestRateMatch } from "../services/maching.ts";
 import { useNavigate } from "react-router-dom";
 import {
   requestMatch,
   onMatchFound,
-} from "../services/FRD.ts";
+  removeFromWaitingList,
+} from "../services/firebase-realtime-database.ts";
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
 import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase.ts"; // Firebaseの認証インスタンスをインポート
@@ -44,8 +46,10 @@ const HomeView: React.FC = () => {
 
   // マッチング開始
   const startMatch = (): void => {
+    if (!user) return; // ログインしていない場合は処理を中断
     setIsMatching(true);
-    requestMatch();
+
+    requestMatch(); //TODO - Matching Mode
 
     // マッチング成功時にバトル画面へ遷移
     onMatchFound((data) => {
@@ -56,6 +60,29 @@ const HomeView: React.FC = () => {
       setIsMatching(false);
     });
   };
+
+    // マッチングキャンセル処理
+    const handleCancelMatch = async () => {
+      setIsMatching(false); // マッチング状態を解除
+      await removeFromWaitingList(); // Firebaseから待機リストを削除
+      console.log("マッチングをキャンセルしました。");
+    };
+
+      // プレイヤーが画面を閉じたりリロードした場合の待機リスト削除
+  useEffect(() => {
+    const handleUnload = async () => {
+      if (isMatching) {
+        await removeFromWaitingList(); // ロード/画面遷移時に待機リストから削除
+        console.log("画面リロードまたは遷移により待機リストから削除されました。");
+      }
+    };
+
+    window.addEventListener("beforeunload", handleUnload); // ブラウザを閉じるまたはリロード時に実行
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload); // クリーンアップ
+    };
+  }, [isMatching]);
+
 
   return (
     <div>
@@ -98,9 +125,17 @@ const HomeView: React.FC = () => {
         </label>
       </div>
 
-      <button onClick={startMatch} disabled={isMatching}>
-        {isMatching ? "Matching..." : "Start Matching"}
-      </button>
+      {/* マッチング中にキャンセルボタンを表示 */}
+      {isMatching ? (
+        <button onClick={handleCancelMatch}>キャンセル</button> // マッチングキャンセルボタン
+      ) : (
+        <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
+      )}
+      {isMatching ? (
+              <p>"Matching ..."</p>
+      ) : (
+        <p></p>
+      )}
     </div>
   );
 };
