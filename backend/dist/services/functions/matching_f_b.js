@@ -24,12 +24,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelMatchFunction = exports.requestMatchFunction = void 0;
-// src/functions/matching.ts
 const functions = __importStar(require("firebase-functions"));
-const matching_b_1 = require("../matching_b");
+const matching_b_1 = require("..//matching_b");
 // マッチングリクエストを処理するFirebase Function
 exports.requestMatchFunction = functions.https.onCall(async (request) => {
-    const playerId = request.auth?.uid;
+    const playerId = request.auth?.uid; // 認証情報からユーザーIDを取得
     const playerRating = request.data.rating;
     if (!playerId) {
         throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
@@ -40,7 +39,7 @@ exports.requestMatchFunction = functions.https.onCall(async (request) => {
 });
 // プレイヤーを待機リストから削除するFirebase Function
 exports.cancelMatchFunction = functions.https.onCall(async (request) => {
-    const playerId = request.auth?.uid;
+    const playerId = request.auth?.uid; // 認証情報からユーザーIDを取得
     if (!playerId) {
         throw new functions.https.HttpsError('unauthenticated', '認証が必要です');
     }

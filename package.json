@@ -10,6 +10,7 @@
     "@types/node": "^16.18.113",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.1",
+    "cors": "^2.8.5",
     "firebase": "^10.14.1",
     "firebase-functions": "^6.0.1",
     "react": "^18.3.1",
@@ -22,7 +23,7 @@
   "scripts": {
     "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
     "start:front": "npm --prefix ./frontend run start",
-    "start:back": "npm --prefix ./backend run emu",
+    "start:back": "npm --prefix ./backend run start",
     "build": "npm run build:back && npm run build:front",
     "build:back": "npm --prefix ./backend run build",
     "build:front": "npm --prefix ./frontend run build",
