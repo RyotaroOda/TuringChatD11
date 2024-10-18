@@ -5,16 +5,21 @@
     "dependencies": {
         "dotenv": "^16.4.5",
         "firebase-admin": "^12.6.0",
+        "firebase-functions": "^6.0.1",
         "tsx": "^4.19.1",
         "uuid": "^10.0.0"
     },
-    "scripts": {
-        "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index.ts",
-        "tsc": "tsc --project tsconfig.backend.json",
-        "clean": "rimraf dist/*",
-        "build": "npm run clean && npm run tsc"
+    "main": "dist/index_serverless.js",
+    "engines": {
+        "node": "20"
     },
-    "devDependencies": {
-        "@types/uuid": "^10.0.0"
+    "scripts": {
+        "start": "npm run tsc && npm run serve",
+        "serve": "firebase emulators:start --only functions",
+        "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index_b.ts",
+        "tsc": "tsc --project tsconfig.backend.json",
+        "clean": "rimraf dist/* && rm -rf node_modules package-lock.json && npm install",
+        "build": "npm run clean && npm run tsc",
+        "deploy": "firebase deploy --only functions"
     }
 }

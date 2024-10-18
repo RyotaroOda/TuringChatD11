@@ -1,0 +1,24 @@
+.
+├── ./directory_structure.txt
+├── ./dist
+│   ├── ./dist/index_b.js
+│   ├── ./dist/index_serverless.js
+│   └── ./dist/services
+│       ├── ./dist/services/firebase_b.js
+│       ├── ./dist/services/functions
+│       │   └── ./dist/services/functions/matching_f_b.js
+│       └── ./dist/services/matching_b.js
+├── ./package-lock.json
+├── ./package.json
+├── ./src
+│   ├── ./src/index_b.ts
+│   ├── ./src/index_serverless.ts
+│   └── ./src/services
+│       ├── ./src/services/firebase_b.ts
+│       ├── ./src/services/functions
+│       │   └── ./src/services/functions/matching_f_b.ts
+│       └── ./src/services/matching_b.ts
+├── ./tsconfig.backend.json
+└── ./ui-debug.log
+
+7 directories, 15 files

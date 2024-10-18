@@ -22,7 +22,7 @@
   "scripts": {
     "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
     "start:front": "npm --prefix ./frontend run start",
-    "start:back": "npm --prefix ./backend run dev",
+    "start:back": "npm --prefix ./backend run emu",
     "build": "npm run build:back && npm run build:front",
     "build:back": "npm --prefix ./backend run build",
     "build:front": "npm --prefix ./frontend run build",

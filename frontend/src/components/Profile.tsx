@@ -1,7 +1,7 @@
 // src/components/Profile.tsx
 import React, { useEffect, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "../services/firebase.ts";
+import { auth } from "../services/firebase_f.ts";
 
 const Profile: React.FC = () => {
   const [user, setUser] = useState<any>(null);

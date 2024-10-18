@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { requestRandomMatch, requestRateMatch } from "../services/maching.ts";
 import { useNavigate } from "react-router-dom";
 import {
-  requestMatch,
   onMatchFound,
   removeFromWaitingList,
 } from "../services/firebase-realtime-database.ts";
+import {
+  requestMatch,
+  cancelMatch
+} from "../services/firebase-functions_f.ts"; // Firebase Functionsの呼び出しをインポート
+
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
 import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
-import { auth } from "../services/firebase.ts"; // Firebaseの認証インスタンスをインポート
+import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import { onAuthStateChanged } from "firebase/auth"; // Firebaseの認証状態確認
 
 const HomeView: React.FC = () => {
@@ -17,7 +20,6 @@ const HomeView: React.FC = () => {
   const [isMatching, setIsMatching] = useState<boolean>(false);
   const [playerName, setPlayerName] = useState<string>(""); // プレイヤーネームを保持
   const navigate = useNavigate();
-
   const { user } = useAuth(); // useAuthフックで認証状態を取得
 
   useEffect(() => {
@@ -44,28 +46,51 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // マッチング開始
-  const startMatch = (): void => {
-    if (!user) return; // ログインしていない場合は処理を中断
-    setIsMatching(true);
-
-    requestMatch(); //TODO - Matching Mode
-
-    // マッチング成功時にバトル画面へ遷移
-    onMatchFound((data) => {
-      console.log("Match found with opponent:", data.opponentId);
-      navigate(`/battle/${data.roomId}`, {
-        state: { matchData: data, myData: { playerName, playerScore, aiPrompt } },
-      });
-      setIsMatching(false);
-    });
+   // マッチング開始処理
+   const startMatch = async () => {
+    setIsMatching(true); // マッチング状態を設定
+    try {
+      const result = await requestMatch(playerScore); // Firebase Functionsを使ってマッチングリクエスト
+      if (result.roomId) {
+        console.log("Match found with opponent:", result.opponentId);
+        navigate(`/battle/${result.roomId}`, {
+          state: { matchData: result, myData: { playerName, playerScore, aiPrompt } },
+        });
+      } else {
+        console.log(result.message);
+      }
+    } catch (error) {
+      console.error("マッチングエラー:", error);
+      setIsMatching(false); // エラー発生時にマッチング状態を解除
+    }
   };
+
+  // // マッチング開始
+  // const startMatch = (): void => {
+  //   if (!user) return; // ログインしていない場合は処理を中断
+  //   setIsMatching(true);
+
+  //   requestMatch(); //TODO - Matching Mode
+
+  //   // マッチング成功時にバトル画面へ遷移
+  //   onMatchFound((data) => {
+  //     console.log("Match found with opponent:", data.opponentId);
+  //     navigate(`/battle/${data.roomId}`, {
+  //       state: { matchData: data, myData: { playerName, playerScore, aiPrompt } },
+  //     });
+  //     setIsMatching(false);
+  //   });
+  // };
 
     // マッチングキャンセル処理
     const handleCancelMatch = async () => {
       setIsMatching(false); // マッチング状態を解除
-      await removeFromWaitingList(); // Firebaseから待機リストを削除
-      console.log("マッチングをキャンセルしました。");
+      try {
+        const result = await cancelMatch(); // Firebase Functionsを使ってキャンセル
+        console.log(result.message);
+      } catch (error) {
+        console.error("キャンセルエラー:", error);
+      }
     };
 
       // プレイヤーが画面を閉じたりリロードした場合の待機リスト削除

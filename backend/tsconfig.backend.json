@@ -2,8 +2,9 @@
 {
     "extends": "../tsconfig.base.json",  // 共通設定を継承
     "compilerOptions": {
-      "module": "ESNext",              // CommonJSモジュール方式を使用
+      "module": "CommonJS",              // CommonJSモジュール方式を使用
       "outDir": "./dist",                // コンパイルされたファイルの出力先
+      "rootDir": "./src",  // ソースファイルのルートディレクトリ
       "lib": ["esnext"],                 // 最新のJavaScript機能を使用
       "strict": true,
       "esModuleInterop": true, // CommonJSとの互換性を有効にする

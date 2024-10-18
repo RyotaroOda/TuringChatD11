@@ -14,7 +14,8 @@
       ]
     },
     "functions": {
-      "source": "backend"
+      "source": "backend",
+      "runtime": "nodejs20"
     }
   }
   
