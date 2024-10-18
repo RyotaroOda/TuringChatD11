@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "./firebase.ts";  // Firebase Authインスタンスをインポート
+import { auth } from "./firebase_f.ts";  // Firebase Authインスタンスをインポート
 
 // 認証コンテキストの作成
 const AuthContext = createContext<{ user: User | null }>({ user: null });

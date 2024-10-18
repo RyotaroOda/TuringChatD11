@@ -1,31 +1,31 @@
 
-import { getDatabase, ref, push, set, update, onValue, remove } from "firebase/database";
-import { auth } from "./firebase.ts"; // Firebaseの認証インスタンスをインポート
-import { getFunctions, httpsCallable } from "firebase/functions"; // Firebase Functions呼び出し
-import { db } from "./firebase.ts"; // Firebase初期化ファイルからデータベースをインポート
+import { ref, push, set, update, onValue, remove } from "firebase/database";
+import { auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
+import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
 
-// マッチングリクエストを行う関数
-export const requestMatch = async () => {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("ログインしていないユーザーです。");
-  }
 
-  const playerId = user.uid;
-  const playerRating = Math.floor(Math.random() * 1000); // 仮のレーティングを生成（本番ではユーザーの実際のスキルに基づく）
+// // マッチングリクエストを行う関数
+// export const requestMatch = async () => {
+//   const user = auth.currentUser;
+//   if (!user) {
+//     throw new Error("ログインしていないユーザーです。");
+//   }
 
-  // プレイヤー情報を待機中のプレイヤーリストに追加
-  const playerData = {
-    id: playerId,
-    rating: playerRating,
-    timeWaiting: Date.now(),
-  };
+//   const playerId = user.uid;
+//   const playerRating = Math.floor(Math.random() * 1000); // 仮のレーティングを生成（本番ではユーザーの実際のスキルに基づく）
 
-  const waitingPlayersRef = ref(db, "waitingPlayers/" + playerId);
-  await set(waitingPlayersRef, playerData);
+//   // プレイヤー情報を待機中のプレイヤーリストに追加
+//   const playerData = {
+//     id: playerId,
+//     rating: playerRating,
+//     timeWaiting: Date.now(),
+//   };
 
-  console.log("プレイヤーを待機リストに追加しました。プレイヤーID:", playerId);
-};
+//   const waitingPlayersRef = ref(db, "waitingPlayers/" + playerId);
+//   await set(waitingPlayersRef, playerData);
+
+//   console.log("プレイヤーを待機リストに追加しました。プレイヤーID:", playerId);
+// };
 
 // マッチングが成立したらコールバックを実行するリスナー
 export const onMatchFound = (callback: (data: any) => void) => {

@@ -12,6 +12,7 @@ firebase-service-account.json
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store

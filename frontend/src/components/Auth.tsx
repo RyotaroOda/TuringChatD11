@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInAnonymously } from "firebase/auth";
-import { auth } from "../services/firebase.ts";
+import { auth } from "../services/firebase_f.ts";
 import { useNavigate } from "react-router-dom";
 
 const Auth: React.FC = () => {

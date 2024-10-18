@@ -1,15 +1,60 @@
 .
 ├── ./README.md
 ├── ./backend
+│   ├── ./backend/directory_structure.txt
+│   ├── ./backend/dist
+│   │   ├── ./backend/dist/index_b.js
+│   │   ├── ./backend/dist/index_serverless.js
+│   │   └── ./backend/dist/services
+│   │       ├── ./backend/dist/services/firebase_b.js
+│   │       ├── ./backend/dist/services/functions
+│   │       │   └── ./backend/dist/services/functions/matching_f_b.js
+│   │       └── ./backend/dist/services/matching_b.js
 │   ├── ./backend/package-lock.json
 │   ├── ./backend/package.json
-│   ├── ./backend/services
-│   │   └── ./backend/services/firebase.ts
 │   ├── ./backend/src
-│   │   └── ./backend/src/index.ts
-│   └── ./backend/tsconfig.backend.json
+│   │   ├── ./backend/src/index_b.ts
+│   │   ├── ./backend/src/index_serverless.ts
+│   │   └── ./backend/src/services
+│   │       ├── ./backend/src/services/firebase_b.ts
+│   │       ├── ./backend/src/services/functions
+│   │       │   └── ./backend/src/services/functions/matching_f_b.ts
+│   │       └── ./backend/src/services/matching_b.ts
+│   ├── ./backend/tsconfig.backend.json
+│   └── ./backend/ui-debug.log
+├── ./codebase
+│   ├── ./codebase/package-lock.json
+│   ├── ./codebase/package.json
+│   ├── ./codebase/src
+│   │   └── ./codebase/src/index.ts
+│   ├── ./codebase/tsconfig.dev.json
+│   └── ./codebase/tsconfig.json
+├── ./database.rules.json
 ├── ./directory_structure.txt
+├── ./firebase-service-account.json
+├── ./firebase.json
+├── ./firestore.indexes.json
+├── ./firestore.rules
 ├── ./frontend
+│   ├── ./frontend/build
+│   │   ├── ./frontend/build/asset-manifest.json
+│   │   ├── ./frontend/build/favicon.ico
+│   │   ├── ./frontend/build/index.html
+│   │   ├── ./frontend/build/logo192.png
+│   │   ├── ./frontend/build/logo512.png
+│   │   ├── ./frontend/build/manifest.json
+│   │   ├── ./frontend/build/robots.txt
+│   │   └── ./frontend/build/static
+│   │       ├── ./frontend/build/static/css
+│   │       │   ├── ./frontend/build/static/css/main.e6c13ad2.css
+│   │       │   └── ./frontend/build/static/css/main.e6c13ad2.css.map
+│   │       └── ./frontend/build/static/js
+│   │           ├── ./frontend/build/static/js/317.d60c904a.chunk.js
+│   │           ├── ./frontend/build/static/js/317.d60c904a.chunk.js.map
+│   │           ├── ./frontend/build/static/js/main.0a3f1f13.js
+│   │           ├── ./frontend/build/static/js/main.0a3f1f13.js.LICENSE.txt
+│   │           └── ./frontend/build/static/js/main.0a3f1f13.js.map
+│   ├── ./frontend/directory_structure.txt
 │   ├── ./frontend/package-lock.json
 │   ├── ./frontend/package.json
 │   ├── ./frontend/public
@@ -22,24 +67,34 @@
 │   ├── ./frontend/src
 │   │   ├── ./frontend/src/App.test.tsx
 │   │   ├── ./frontend/src/App.tsx
+│   │   ├── ./frontend/src/components
+│   │   │   ├── ./frontend/src/components/Auth.tsx
+│   │   │   ├── ./frontend/src/components/Profile.tsx
+│   │   │   └── ./frontend/src/components/ProtectedRoute.tsx
 │   │   ├── ./frontend/src/index.css
 │   │   ├── ./frontend/src/index.tsx
 │   │   ├── ./frontend/src/logo.svg
 │   │   ├── ./frontend/src/react-app-env.d.ts
 │   │   ├── ./frontend/src/reportWebVitals.ts
 │   │   ├── ./frontend/src/services
-│   │   │   ├── ./frontend/src/services/FRD.ts
-│   │   │   └── ./frontend/src/services/firebase.ts
+│   │   │   ├── ./frontend/src/services/firebase-functions_f.ts
+│   │   │   ├── ./frontend/src/services/firebase-realtime-database.ts
+│   │   │   ├── ./frontend/src/services/firebase_f.ts
+│   │   │   ├── ./frontend/src/services/maching.ts
+│   │   │   └── ./frontend/src/services/useAuth.tsx
 │   │   ├── ./frontend/src/setupTests.ts
 │   │   └── ./frontend/src/views
-│   │       ├── ./frontend/src/views/BattleView.ts
-│   │       ├── ./frontend/src/views/HomeView.ts
-│   │       └── ./frontend/src/views/ResultView.ts
+│   │       ├── ./frontend/src/views/BattleView.tsx
+│   │       ├── ./frontend/src/views/HomeView.tsx
+│   │       └── ./frontend/src/views/ResultView.tsx
 │   └── ./frontend/tsconfig.frontend.json
 ├── ./package-lock.json
 ├── ./package.json
+├── ./public
+│   └── ./public/index.html
 ├── ./shared
 │   └── ./shared/types.ts
+├── ./storage.rules
 └── ./tsconfig.base.json
 
-10 directories, 33 files
+22 directories, 76 files
