@@ -43,3 +43,9 @@ export type Player = {
   rating: number; // プレイヤーのレーティング（スキル値）
   timeWaiting: number; // 待機時間
 };
+
+export type MatchResult = {
+  roomId: string;
+  opponentId: string;
+  message?: string; // Optional property
+};

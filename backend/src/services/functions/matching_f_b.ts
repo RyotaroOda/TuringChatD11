@@ -1,10 +1,9 @@
-// src/functions/matching.ts
 import * as functions from 'firebase-functions';
-import { requestMatch, findMatch, removePlayerFromWaitingList } from '../matching_b';
+import { requestMatch, findMatch, removePlayerFromWaitingList } from '..//matching_b';
 
 // マッチングリクエストを処理するFirebase Function
-export const requestMatchFunction = functions.https.onCall(async (request: functions.https.CallableRequest) => {
-  const playerId = request.auth?.uid;
+export const requestMatchFunction = functions.https.onCall(async (request) => {
+  const playerId = request.auth?.uid;  // 認証情報からユーザーIDを取得
   const playerRating = request.data.rating;
 
   if (!playerId) {
@@ -18,8 +17,8 @@ export const requestMatchFunction = functions.https.onCall(async (request: funct
 });
 
 // プレイヤーを待機リストから削除するFirebase Function
-export const cancelMatchFunction = functions.https.onCall(async (request: functions.https.CallableRequest) => {
-  const playerId = request.auth?.uid;
+export const cancelMatchFunction = functions.https.onCall(async (request) => {
+  const playerId = request.auth?.uid;  // 認証情報からユーザーIDを取得
 
   if (!playerId) {
     throw new functions.https.HttpsError('unauthenticated', '認証が必要です');

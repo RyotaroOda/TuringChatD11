@@ -6,13 +6,14 @@ import {
 } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
-  cancelMatch
-} from "../services/firebase-functions_f.ts"; // Firebase Functionsの呼び出しをインポート
+  cancelMatch,
+} from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
 import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import { onAuthStateChanged } from "firebase/auth"; // Firebaseの認証状態確認
+import { MatchResult } from "../../../shared/types";
 
 const HomeView: React.FC = () => {
   const [playerScore, setPlayerScore] = useState<number>(9999);
@@ -46,15 +47,18 @@ const HomeView: React.FC = () => {
     }
   };
 
-   // マッチング開始処理
-   const startMatch = async () => {
+  // マッチング開始処理
+  const startMatch = async () => {
     setIsMatching(true); // マッチング状態を設定
     try {
-      const result = await requestMatch(playerScore); // Firebase Functionsを使ってマッチングリクエスト
+      const result = await requestMatch(playerScore); // Firebase Functionsでマッチングリクエスト
       if (result.roomId) {
         console.log("Match found with opponent:", result.opponentId);
         navigate(`/battle/${result.roomId}`, {
-          state: { matchData: result, myData: { playerName, playerScore, aiPrompt } },
+          state: {
+            matchData: result,
+            myData: { playerName, playerScore, aiPrompt },
+          },
         });
       } else {
         console.log(result.message);
@@ -82,23 +86,25 @@ const HomeView: React.FC = () => {
   //   });
   // };
 
-    // マッチングキャンセル処理
-    const handleCancelMatch = async () => {
-      setIsMatching(false); // マッチング状態を解除
-      try {
-        const result = await cancelMatch(); // Firebase Functionsを使ってキャンセル
-        console.log(result.message);
-      } catch (error) {
-        console.error("キャンセルエラー:", error);
-      }
-    };
+  // マッチングキャンセル処理
+  const handleCancelMatch = async () => {
+    setIsMatching(false); // マッチング状態を解除
+    try {
+      const result = await cancelMatch(); // サーバーレス関数でキャンセル
+      console.log(result.message);
+    } catch (error) {
+      console.error("キャンセルエラー:", error);
+    }
+  };
 
-      // プレイヤーが画面を閉じたりリロードした場合の待機リスト削除
+  // プレイヤーが画面を閉じたりリロードした場合の待機リスト削除
   useEffect(() => {
     const handleUnload = async () => {
       if (isMatching) {
         await removeFromWaitingList(); // ロード/画面遷移時に待機リストから削除
-        console.log("画面リロードまたは遷移により待機リストから削除されました。");
+        console.log(
+          "画面リロードまたは遷移により待機リストから削除されました。"
+        );
       }
     };
 
@@ -108,7 +114,6 @@ const HomeView: React.FC = () => {
     };
   }, [isMatching]);
 
-
   return (
     <div>
       <h1>ホーム</h1>
@@ -116,18 +121,20 @@ const HomeView: React.FC = () => {
       {user ? (
         <div>
           <p>
-            こんにちは、{playerName}さん {/* ログイン状態に基づいて名前を表示 */}
+            こんにちは、{playerName}さん{" "}
+            {/* ログイン状態に基づいて名前を表示 */}
           </p>
           {/* 匿名ユーザーなら「ログイン」ボタンを表示 */}
           {user.isAnonymous ? (
-            <button onClick={() => navigate("/login")}>ログイン</button> 
+            <button onClick={() => navigate("/login")}>ログイン</button>
           ) : (
             <button onClick={handleLogout}>ログアウト</button>
           )}
         </div>
       ) : (
         <div>
-          <button onClick={() => navigate("/login")}>ログイン</button> {/* ログインボタン */}
+          <button onClick={() => navigate("/login")}>ログイン</button>{" "}
+          {/* ログインボタン */}
         </div>
       )}
 
@@ -156,11 +163,7 @@ const HomeView: React.FC = () => {
       ) : (
         <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
       )}
-      {isMatching ? (
-              <p>"Matching ..."</p>
-      ) : (
-        <p></p>
-      )}
+      {isMatching ? <p>"Matching ..."</p> : <p></p>}
     </div>
   );
 };
