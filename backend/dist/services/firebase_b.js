@@ -28,13 +28,13 @@ const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const dotenv = __importStar(require("dotenv"));
 // import * as serviceAccount from '../../firebase-service-account.json';  // サービスアカウントキーのパス
-// import { ServiceAccount } from "firebase-admin"; 
+// import { ServiceAccount } from "firebase-admin";
 dotenv.config(); // 環境変数のロード
 exports.initFirebase = admin.initializeApp({
     credential: admin.credential.cert({
         projectId: process.env.FD_PROJECT_ID,
         clientEmail: process.env.FD_CLIENT_EMAIL,
-        privateKey: process.env.FD_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        privateKey: process.env.FD_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     }),
     databaseURL: process.env.FD_DATABASE_URL, // Realtime DatabaseのURLを.envから取得
 });

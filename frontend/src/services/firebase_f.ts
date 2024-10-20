@@ -1,8 +1,11 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getFunctions } from "firebase/functions";
-
+import {
+  getFunctions,
+  connectFunctionsEmulator,
+  httpsCallable,
+} from "firebase/functions";
 
 // フロントエンド用にREACT_APP_プレフィックスをつけた環境変数を使う
 const firebaseConfig = {
@@ -24,8 +27,7 @@ export const db = getDatabase(app);
 // Firebase Authenticationのインスタンスを作成
 export const auth = getAuth(app);
 
-export const funcs = getFunctions(app);
-
+export const functions = getFunctions(app);
 
 // 匿名認証を行う関数
 export const signInAnonymouslyUser = () => {
@@ -39,3 +41,21 @@ export const signInAnonymouslyUser = () => {
       console.error("Anonymous sign-in failed:", error);
     });
 };
+
+// ローカル開発用エミュレーターの接続設定
+if (window.location.hostname === "localhost") {
+  // Functionsエミュレーター
+  connectFunctionsEmulator(functions, "127.0.0.1", 5001); // ポートはエミュレータのポートに合わせる
+  console.log("Functions emulator connected", functions);
+
+  const testFunction = httpsCallable(functions, "testFunction");
+  console.log("testFunction", testFunction);
+  try {
+    const result = await testFunction();
+    console.log("Function result:", result.data);
+  } catch (error) {
+    console.error("Error calling test function:", error);
+  }
+
+  console.log("testFunction fin");
+}

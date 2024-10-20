@@ -1,5 +1,5 @@
-// services/matching.ts
-import { db } from './firebase_b';
+// services/matching_b.ts
+import { db } from "./firebase_b";
 
 interface Player {
   id: string;
@@ -9,8 +9,8 @@ interface Player {
 
 // マッチングリクエストを処理する関数
 export const requestMatch = async (playerId: string, rating: number) => {
-  const playerRef = db.ref('waitingPlayers/' + playerId);
-  
+  const playerRef = db.ref("waitingPlayers/" + playerId);
+
   const playerData: Player = {
     id: playerId,
     rating: rating,
@@ -23,8 +23,8 @@ export const requestMatch = async (playerId: string, rating: number) => {
 
 // マッチング処理を実行する関数
 export const findMatch = async (playerId: string, rating: number) => {
-  const waitingPlayersRef = db.ref('waitingPlayers');
-  const snapshot = await waitingPlayersRef.once('value');
+  const waitingPlayersRef = db.ref("waitingPlayers");
+  const snapshot = await waitingPlayersRef.once("value");
   const waitingPlayers = snapshot.val();
 
   let bestMatchId: string | null = null;
@@ -34,7 +34,7 @@ export const findMatch = async (playerId: string, rating: number) => {
     Object.keys(waitingPlayers).forEach((key) => {
       const opponent = waitingPlayers[key];
       const ratingDiff = Math.abs(opponent.rating - rating);
-      
+
       if (ratingDiff < bestMatchDiff && opponent.id !== playerId) {
         bestMatchDiff = ratingDiff;
         bestMatchId = opponent.id;
@@ -42,7 +42,7 @@ export const findMatch = async (playerId: string, rating: number) => {
     });
 
     if (bestMatchId) {
-      const roomId = db.ref('rooms').push().key; // 新しいルームIDを生成
+      const roomId = db.ref("rooms").push().key; // 新しいルームIDを生成
       const roomData = {
         player1: playerId,
         player2: bestMatchId,
@@ -50,22 +50,22 @@ export const findMatch = async (playerId: string, rating: number) => {
       };
 
       // ルーム情報をデータベースに保存
-      await db.ref('rooms/' + roomId).set(roomData);
+      await db.ref("rooms/" + roomId).set(roomData);
 
       // 待機リストから両プレイヤーを削除
-      await db.ref('waitingPlayers/' + playerId).remove();
-      await db.ref('waitingPlayers/' + bestMatchId).remove();
+      await db.ref("waitingPlayers/" + playerId).remove();
+      await db.ref("waitingPlayers/" + bestMatchId).remove();
 
       return { roomId, opponentId: bestMatchId };
     }
   }
 
-  return { message: '対戦相手が見つかりませんでした' };
+  return { message: "対戦相手が見つかりませんでした" };
 };
 
 // 待機リストからプレイヤーを削除する関数
 export const removePlayerFromWaitingList = async (playerId: string) => {
-  const playerRef = db.ref('waitingPlayers/' + playerId);
+  const playerRef = db.ref("waitingPlayers/" + playerId);
   await playerRef.remove();
   console.log("プレイヤーを待機リストから削除しました:", playerId);
 };
