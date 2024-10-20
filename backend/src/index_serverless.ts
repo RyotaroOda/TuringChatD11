@@ -1,1 +1,5 @@
-export { requestMatchFunction, cancelMatchFunction } from './services/functions/matching_f_b';
+export {
+  requestMatchFunction,
+  cancelMatchFunction,
+  testFunction,
+} from "./services/functions/matching_f_b";
