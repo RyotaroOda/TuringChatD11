@@ -1,6 +1,6 @@
 //src/services/functions/matching_f_b.ts
 // import * as functions from "firebase-functions";
-import { MatchResult } from "@shared/types";
+import { MatchResult } from "../../../../shared/types";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 

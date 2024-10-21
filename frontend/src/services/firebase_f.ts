@@ -1,11 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import {
-  getFunctions,
-  connectFunctionsEmulator,
-  httpsCallable,
-} from "firebase/functions";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 // フロントエンド用にREACT_APP_プレフィックスをつけた環境変数を使う
 const firebaseConfig = {
