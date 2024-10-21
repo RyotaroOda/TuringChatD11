@@ -76,6 +76,7 @@ const HomeView: React.FC = () => {
     }
   };
 
+  //ルーム監視
   useEffect(() => {
     if (roomId) {
       // ルームIDが設定されている場合、ルームのデータを監視

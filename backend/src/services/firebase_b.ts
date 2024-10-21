@@ -1,8 +1,6 @@
 import * as admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
-// import * as serviceAccount from '../../firebase-service-account.json';  // サービスアカウントキーのパス
-// import { ServiceAccount } from "firebase-admin";
 
 dotenv.config(); // 環境変数のロード
 

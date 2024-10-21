@@ -4,7 +4,7 @@
     "module": "CommonJS", // CommonJSモジュール方式を使用
     "outDir": "./dist", // コンパイルされたファイルの出力先
     "rootDir": "..", // ソースファイルのルートディレクトリ
-    "baseUrl": ".",
+    "baseUrl": ".", // ベースのディレクトリをカレントディレクトリに設定
     "paths": {
       "@shared/*": ["../shared/*"] // shared ディレクトリのエイリアス
     },

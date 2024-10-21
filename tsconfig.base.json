@@ -40,9 +40,7 @@
     "noEmit": false,
 
     // ReactのJSX記法を使用
-    "jsx": "react-jsx",
-
-    "baseUrl": "."
+    "jsx": "react-jsx"
   },
 
   // node_modulesディレクトリをコンパイル対象から除外
