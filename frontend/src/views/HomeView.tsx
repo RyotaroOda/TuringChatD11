@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  onMatchFound,
+  onRoomUpdate,
   removeFromWaitingList,
 } from "../services/firebase-realtime-database.ts";
 import {
@@ -19,10 +19,13 @@ const HomeView: React.FC = () => {
   const [playerScore, setPlayerScore] = useState<number>(9999);
   const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
   const [isMatching, setIsMatching] = useState<boolean>(false);
+  const [roomId, setRoomId] = useState<string | null>(null); // ルームID
   const [playerName, setPlayerName] = useState<string>(""); // プレイヤーネームを保持
+
   const navigate = useNavigate();
   const { user } = useAuth(); // useAuthフックで認証状態を取得
 
+  //#region ログイン状態
   useEffect(() => {
     if (user) {
       // ログイン済みユーザーならFirebaseからプレイヤー名を取得
@@ -46,45 +49,26 @@ const HomeView: React.FC = () => {
       console.error("ログアウトエラー:", error);
     }
   };
+  //#endregion
 
+  //#region マッチング
   // マッチング開始処理
   const startMatch = async () => {
     setIsMatching(true); // マッチング状態を設定
     try {
-      const result = await requestMatch(playerScore); // Firebase Functionsでマッチングリクエスト
+      const result = await requestMatch(); // サーバーレス関数でマッチングリクエスト
       if (result.roomId) {
-        console.log("Match found with opponent:", result.opponentId);
-        navigate(`/battle/${result.roomId}`, {
-          state: {
-            matchData: result,
-            myData: { playerName, playerScore, aiPrompt },
-          },
-        });
-      } else {
+        setRoomId(result.roomId); // ルームIDを保存
         console.log(result.message);
+      } else {
+        console.error("マッチングエラー1");
+        setIsMatching(false);
       }
     } catch (error) {
-      console.error("マッチングエラー:", error);
+      console.error("マッチングエラー2:", error);
       setIsMatching(false); // エラー発生時にマッチング状態を解除
     }
   };
-
-  // // マッチング開始
-  // const startMatch = (): void => {
-  //   if (!user) return; // ログインしていない場合は処理を中断
-  //   setIsMatching(true);
-
-  //   requestMatch(); //TODO - Matching Mode
-
-  //   // マッチング成功時にバトル画面へ遷移
-  //   onMatchFound((data) => {
-  //     console.log("Match found with opponent:", data.opponentId);
-  //     navigate(`/battle/${data.roomId}`, {
-  //       state: { matchData: data, myData: { playerName, playerScore, aiPrompt } },
-  //     });
-  //     setIsMatching(false);
-  //   });
-  // };
 
   // マッチングキャンセル処理
   const handleCancelMatch = async () => {
@@ -113,6 +97,7 @@ const HomeView: React.FC = () => {
       window.removeEventListener("beforeunload", handleUnload); // クリーンアップ
     };
   }, [isMatching]);
+  //#endregion
 
   return (
     <div>

@@ -1,57 +1,85 @@
 //src/services/functions/matching_f_b.ts
 // import * as functions from "firebase-functions";
-import { onCall, HttpsError, onRequest } from "firebase-functions/v2/https";
-import {
-  requestMatch,
-  findMatch,
-  removePlayerFromWaitingList,
-} from "..//matching_b";
+import { db } from "../firebase_b";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 
-// import { Request, Response } from "express";
+const waitingPlayersRef = db.ref("randomMatching/waitingPlayers/");
 
-// export const testFunction = onRequest(async (req: Request, res: Response) => {
-//   // テキストパラメータを取得
-//   const original = req.query.text as string;
-
-//   if (!original) {
-//     res.status(400).json({ result: "No text provided" });
-//     return;
-//   }
-
-//   // メッセージが正常に書き込まれたことを通知
-//   res.json({ result: `Message with ID: ${original} added.` });
-// });
+const authCheck = (playerId: string) => {
+  if (!playerId) {
+    throw new HttpsError("unauthenticated", "認証が必要です");
+  }
+  return playerId;
+};
 
 // テスト関数
 export const testFunction = onCall((request) => {
   // テスト用にシンプルなレスポンスを返す
-  return { message: "Test function executed successfully!" };
+  const text = "Test test test";
+  const data = 999;
+  return {
+    message: "Test function executed successfully!",
+    text: text,
+    data: data,
+  };
 });
 
 // マッチングリクエストを処理するFirebase Function
 export const requestMatchFunction = onCall(async (request) => {
-  console.log("requestMatchFunction sever start");
-  const playerId = request.auth?.uid; // 認証情報からユーザーIDを取得
-  const playerRating = request.data.rating; // クライアントから送られたデータを取得
+  const playerId = authCheck(request.auth?.uid ?? ""); // マッチング処理を実行
+  const snapshot = await waitingPlayersRef.once("value"); // Firebase Realtime Databaseから一度だけデータを取得
+  const waitingPlayers = snapshot.val(); // 待機中のプレイヤーのデータを取得
 
-  if (!playerId) {
-    throw new HttpsError("unauthenticated", "認証が必要です");
+  /// マッチング相手が見つかった場合
+  if (waitingPlayers) {
+    // 待機リストに他のプレイヤーがいる場合、そのプレイヤーのルームに参加
+    const opponentKey = Object.keys(waitingPlayers)[0];
+    const opponent = waitingPlayers[opponentKey];
+    const roomId = opponent.roomId;
+
+    // 待機リストから相手を削除
+    await waitingPlayersRef.child(opponentKey).remove();
+
+    // ルームにこのプレイヤーを追加（player2として）
+    await db.ref(`rooms/${roomId}/player2`).set(playerId);
+
+    return { roomId, opponentId: opponent.id }; // マッチング成功時にルームIDと相手のIDを返す
   }
 
-  await requestMatch(playerId, playerRating); // プレイヤーを待機リストに追加
-  const matchResult = await findMatch(playerId, playerRating); // マッチング処理を実行
+  // マッチング相手が見つからなかった場合
+  else {
+    // 待機プレイヤーがいない場合、新しいルームを作成
+    const roomId = db.ref("rooms").push().key; // 新しいルームIDを生成
+    const roomData = {
+      player1: playerId,
+      createdAt: Date.now(),
+    };
 
-  return matchResult;
+    // ルーム情報をデータベースに保存
+    await db.ref("rooms/" + roomId).set(roomData);
+
+    // 待機リストにプレイヤーを追加（ルームIDも含む）
+    const playerData = { id: playerId, roomId, timeWaiting: Date.now() };
+    await waitingPlayersRef.child(playerId).set(playerData);
+
+    return { roomId, message: "Waiting for an opponent..." };
+  }
 });
 
 // プレイヤーを待機リストから削除するFirebase Function
 export const cancelMatchFunction = onCall(async (request) => {
-  const playerId = request.auth?.uid; // 認証情報からユーザーIDを取得
+  const playerId = authCheck(request.auth?.uid ?? "");
+  const playerSnapshot = await db
+    .ref(`${waitingPlayersRef}/${playerId}`)
+    .once("value");
+  const playerData = playerSnapshot.val();
 
-  if (!playerId) {
-    throw new HttpsError("unauthenticated", "認証が必要です");
+  if (playerData && playerData.roomId) {
+    // 自分が作ったルームも削除
+    await db.ref(`rooms/${playerData.roomId}`).remove();
   }
 
-  await removePlayerFromWaitingList(playerId); // 待機リストから削除
-  return { message: "マッチングがキャンセルされました" };
+  // 待機リストから自分を削除
+  await waitingPlayersRef.remove();
+  console.log("プレイヤーを待機リストから削除しました:", playerId);
 });
