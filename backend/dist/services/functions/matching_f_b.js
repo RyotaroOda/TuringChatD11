@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelMatchFunction = exports.requestMatchFunction = exports.testFunction = void 0;
-//src/services/functions/matching_f_b.ts
-// import * as functions from "firebase-functions";
 const firebase_b_1 = require("../firebase_b");
 const https_1 = require("firebase-functions/v2/https");
 const waitingPlayersRef = firebase_b_1.db.ref("randomMatching/waitingPlayers/");
@@ -38,7 +36,11 @@ exports.requestMatchFunction = (0, https_1.onCall)(async (request) => {
         await waitingPlayersRef.child(opponentKey).remove();
         // ルームにこのプレイヤーを追加（player2として）
         await firebase_b_1.db.ref(`rooms/${roomId}/player2`).set(playerId);
-        return { roomId, opponentId: opponent.id }; // マッチング成功時にルームIDと相手のIDを返す
+        return {
+            roomId: roomId,
+            opponentId: opponent.id,
+            message: "success to match",
+        }; // マッチング成功時にルームIDと相手のIDを返す
     }
     // マッチング相手が見つからなかった場合
     else {
@@ -53,7 +55,11 @@ exports.requestMatchFunction = (0, https_1.onCall)(async (request) => {
         // 待機リストにプレイヤーを追加（ルームIDも含む）
         const playerData = { id: playerId, roomId, timeWaiting: Date.now() };
         await waitingPlayersRef.child(playerId).set(playerData);
-        return { roomId, message: "Waiting for an opponent..." };
+        return {
+            roomId: roomId,
+            opponentId: "",
+            message: "Waiting for an opponent...",
+        };
     }
 });
 // プレイヤーを待機リストから削除するFirebase Function

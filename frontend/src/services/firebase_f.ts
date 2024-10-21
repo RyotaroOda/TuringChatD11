@@ -27,6 +27,7 @@ export const db = getDatabase(app);
 // Firebase Authenticationのインスタンスを作成
 export const auth = getAuth(app);
 
+// Firebase Functionsのインスタンスを作成
 export const functions = getFunctions(app);
 
 // 匿名認証を行う関数
@@ -48,14 +49,16 @@ if (window.location.hostname === "localhost") {
   connectFunctionsEmulator(functions, "127.0.0.1", 5001); // ポートはエミュレータのポートに合わせる
   console.log("Functions emulator connected", functions);
 
-  const testFunction = httpsCallable(functions, "testFunction");
-  console.log("testFunction", testFunction);
-  try {
-    const result = await testFunction();
-    console.log("Function result:", result.data);
-  } catch (error) {
-    console.error("Error calling test function:", error);
-  }
+  // // #region testFunction
+  // const testFunction = httpsCallable(functions, "testFunction");
+  // console.log("testFunction", testFunction);
+  // try {
+  //   const result = await testFunction();
+  //   console.log("Function result:", result.data);
+  // } catch (error) {
+  //   console.error("Error calling test function:", error);
+  // }
 
-  console.log("testFunction fin");
+  // console.log("testFunction fin");
+  // //#endregion
 }

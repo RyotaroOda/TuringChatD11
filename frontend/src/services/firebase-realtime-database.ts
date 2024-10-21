@@ -8,10 +8,20 @@ export const onRoomUpdate = (
   callback: (roomData: any) => void
 ) => {
   const roomRef = ref(db, `rooms/${roomId}`);
-  onValue(roomRef, (snapshot) => {
-    const roomData = snapshot.val();
-    callback(roomData);
-  });
+  onValue(
+    roomRef,
+    (snapshot) => {
+      const roomData = snapshot.val();
+      if (roomData) {
+        callback(roomData); // データがある場合はコールバックを呼び出す
+      } else {
+        console.error("ルームが存在しません。");
+      }
+    },
+    (error) => {
+      console.error("ルームデータの監視中にエラーが発生しました:", error);
+    }
+  );
 };
 
 // // マッチングリクエストを行う関数

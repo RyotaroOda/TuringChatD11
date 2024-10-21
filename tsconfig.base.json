@@ -2,51 +2,49 @@
   "compilerOptions": {
     // コンパイル対象のJavaScriptバージョンをES5に設定
     "target": "es5",
-    
+
     // 使用するライブラリを指定 (ブラウザのDOM、DOMの反復処理、最新のES仕様)
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    
+    "lib": ["dom", "dom.iterable", "esnext"],
+
     // JavaScriptファイルの使用を許可
     "allowJs": true,
-    
+
     // ライブラリの型チェックをスキップ
     "skipLibCheck": true,
-    
+
     // ESモジュールの互換性をサポート
     "esModuleInterop": true,
-    
+
     // 合成されたデフォルトインポートを許可
     "allowSyntheticDefaultImports": true,
-    
+
     // 厳格な型チェックを有効にする
     "strict": true,
-    
+
     // ファイル名の大文字小文字の一貫性を強制
     "forceConsistentCasingInFileNames": true,
-    
+
     // switch文でフォールスルーが発生しないようにする
     "noFallthroughCasesInSwitch": true,
-    
+
     // Node.jsのモジュール解決方法を使用
     "moduleResolution": "node",
-    
+
     // JSONモジュールのインポートを許可
     "resolveJsonModule": true,
-    
+
     // 各モジュールを分離してコンパイル
     "isolatedModules": false,
-    
+
     // コンパイル後のファイルを出力 (emit)
     "noEmit": false,
-    
+
     // ReactのJSX記法を使用
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+
+    "baseUrl": "."
   },
-  
+
   // node_modulesディレクトリをコンパイル対象から除外
   "exclude": ["node_modules"]
 }
