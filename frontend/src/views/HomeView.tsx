@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  onRoomUpdate,
-  removeFromWaitingList,
-} from "../services/firebase-realtime-database.ts";
+import { onRoomUpdate } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
   cancelMatch,
@@ -12,8 +9,6 @@ import {
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
 import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
-import { onAuthStateChanged } from "firebase/auth"; // Firebaseの認証状態確認
-import { MatchResult } from "../../../shared/types";
 
 const HomeView: React.FC = () => {
   const [playerScore, setPlayerScore] = useState<number>(9999);
@@ -81,22 +76,45 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // プレイヤーが画面を閉じたりリロードした場合の待機リスト削除
   useEffect(() => {
-    const handleUnload = async () => {
+    if (roomId) {
+      // ルームIDが設定されている場合、ルームのデータを監視
+      onRoomUpdate(roomId, (roomData) => {
+        if (roomData && roomData.player2) {
+          // player2が設定されたらマッチング成立とみなす
+          console.log("Match found with opponent:", roomData.player2);
+          navigate(`/battle/${roomId}`, {
+            state: { matchData: roomData, myData: { playerName } },
+          });
+        } else if (!roomData) {
+          // ルームが削除された場合
+          console.error(
+            "ルームが削除されました。マッチングがキャンセルされた可能性があります。"
+          );
+          setIsMatching(false);
+          alert("マッチングがキャンセルされました。");
+        }
+      });
+    }
+  }, [roomId, navigate, playerName]);
+
+  // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
+  useEffect(() => {
+    const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
       if (isMatching) {
-        await removeFromWaitingList(); // ロード/画面遷移時に待機リストから削除
-        console.log(
-          "画面リロードまたは遷移により待機リストから削除されました。"
-        );
+        await cancelMatch(); // マッチングが進行中ならキャンセル
+        event.preventDefault();
+        event.returnValue = ""; // ブラウザに確認メッセージを表示（ユーザーが手動で中止できる）
       }
     };
 
-    window.addEventListener("beforeunload", handleUnload); // ブラウザを閉じるまたはリロード時に実行
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
-      window.removeEventListener("beforeunload", handleUnload); // クリーンアップ
+      window.removeEventListener("beforeunload", handleBeforeUnload); // クリーンアップ
     };
   }, [isMatching]);
+
   //#endregion
 
   return (

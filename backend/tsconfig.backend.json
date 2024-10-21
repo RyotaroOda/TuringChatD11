@@ -1,21 +1,26 @@
-
 {
-    "extends": "../tsconfig.base.json",  // 共通設定を継承
-    "compilerOptions": {
-      "module": "CommonJS",              // CommonJSモジュール方式を使用
-      "outDir": "./dist",                // コンパイルされたファイルの出力先
-      "rootDir": "./src",  // ソースファイルのルートディレクトリ
-      "lib": ["esnext"],                 // 最新のJavaScript機能を使用
-      "strict": true,
-      "esModuleInterop": true, // CommonJSとの互換性を有効にする
-      "skipLibCheck": true,
-      "moduleResolution": "node",        // Node.jsのモジュール解決方式を使用
-      "target": "ES2020",                // 出力するJavaScriptのバージョン
-      "allowSyntheticDefaultImports": true, // default importを許可
-      "resolveJsonModule": true,         // JSONファイルのインポートを許可
-      "diagnostics": true,  // エラー診断情報の出力
+  "extends": "../tsconfig.base.json", // 共通設定を継承
+  "compilerOptions": {
+    "module": "CommonJS", // CommonJSモジュール方式を使用
+    "outDir": "./dist", // コンパイルされたファイルの出力先
+    "rootDir": "..", // ソースファイルのルートディレクトリ
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"] // shared ディレクトリのエイリアス
     },
-      "include": ["src/**/*"],
-      "exclude": ["node_modules", "dist"] // node_modulesとdistディレクトリを除外
-    }
-    
+    "lib": ["esnext"], // 最新のJavaScript機能を使用
+    "strict": true,
+    "esModuleInterop": true, // CommonJSとの互換性を有効にする
+    "skipLibCheck": true,
+    "moduleResolution": "node", // Node.jsのモジュール解決方式を使用
+    "target": "ES2020", // 出力するJavaScriptのバージョン
+    "allowSyntheticDefaultImports": true, // default importを許可
+    "resolveJsonModule": true, // JSONファイルのインポートを許可
+    "diagnostics": true // エラー診断情報の出力
+  },
+  "include": [
+    "src/**/*", // src 配下のすべてのファイルを含める
+    "../shared/**/*" // shared ディレクトリのファイルも含める
+  ],
+  "exclude": ["node_modules", "dist"] // node_modulesとdistディレクトリを除外
+}
