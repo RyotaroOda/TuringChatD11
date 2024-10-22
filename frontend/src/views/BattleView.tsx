@@ -1,58 +1,64 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { sendMessage, onTurnUpdated, onBattleEnd } from "../services/firebase-realtime-database.ts";
-import { BattleLog } from "../../../shared/types.ts";
+import {
+  sendMessage,
+  onTurnUpdated,
+  onBattleEnd,
+} from "../services/firebase-realtime-database.ts";
+import { BattleLog } from "../shared/types.ts";
 
 const BattleView: React.FC = () => {
-// State hooks
-const [chatLog, setChatLog] = useState<{ senderId: string; message: string }[]>([]);
-const [message, setMessage] = useState<string>("");
-const [isMyTurn, setIsMyTurn] = useState<boolean>(true); // Initial turn state (placeholder)
-const [turnCount, setTurnCount] = useState<number>(0);
+  // State hooks
+  const [chatLog, setChatLog] = useState<
+    { senderId: string; message: string }[]
+  >([]);
+  const [message, setMessage] = useState<string>("");
+  const [isMyTurn, setIsMyTurn] = useState<boolean>(true); // Initial turn state (placeholder)
+  const [turnCount, setTurnCount] = useState<number>(0);
 
-// Location and Params
-const location = useLocation();
-const { roomId } = useParams<{ roomId: string }>();
+  // Location and Params
+  const location = useLocation();
+  const { roomId } = useParams<{ roomId: string }>();
 
-// Player Information
-const myId = "uniquePlayerId"; // TODO: Replace with actual ID generation/auth logic
-const myName = location.state?.myData.playerName 
-  ? `${location.state.myData.playerName} (あなた)` 
-  : "error";
+  // Player Information
+  const myId = "uniquePlayerId"; // TODO: Replace with actual ID generation/auth logic
+  const myName = location.state?.myData.playerName
+    ? `${location.state.myData.playerName} (あなた)`
+    : "error";
 
-const opponentId = location.state?.matchData.opponentId || "error";
-const opponentName = location.state?.matchData.opponentName || "error";
+  const opponentId = location.state?.matchData.opponentId || "error";
+  const opponentName = location.state?.matchData.opponentName || "error";
 
-// Battle Configuration
-const maxTurn = location.state?.matchData.battleConfig.maxTurn || 10;
-const oneTurnTime = location.state?.matchData.battleConfig.oneTurnTime || 60; // in seconds
-const [remainingTime, setRemainingTime] = useState<number>(oneTurnTime);
+  // Battle Configuration
+  const maxTurn = location.state?.matchData.battleConfig.maxTurn || 10;
+  const oneTurnTime = location.state?.matchData.battleConfig.oneTurnTime || 60; // in seconds
+  const [remainingTime, setRemainingTime] = useState<number>(oneTurnTime);
 
-// Player names mapping
-const playerNames: Record<string, string> = {
-  [myId]: myName,
-  [opponentId]: opponentName,
-};
+  // Player names mapping
+  const playerNames: Record<string, string> = {
+    [myId]: myName,
+    [opponentId]: opponentName,
+  };
 
-// ゲームの進行状況を監視する
-useEffect(() => {
-  if (roomId) {
-    // ターンの更新を監視
-    onTurnUpdated(roomId, (data: { battleLog: BattleLog }) => {
-      setIsMyTurn(data.battleLog.activePlayerId === myId);  // 自分のターンかどうかを判定
-      setTurnCount(data.battleLog.currentTurn);
+  // ゲームの進行状況を監視する
+  useEffect(() => {
+    if (roomId) {
+      // ターンの更新を監視
+      onTurnUpdated(roomId, (data: { battleLog: BattleLog }) => {
+        setIsMyTurn(data.battleLog.activePlayerId === myId); // 自分のターンかどうかを判定
+        setTurnCount(data.battleLog.currentTurn);
 
-      // 新しいメッセージが追加されていれば、それをチャットログに追加
-      const newMessage = data.battleLog.messages[data.battleLog.currentTurn];
-      if (newMessage) {
-        setChatLog((prevChatLog) => [
-          ...prevChatLog,
-          { senderId: newMessage.senderId, message: newMessage.message }
-        ]);
-      }
-    });
-  }
-}, [roomId, myId]);
+        // 新しいメッセージが追加されていれば、それをチャットログに追加
+        const newMessage = data.battleLog.messages[data.battleLog.currentTurn];
+        if (newMessage) {
+          setChatLog((prevChatLog) => [
+            ...prevChatLog,
+            { senderId: newMessage.senderId, message: newMessage.message },
+          ]);
+        }
+      });
+    }
+  }, [roomId, myId]);
 
   // useEffect(() => {
   //   if (roomId) {
@@ -60,7 +66,7 @@ useEffect(() => {
   //     onTurnUpdated(roomId, (data: { battleLog: BattleLog }) => {
   //       setIsMyTurn(data.battleLog.activePlayerId === myId);
   //       setTurnCount(data.battleLog.currentTurn);
-        
+
   //       const newMessage = data.battleLog.messages[data.battleLog.currentTurn];
   //       setChatLog((prevChatLog) => [
   //         ...prevChatLog,
@@ -71,8 +77,8 @@ useEffect(() => {
   //   }
   // }, [roomId, myId, message]);
 
-   // バトル終了の監視
-   useEffect(() => {
+  // バトル終了の監視
+  useEffect(() => {
     if (roomId) {
       onBattleEnd(roomId, () => {
         alert("Battle Ended!");
@@ -103,7 +109,8 @@ useEffect(() => {
         <ul>
           {chatLog.map((msg, index) => (
             <li key={index}>
-              <strong>{playerNames[msg.senderId] || "Unknown"}:</strong> {msg.message}
+              <strong>{playerNames[msg.senderId] || "Unknown"}:</strong>{" "}
+              {msg.message}
             </li>
           ))}
         </ul>

@@ -3,17 +3,14 @@
 ├── ./backend
 │   ├── ./backend/directory_structure.txt
 │   ├── ./backend/dist
-│   │   ├── ./backend/dist/index_b.js
-│   │   ├── ./backend/dist/index_serverless.js
-│   │   └── ./backend/dist/services
-│   │       ├── ./backend/dist/services/firebase_b.js
-│   │       ├── ./backend/dist/services/functions
-│   │       │   └── ./backend/dist/services/functions/matching_f_b.js
-│   │       └── ./backend/dist/services/matching_b.js
+│   │   ├── ./backend/dist/backend
+│   │   │   └── ./backend/dist/backend/src
+│   │   │       └── ./backend/dist/backend/src/index_serverless.js
+│   │   └── ./backend/dist/shared
+│   │       └── ./backend/dist/shared/types.js
 │   ├── ./backend/package-lock.json
 │   ├── ./backend/package.json
 │   ├── ./backend/src
-│   │   ├── ./backend/src/index_b.ts
 │   │   ├── ./backend/src/index_serverless.ts
 │   │   └── ./backend/src/services
 │   │       ├── ./backend/src/services/firebase_b.ts
@@ -21,42 +18,19 @@
 │   │           └── ./backend/src/services/functions/matching_f_b.ts
 │   ├── ./backend/tsconfig.backend.json
 │   └── ./backend/ui-debug.log
-├── ./codebase
-│   ├── ./codebase/lib
-│   │   ├── ./codebase/lib/index.js
-│   │   └── ./codebase/lib/index.js.map
-│   ├── ./codebase/package-lock.json
-│   ├── ./codebase/package.json
-│   ├── ./codebase/src
-│   │   └── ./codebase/src/index.ts
-│   ├── ./codebase/tsconfig.dev.json
-│   ├── ./codebase/tsconfig.json
-│   └── ./codebase/ui-debug.log
 ├── ./database.rules.json
 ├── ./directory_structure.txt
-├── ./firebase-service-account.json
 ├── ./firebase.json
 ├── ./firestore.indexes.json
 ├── ./firestore.rules
 ├── ./frontend
 │   ├── ./frontend/build
-│   │   ├── ./frontend/build/asset-manifest.json
 │   │   ├── ./frontend/build/favicon.ico
-│   │   ├── ./frontend/build/index.html
 │   │   ├── ./frontend/build/logo192.png
 │   │   ├── ./frontend/build/logo512.png
 │   │   ├── ./frontend/build/manifest.json
-│   │   ├── ./frontend/build/robots.txt
-│   │   └── ./frontend/build/static
-│   │       ├── ./frontend/build/static/css
-│   │       │   ├── ./frontend/build/static/css/main.e6c13ad2.css
-│   │       │   └── ./frontend/build/static/css/main.e6c13ad2.css.map
-│   │       └── ./frontend/build/static/js
-│   │           ├── ./frontend/build/static/js/317.d60c904a.chunk.js
-│   │           ├── ./frontend/build/static/js/317.d60c904a.chunk.js.map
-│   │           ├── ./frontend/build/static/js/main.95be493b.js
-│   │           ├── ./frontend/build/static/js/main.95be493b.js.LICENSE.txt
-│   │           └── ./frontend/build/static/js/main.95be493b.js.map
+│   │   └── ./frontend/build/robots.txt
+│   ├── ./frontend/config-overrides.js
 │   ├── ./frontend/directory_structure.txt
 │   ├── ./frontend/package-lock.json
 │   ├── ./frontend/package.json
@@ -102,4 +76,4 @@
 ├── ./tsconfig.base.json
 └── ./ui-debug.log
 
-23 directories, 80 files
+18 directories, 59 files

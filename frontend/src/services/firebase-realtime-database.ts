@@ -1,27 +1,49 @@
-import { ref, push, onValue, remove } from "firebase/database";
+import { ref, push, get, onValue, remove } from "firebase/database";
 import { auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
+import { RoomData } from "../shared/types.ts";
 
 // ルームのデータを監視
 export const onRoomUpdate = (
   roomId: string,
-  callback: (roomData: any) => void
+  callback: (roomData: RoomData | null) => void
 ) => {
   const roomRef = ref(db, `rooms/${roomId}`);
   onValue(
     roomRef,
     (snapshot) => {
-      const roomData = snapshot.val();
+      const roomData = snapshot.val() as RoomData | null; // RoomData型にキャスト
       if (roomData) {
         callback(roomData); // データがある場合はコールバックを呼び出す
       } else {
         console.error("ルームが存在しません。");
+        callback(null);
       }
     },
     (error) => {
       console.error("ルームデータの監視中にエラーが発生しました:", error);
+      callback(null);
     }
   );
+};
+
+// ルームデータを取得する関数
+export const getRoomData = async (roomId: string): Promise<RoomData | null> => {
+  try {
+    const roomRef = ref(db, `rooms/${roomId}`);
+    const snapshot = await get(roomRef);
+
+    if (snapshot.exists()) {
+      const roomData = snapshot.val();
+      return roomData as RoomData; // RoomData型にキャストして返す
+    } else {
+      console.error("ルームが存在しません");
+      return null;
+    }
+  } catch (error) {
+    console.error("ルームデータの取得に失敗しました:", error);
+    return null;
+  }
 };
 
 // メッセージを送信する関数

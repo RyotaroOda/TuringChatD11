@@ -1,15 +1,26 @@
 {
-    "name": "frontend",
-    "version": "0.1.0",
-    "private": true,
-    "dependencies": {
-        "react-router-dom": "^6.27.0"
-    },
-
-    "scripts": {
-        "start": "react-scripts start",
-        "build": "react-scripts build",
-        "test": "react-scripts test",
-        "eject": "react-scripts eject"
-    }
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react-scripts": "^5.0.1",
+    "shared": "file:../shared"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-env",
+      "@babel/preset-react",
+      "@babel/preset-typescript"
+    ]
+  },
+  "scripts": {
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test",
+    "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "react-app-rewired": "^2.2.1",
+    "react-router-dom": "^6.27.0"
+  }
 }

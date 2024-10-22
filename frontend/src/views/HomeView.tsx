@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { onRoomUpdate } from "../services/firebase-realtime-database.ts";
+import {
+  onRoomUpdate,
+  getRoomData,
+} from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
   cancelMatch,
@@ -10,12 +13,14 @@ import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをイン�
 import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
+import { AIModel, PlayerData } from "shared/dist/types";
+
 const HomeView: React.FC = () => {
-  const [playerScore, setPlayerScore] = useState<number>(9999);
+  const [score, setScore] = useState<number>(9999);
   const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
-  const [isMatching, setIsMatching] = useState<boolean>(false);
   const [roomId, setRoomId] = useState<string | null>(null); // ルームID
   const [playerName, setPlayerName] = useState<string>(""); // プレイヤーネームを保持
+  const [playerId, setPlayerId] = useState<string>(""); // プレイヤーID
 
   const navigate = useNavigate();
   const { user } = useAuth(); // useAuthフックで認証状態を取得
@@ -23,6 +28,7 @@ const HomeView: React.FC = () => {
   //#region ログイン状態
   useEffect(() => {
     if (user) {
+      setPlayerId(user.uid); // プレイヤーIDを設定
       // ログイン済みユーザーならFirebaseからプレイヤー名を取得
       if (user.isAnonymous) {
         setPlayerName("ゲスト"); // 匿名ユーザーの場合はゲスト表示
@@ -46,15 +52,64 @@ const HomeView: React.FC = () => {
   };
   //#endregion
 
+  //#region プレイヤーネーム
+  const [isEditingName, setIsEditingName] = useState<boolean>(false); // 名前編集モード
+  const [newName, setNewName] = useState<string>(""); // 新しい名前
+  // ユーザー情報が変わるたびにプレイヤーネームを更新
+  useEffect(() => {
+    if (user) {
+      const displayName =
+        user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
+      setPlayerName(displayName); // 既存のプレイヤーネームを設定
+      setNewName(displayName); // 名前編集用のテキストフィールドにも設定
+    }
+  }, [user]);
+
+  // 名前変更ボタンを押した時の処理
+  const handleNameChangeClick = () => {
+    setIsEditingName(!isEditingName); // 編集モードのオン/オフを切り替え
+  };
+
+  // 名前を更新する処理
+  const handleNameSubmit = async () => {
+    if (user && newName) {
+      try {
+        //FIXME - updateProfile関数の実装が必要
+        // await updateProfile(user, { displayName: newName }); // Firebaseで名前を更新
+        setPlayerName(newName); // 画面上の名前を更新
+        setIsEditingName(false); // 編集モードを終了
+      } catch (error) {
+        console.error("名前の更新に失敗しました:", error);
+      }
+    }
+  };
+
+  //#endregion
+
   //#region マッチング
+  const [isMatching, setIsMatching] = useState<boolean>(false);
   // マッチング開始処理
   const startMatch = async () => {
-    setIsMatching(true); // マッチング状態を設定
     try {
-      const result = await requestMatch(); // サーバーレス関数でマッチングリクエスト
+      const player: PlayerData = {
+        id: playerId, // プレイヤーID
+        name: playerName,
+        rating: score,
+        bot: { prompt: aiPrompt, model: AIModel.default },
+      };
+      const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId) {
         setRoomId(result.roomId); // ルームIDを保存
-        console.log(result.message);
+        if (result.startBattle) {
+          //バトル開始
+          const roomData = getRoomData(result.roomId);
+          navigate(`/battle/${roomId}`, {
+            state: { roomData: roomData },
+          });
+        } else {
+          //ホスト
+          setIsMatching(true); // マッチング状態を設定
+        }
       } else {
         console.error("マッチングエラー1");
         setIsMatching(false);
@@ -68,6 +123,7 @@ const HomeView: React.FC = () => {
   // マッチングキャンセル処理
   const handleCancelMatch = async () => {
     setIsMatching(false); // マッチング状態を解除
+    setRoomId(null); // ルームIDをクリア
     try {
       const result = await cancelMatch(); // サーバーレス関数でキャンセル
       console.log(result.message);
@@ -78,7 +134,7 @@ const HomeView: React.FC = () => {
 
   //ルーム監視
   useEffect(() => {
-    if (roomId) {
+    if (isMatching && roomId) {
       // ルームIDが設定されている場合、ルームのデータを監視
       onRoomUpdate(roomId, (roomData) => {
         if (roomData && roomData.player2) {
@@ -92,12 +148,13 @@ const HomeView: React.FC = () => {
           console.error(
             "ルームが削除されました。マッチングがキャンセルされた可能性があります。"
           );
+          cancelMatch(); // マッチングをキャンセル
           setIsMatching(false);
           alert("マッチングがキャンセルされました。");
         }
       });
     }
-  }, [roomId, navigate, playerName]);
+  }, [roomId, navigate, playerName, isMatching]);
 
   // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
   useEffect(() => {
@@ -121,19 +178,31 @@ const HomeView: React.FC = () => {
   return (
     <div>
       <h1>ホーム</h1>
-      {/* ログイン状態による表示の切り替え */}
       {user ? (
         <div>
-          <p>
-            こんにちは、{playerName}さん{" "}
-            {/* ログイン状態に基づいて名前を表示 */}
-          </p>
-          {/* 匿名ユーザーなら「ログイン」ボタンを表示 */}
-          {user.isAnonymous ? (
-            <button onClick={() => navigate("/login")}>ログイン</button>
-          ) : (
-            <button onClick={handleLogout}>ログアウト</button>
+          {/* ゲストユーザー（匿名）ではない場合に名前を表示 */}
+          {!user.isAnonymous && (
+            <div>
+              <p>こんにちは、{playerName}さん</p>
+              <button onClick={handleNameChangeClick}>
+                {isEditingName ? "キャンセル" : "名前変更"}
+              </button>
+
+              {/* 名前編集モード時にのみテキストフィールドを表示 */}
+              {isEditingName && (
+                <div>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)} // テキストフィールドの値を更新
+                    placeholder="新しい名前を入力"
+                  />
+                  <button onClick={handleNameSubmit}>名前を保存</button>
+                </div>
+              )}
+            </div>
           )}
+          <button onClick={handleLogout}>ログアウト</button>
         </div>
       ) : (
         <div>
@@ -149,7 +218,7 @@ const HomeView: React.FC = () => {
         </div>
       )}
 
-      <p>Score: {playerScore}</p>
+      <p>Score: {score}</p>
       <div>
         <label>
           AIプロンプト:
