@@ -1,7 +1,7 @@
 // services/firebase-functions-client.ts
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
-import { PlayerData, MatchResult } from "../shared/types.ts";
+import { PlayerData, MatchResult } from "shared/dist/types";
 
 // サーバーレス関数を使ってマッチングリクエストを送信する関数
 export const requestMatch = async (
@@ -43,10 +43,6 @@ export const cancelMatch = async () => {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const cancelMatchFunction = httpsCallable<{ rating: number }, MatchResult>(
-    functions,
-    "cancelMatchFunction"
-  );
-  const result = await cancelMatchFunction();
-  return result.data;
+  const cancelMatchFunction = httpsCallable(functions, "cancelMatchFunction");
+  await cancelMatchFunction();
 };

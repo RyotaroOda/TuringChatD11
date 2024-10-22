@@ -38,13 +38,12 @@ const authCheck = (playerId: string) => {
   return playerId;
 };
 
-const createRoom = async (player: PlayerData) => {
+const createRoom = async (player: PlayerData, player2?: PlayerData) => {
   const roomId = db.ref("rooms").push().key as string;
 
   const roomData: RoomData = {
     roomId: roomId,
     player1: player,
-    player2: undefined,
     battleConfig: battleConfig,
     battleLog: newBattleLog,
   };
@@ -96,8 +95,7 @@ export const requestMatchFunction = onCall(
     // マッチング相手が見つからなかった場合
     else {
       // 待機プレイヤーがいない場合、新しいルームを作成
-      const roomId = db.ref("rooms").push().key as string; // 新しいルームIDを生成
-      await createRoom(player);
+      const roomId = await createRoom(player); // 新しいルームIDを生成
 
       // 待機リストにプレイヤーを追加（ルームIDも含む）
       const waitingData = { id: playerId, roomId, timeWaiting: Date.now() };
@@ -129,3 +127,23 @@ export const cancelMatchFunction = onCall(async (request) => {
   await waitingPlayersRef.remove();
   console.log("プレイヤーを待機リストから削除しました:", playerId);
 });
+
+// 初期化処理：Realtime Database の初期化
+const initializeDatabase = async () => {
+  try {
+    // 初期化するデータ構造 (例：rooms, waitingPlayers などをクリア)
+    const initialData = {
+      rooms: null, // 全ルームデータを削除
+      randomMatching: null, // 待機中のプレイヤーデータを削除
+    };
+
+    // Firebase Realtime Database に初期データを設定
+    await db.ref().set(initialData);
+    console.log("Realtime Database の初期化が完了しました。");
+    console.log("Generating Functions...");
+  } catch (error) {
+    console.error("Realtime Database の初期化中にエラーが発生しました:", error);
+  }
+};
+// サーバー起動時に初期化処理を実行
+initializeDatabase();
