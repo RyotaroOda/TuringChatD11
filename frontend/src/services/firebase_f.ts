@@ -1,7 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { child, get, getDatabase, ref } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import {
+  getFunctions,
+  connectFunctionsEmulator,
+  httpsCallable,
+} from "firebase/functions";
 
 // フロントエンド用にREACT_APP_プレフィックスをつけた環境変数を使う
 const firebaseConfig = {
@@ -45,7 +49,7 @@ if (window.location.hostname === "localhost") {
   connectFunctionsEmulator(functions, "127.0.0.1", 5001); // ポートはエミュレータのポートに合わせる
   console.log("Functions emulator connected", functions);
 
-  // // #region testFunction
+  // #region testFunction
   // const testFunction = httpsCallable(functions, "testFunction");
   // console.log("testFunction", testFunction);
   // try {
@@ -56,5 +60,31 @@ if (window.location.hostname === "localhost") {
   // }
 
   // console.log("testFunction fin");
-  // //#endregion
+  //#endregion
 }
+
+//#region testGetData
+// test_dataを取得する関数
+// export const getTestData = async (): Promise<any> => {
+//   try {
+//     const dbRef = ref(db); // データベースのルートを参照
+//     const snapshot = await get(child(dbRef, "test_data")); // test_dataノードを取得
+
+//     if (snapshot.exists()) {
+//       return snapshot.val(); // データが存在する場合、その値を返す
+//     } else {
+//       console.error("データが存在しません");
+//       return null; // データが存在しない場合はnullを返す
+//     }
+//   } catch (error) {
+//     console.error("データの取得に失敗しました:", error);
+//     throw error; // エラーが発生した場合は例外を投げる
+//   }
+// };
+// try {
+//   const result = getTestData();
+//   console.log("result:", result);
+// } catch (error) {
+//   console.error("Error calling getTestData:", error);
+// }
+//#endregion

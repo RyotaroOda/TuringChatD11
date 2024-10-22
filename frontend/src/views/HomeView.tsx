@@ -98,11 +98,12 @@ const HomeView: React.FC = () => {
         bot: { prompt: aiPrompt, model: AIModel.default },
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
+
       if (result.roomId) {
         setRoomId(result.roomId); // ルームIDを保存
         if (result.startBattle) {
           //バトル開始
-          const roomData = getRoomData(result.roomId);
+          const roomData = await getRoomData(result.roomId);
           navigate(`/battle/${roomId}`, {
             state: { roomData: roomData },
           });
@@ -125,8 +126,7 @@ const HomeView: React.FC = () => {
     setIsMatching(false); // マッチング状態を解除
     setRoomId(null); // ルームIDをクリア
     try {
-      const result = await cancelMatch(); // サーバーレス関数でキャンセル
-      console.log(result.message);
+      await cancelMatch(); // サーバーレス関数でキャンセル
     } catch (error) {
       console.error("キャンセルエラー:", error);
     }
@@ -150,7 +150,9 @@ const HomeView: React.FC = () => {
           );
           cancelMatch(); // マッチングをキャンセル
           setIsMatching(false);
-          alert("マッチングがキャンセルされました。");
+          alert(
+            "ルームが削除されました。マッチングがキャンセルされた可能性があります"
+          );
         }
       });
     }

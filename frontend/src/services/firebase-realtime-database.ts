@@ -1,7 +1,7 @@
-import { ref, push, get, onValue, remove } from "firebase/database";
+import { ref, push, get, onValue, remove, child } from "firebase/database";
 import { auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
-import { RoomData } from "../shared/types.ts";
+import { RoomData } from "shared/dist/types";
 
 // ルームのデータを監視
 export const onRoomUpdate = (
@@ -30,8 +30,12 @@ export const onRoomUpdate = (
 // ルームデータを取得する関数
 export const getRoomData = async (roomId: string): Promise<RoomData | null> => {
   try {
+    console.log("roomId", roomId);
+    const dbRef = ref(db);
     const roomRef = ref(db, `rooms/${roomId}`);
+    console.log("roomRef", roomRef);
     const snapshot = await get(roomRef);
+    console.log("snapshot", snapshot);
 
     if (snapshot.exists()) {
       const roomData = snapshot.val();
