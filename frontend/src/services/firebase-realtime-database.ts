@@ -3,6 +3,7 @@ import { auth } from "./firebase_f.ts"; // Firebaseの認証インスタンス�
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
 import { RoomData } from "shared/dist/types";
 
+//#region HomeView
 // ルームのデータを監視
 export const onRoomUpdate = (
   roomId: string,
@@ -49,7 +50,22 @@ export const getRoomData = async (roomId: string): Promise<RoomData | null> => {
     return null;
   }
 };
+//#endregion
 
+// // マッチング成立時、マッチングがキャンセルされた場合やリロード時にwaitingPlayersから削除する関数
+// export const removeFromWaitingList = async () => {
+//   const user = auth.currentUser;
+//   if (!user) {
+//     throw new Error("ログインしていないユーザーです。");
+//   }
+
+//   const playerId = user.uid;
+//   const playerRef = ref(db, "waitingPlayers/" + playerId);
+//   await remove(playerRef); // 待機リストからプレイヤーを削除
+//   console.log("プレイヤーを待機リストから削除しました。");
+// };
+
+//#region BattleView
 // メッセージを送信する関数
 export const sendMessage = async (roomId: string, message: string) => {
   const user = auth.currentUser;
@@ -96,16 +112,4 @@ export const onBattleEnd = (roomId: string, callback: () => void) => {
     }
   });
 };
-
-// マッチング成立時、マッチングがキャンセルされた場合やリロード時にwaitingPlayersから削除する関数
-export const removeFromWaitingList = async () => {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error("ログインしていないユーザーです。");
-  }
-
-  const playerId = user.uid;
-  const playerRef = ref(db, "waitingPlayers/" + playerId);
-  await remove(playerRef); // 待機リストからプレイヤーを削除
-  console.log("プレイヤーを待機リストから削除しました。");
-};
+//#endregion

@@ -30,7 +30,7 @@ const authCheck = (playerId) => {
     }
     return playerId;
 };
-const createRoom = async (player, player2) => {
+const createRoom = async (player) => {
     const roomId = firebase_b_1.db.ref("rooms").push().key;
     const roomData = {
         roomId: roomId,
