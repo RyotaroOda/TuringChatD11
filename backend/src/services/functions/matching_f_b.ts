@@ -1,17 +1,23 @@
 //src/services/functions/matching_f_b.ts
 // import * as functions from "firebase-functions";
-import { MatchResult } from "../../../../shared/types";
+import {
+  BattleConfig,
+  BattleType,
+  newBattleLog,
+  PlayerData,
+  RoomData,
+  MatchResult,
+} from "shared/dist/types";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 
-const waitingPlayersRef = db.ref("randomMatching/waitingPlayers/");
-
-const authCheck = (playerId: string) => {
-  if (!playerId) {
-    throw new HttpsError("unauthenticated", "認証が必要です");
-  }
-  return playerId;
+//バトル設定
+const battleConfig: BattleConfig = {
+  maxTurn: 6 * 2,
+  battleType: BattleType.Single,
+  oneTurnTime: 60,
 };
+const waitingPlayersRef = db.ref("randomMatching/waitingPlayers/");
 
 // テスト関数
 export const testFunction = onCall((request) => {
@@ -25,10 +31,46 @@ export const testFunction = onCall((request) => {
   };
 });
 
-// マッチングリクエストを処理するFirebase Function
+const authCheck = (playerId: string) => {
+  if (!playerId) {
+    throw new HttpsError("unauthenticated", "認証が必要です");
+  }
+  return playerId;
+};
+
+const createRoom = async (player: PlayerData) => {
+  const roomId = db.ref("rooms").push().key as string;
+
+  const roomData: RoomData = {
+    roomId: roomId,
+    player1: player,
+    player2: undefined,
+    battleConfig: battleConfig,
+    battleLog: newBattleLog,
+  };
+
+  // ルーム情報をデータベースに保存
+  await db.ref("rooms/" + roomId).set(roomData);
+  return roomId;
+};
+
+const joinRoom = async (roomId: string, player: PlayerData) => {
+  const roomSnapshot = await db.ref(`rooms/${roomId}`).once("value");
+  const roomData = roomSnapshot.val();
+  if (!roomData) {
+    throw new HttpsError("not-found", "ルームが見つかりません");
+  }
+  if (roomData.player2) {
+    throw new HttpsError("already-exists", "既にプレイヤー2が存在します");
+  }
+  await db.ref(`rooms/${roomId}/player2`).set(player);
+};
+
+// マッチングリクエストを処理するFirebase Function 引数:PlayerData
 export const requestMatchFunction = onCall(
   async (request): Promise<MatchResult> => {
     const playerId = authCheck(request.auth?.uid ?? ""); // マッチング処理を実行
+    const player = request.data as PlayerData;
     const snapshot = await waitingPlayersRef.once("value"); // Firebase Realtime Databaseから一度だけデータを取得
     const waitingPlayers = snapshot.val(); // 待機中のプレイヤーのデータを取得
 
@@ -42,12 +84,11 @@ export const requestMatchFunction = onCall(
       // 待機リストから相手を削除
       await waitingPlayersRef.child(opponentKey).remove();
 
-      // ルームにこのプレイヤーを追加（player2として）
-      await db.ref(`rooms/${roomId}/player2`).set(playerId);
+      await joinRoom(roomId, player);
 
       return {
         roomId: roomId,
-        opponentId: opponent.id,
+        startBattle: true,
         message: "success to match",
       }; // マッチング成功時にルームIDと相手のIDを返す
     }
@@ -56,21 +97,15 @@ export const requestMatchFunction = onCall(
     else {
       // 待機プレイヤーがいない場合、新しいルームを作成
       const roomId = db.ref("rooms").push().key as string; // 新しいルームIDを生成
-      const roomData = {
-        player1: playerId,
-        createdAt: Date.now(),
-      };
-
-      // ルーム情報をデータベースに保存
-      await db.ref("rooms/" + roomId).set(roomData);
+      await createRoom(player);
 
       // 待機リストにプレイヤーを追加（ルームIDも含む）
-      const playerData = { id: playerId, roomId, timeWaiting: Date.now() };
-      await waitingPlayersRef.child(playerId).set(playerData);
+      const waitingData = { id: playerId, roomId, timeWaiting: Date.now() };
+      await waitingPlayersRef.child(playerId).set(waitingData);
 
       return {
         roomId: roomId,
-        opponentId: "",
+        startBattle: false,
         message: "Waiting for an opponent...",
       };
     }

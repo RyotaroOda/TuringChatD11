@@ -1,13 +1,10 @@
+///backend/tsconfig.backend.json
 {
   "extends": "../tsconfig.base.json", // 共通設定を継承
   "compilerOptions": {
     "module": "CommonJS", // CommonJSモジュール方式を使用
     "outDir": "./dist", // コンパイルされたファイルの出力先
-    "rootDir": "..", // ソースファイルのルートディレクトリ
-    "baseUrl": ".", // ベースのディレクトリをカレントディレクトリに設定
-    "paths": {
-      "@shared/*": ["../shared/*"] // shared ディレクトリのエイリアス
-    },
+    "rootDir": "./src", // ソースファイルのルートディレクトリ
     "lib": ["esnext"], // 最新のJavaScript機能を使用
     "strict": true,
     "esModuleInterop": true, // CommonJSとの互換性を有効にする
@@ -19,8 +16,7 @@
     "diagnostics": true // エラー診断情報の出力
   },
   "include": [
-    "src/**/*", // src 配下のすべてのファイルを含める
-    "../shared/**/*" // shared ディレクトリのファイルも含める
+    "src/**/*" // src 配下のすべてのファイルを含める
   ],
   "exclude": ["node_modules", "dist"] // node_modulesとdistディレクトリを除外
 }

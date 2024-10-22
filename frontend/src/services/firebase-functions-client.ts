@@ -1,10 +1,12 @@
 // services/firebase-functions-client.ts
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
-import { MatchResult } from "../../../shared/types";
+import { PlayerData, MatchResult } from "../shared/types.ts";
 
 // サーバーレス関数を使ってマッチングリクエストを送信する関数
-export const requestMatch = async (): Promise<MatchResult> => {
+export const requestMatch = async (
+  player: PlayerData
+): Promise<{ roomId: string; startBattle: Boolean }> => {
   const requestMatchFunction = httpsCallable(functions, "requestMatchFunction");
 
   const TIMEOUT_DURATION = 60000; // 60秒待機してもマッチングしなければタイムアウト
@@ -16,7 +18,7 @@ export const requestMatch = async (): Promise<MatchResult> => {
         () => reject({ message: "マッチングタイムアウト" }),
         TIMEOUT_DURATION
       );
-      requestMatchFunction()
+      requestMatchFunction(player)
         .then((response) => {
           clearTimeout(timeoutId); // タイムアウトをクリア
           resolve(response.data as MatchResult);
@@ -30,7 +32,7 @@ export const requestMatch = async (): Promise<MatchResult> => {
     return result;
   } catch (error) {
     console.error("マッチングエラーまたはタイムアウト:", error);
-    return { roomId: "", opponentId: "", message: error.message };
+    return { roomId: "", startBattle: false };
   }
 };
 

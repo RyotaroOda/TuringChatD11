@@ -27,8 +27,6 @@ exports.auth = exports.firestore = exports.db = exports.initFirebase = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firestore_1 = require("firebase-admin/firestore");
 const dotenv = __importStar(require("dotenv"));
-// import * as serviceAccount from '../../firebase-service-account.json';  // サービスアカウントキーのパス
-// import { ServiceAccount } from "firebase-admin";
 dotenv.config(); // 環境変数のロード
 exports.initFirebase = admin.initializeApp({
     credential: admin.credential.cert({
