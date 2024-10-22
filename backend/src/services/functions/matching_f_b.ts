@@ -38,7 +38,7 @@ const authCheck = (playerId: string) => {
   return playerId;
 };
 
-const createRoom = async (player: PlayerData, player2?: PlayerData) => {
+const createRoom = async (player: PlayerData) => {
   const roomId = db.ref("rooms").push().key as string;
 
   const roomData: RoomData = {

@@ -10,10 +10,10 @@ import {
 } from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
-import { signOut } from "firebase/auth"; // Firebaseのログアウト機能をインポート
+import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
-import { AIModel, PlayerData } from "shared/dist/types";
+import { AIModel, PlayerData, RoomData } from "shared/dist/types";
 
 const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(9999);
@@ -74,8 +74,7 @@ const HomeView: React.FC = () => {
   const handleNameSubmit = async () => {
     if (user && newName) {
       try {
-        //FIXME - updateProfile関数の実装が必要
-        // await updateProfile(user, { displayName: newName }); // Firebaseで名前を更新
+        await updateProfile(user, { displayName: newName }); // FirebaseAuthで名前を更新
         setPlayerName(newName); // 画面上の名前を更新
         setIsEditingName(false); // 編集モードを終了
       } catch (error) {
@@ -104,9 +103,14 @@ const HomeView: React.FC = () => {
         if (result.startBattle) {
           //バトル開始
           const roomData = await getRoomData(result.roomId);
-          navigate(`/battle/${roomId}`, {
-            state: { roomData: roomData },
-          });
+          console.log("Match found with opponent:", roomData);
+          if (roomData) {
+            toBattleViewSegue(roomData); // バトル画面に遷移
+          } else {
+            console.error("ルームデータが取得できませんでした。");
+            setIsMatching(false);
+            cancelMatch();
+          }
         } else {
           //ホスト
           setIsMatching(true); // マッチング状態を設定
@@ -139,10 +143,8 @@ const HomeView: React.FC = () => {
       onRoomUpdate(roomId, (roomData) => {
         if (roomData && roomData.player2) {
           // player2が設定されたらマッチング成立とみなす
-          console.log("Match found with opponent:", roomData.player2);
-          navigate(`/battle/${roomId}`, {
-            state: { matchData: roomData, myData: { playerName } },
-          });
+          console.log("Match found with opponent:", roomData);
+          toBattleViewSegue(roomData); // バトル画面に遷移
         } else if (!roomData) {
           // ルームが削除された場合
           console.error(
@@ -176,6 +178,12 @@ const HomeView: React.FC = () => {
   }, [isMatching]);
 
   //#endregion
+
+  const toBattleViewSegue = (roomData: RoomData) => {
+    navigate(`/battle/${roomData.roomId}`, {
+      state: { roomData: roomData },
+    });
+  };
 
   return (
     <div>
