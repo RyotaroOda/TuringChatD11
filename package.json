@@ -25,11 +25,16 @@
     "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
     "start:front": "npm --prefix ./frontend run start",
     "start:back": "npm --prefix ./backend run start",
-    "build": "npm run build:back && npm run build:front",
+    "build": "npm run build:shared && npm run build:back && npm run build:front",
     "build:back": "npm --prefix ./backend run build",
     "build:front": "npm --prefix ./frontend run build",
+    "build:shared": "npm --prefix ./shared run build",
     "test": "react-scripts test",
-    "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install"
+    "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install",
+    "link shared": "npm --prefix ./shared link && npm --prefix ./frontend link shared && npm --prefix ./backend link shared",
+    "unlink shared": "npm --prefix ./shared unlink",
+    "clean": "rm -rf node_modules package-lock.json && npm cache clean && npm install",
+    "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean"
   },
   "browserslist": {
     "production": [
