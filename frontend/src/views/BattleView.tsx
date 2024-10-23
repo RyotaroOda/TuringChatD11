@@ -11,6 +11,7 @@ import { useAuth } from "../services/useAuth.tsx";
 const BattleView: React.FC = () => {
   //#region init
   const { roomId } = useParams<{ roomId: string }>();
+
   const { user } = useAuth();
   const myId = user?.uid || "error";
 
