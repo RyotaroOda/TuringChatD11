@@ -6,7 +6,7 @@ import {
 } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
-  cancelMatch,
+  cancelRequest,
 } from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
 import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
@@ -98,7 +98,7 @@ const HomeView: React.FC = () => {
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
 
-      if (result.roomId) {
+      if (result.roomId !== "") {
         setRoomId(result.roomId); // ルームIDを保存
         if (result.startBattle) {
           //バトル開始
@@ -108,29 +108,28 @@ const HomeView: React.FC = () => {
             toBattleViewSegue(roomData); // バトル画面に遷移
           } else {
             console.error("ルームデータが取得できませんでした。");
-            setIsMatching(false);
-            cancelMatch();
+            cancelMatching();
           }
         } else {
           //ホスト
           setIsMatching(true); // マッチング状態を設定
         }
       } else {
-        console.error("マッチングエラー1");
-        setIsMatching(false);
+        console.error("マッチングエラー", result.message);
+        cancelMatching();
       }
     } catch (error) {
-      console.error("マッチングエラー2:", error);
-      setIsMatching(false); // エラー発生時にマッチング状態を解除
+      console.error("マッチングエラー:", error);
+      cancelMatching(); // エラー発生時にマッチング状態を解除
     }
   };
 
   // マッチングキャンセル処理
-  const handleCancelMatch = async () => {
+  const cancelMatching = async () => {
     setIsMatching(false); // マッチング状態を解除
     setRoomId(null); // ルームIDをクリア
     try {
-      await cancelMatch(); // サーバーレス関数でキャンセル
+      await cancelRequest(); // サーバーレス関数でキャンセル
     } catch (error) {
       console.error("キャンセルエラー:", error);
     }
@@ -150,8 +149,7 @@ const HomeView: React.FC = () => {
           console.error(
             "ルームが削除されました。マッチングがキャンセルされた可能性があります。"
           );
-          cancelMatch(); // マッチングをキャンセル
-          setIsMatching(false);
+          cancelMatching();
           alert(
             "ルームが削除されました。マッチングがキャンセルされた可能性があります"
           );
@@ -164,7 +162,7 @@ const HomeView: React.FC = () => {
   useEffect(() => {
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
       if (isMatching) {
-        await cancelMatch(); // マッチングが進行中ならキャンセル
+        cancelMatching();
         event.preventDefault();
         event.returnValue = ""; // ブラウザに確認メッセージを表示（ユーザーが手動で中止できる）
       }
@@ -242,7 +240,7 @@ const HomeView: React.FC = () => {
 
       {/* マッチング中にキャンセルボタンを表示 */}
       {isMatching ? (
-        <button onClick={handleCancelMatch}>キャンセル</button> // マッチングキャンセルボタン
+        <button onClick={cancelMatching}>キャンセル</button> // マッチングキャンセルボタン
       ) : (
         <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
       )}
