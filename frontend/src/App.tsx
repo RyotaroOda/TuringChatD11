@@ -1,16 +1,18 @@
-import React from 'react';
+import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import HomeView from "./views/HomeView.tsx";
 import BattleView from "./views/BattleView.tsx";
 import ResultView from "./views/ResultView.tsx";
 import Auth from "./components/Auth.tsx";
-import Profile from "./components/Profile.tsx";  // 任意のプロフィールページ
-import ProtectedRoute from "./components/ProtectedRoute.tsx";  // 認証保護されたルート
-import { AuthProvider } from "./services/useAuth.tsx";  // 認証状態のコンテキスト
+import Profile from "./components/Profile.tsx"; // 任意のプロフィールページ
+import ProtectedRoute from "./components/ProtectedRoute.tsx"; // 認証保護されたルート
+import { AuthProvider } from "./services/useAuth.tsx"; // 認証状態のコンテキスト
 
 function App() {
   return (
-    <AuthProvider> {/* 認証状態をアプリ全体に提供 */}
+    <AuthProvider>
+      {" "}
+      {/* 認証状態をアプリ全体に提供 */}
       <Router>
         <Routes>
           <Route path="/" element={<HomeView />} />

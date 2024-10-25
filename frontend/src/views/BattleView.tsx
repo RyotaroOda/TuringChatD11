@@ -63,8 +63,10 @@ const BattleView: React.FC = () => {
       // ターン更新をFirebaseから受け取る
       onMessageAdded(roomId, (newMessage) => {
         console.log("onMessageAdded:", newMessage);
-        setIsMyTurn(!isMyTurn);
-        setTurnCount(turnCount + 1);
+        // setIsMyTurn(!isMyTurn);
+        // setIsMyTurn((prevTurn) => !prevTurn);
+
+        // setTurnCount(turnCount + 1);
 
         setChatLog((prevChatLog) => [
           ...prevChatLog,
@@ -73,6 +75,13 @@ const BattleView: React.FC = () => {
       });
     }
   }, [roomId, isViewLoaded]);
+
+  useEffect(() => {
+    if (isViewLoaded) {
+      setIsMyTurn((prevTurn) => !prevTurn);
+      setTurnCount((prevCount) => prevCount + 1);
+    }
+  }, [chatLog]);
 
   // バトル終了の監視
   useEffect(() => {

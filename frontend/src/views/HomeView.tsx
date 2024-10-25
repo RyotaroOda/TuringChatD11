@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   onRoomUpdate,
   getRoomData,
+  stopOnRoomPlayers,
 } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
@@ -158,7 +159,11 @@ const HomeView: React.FC = () => {
           );
         }
       });
+      isMatching;
     }
+    return () => {
+      if (roomId) stopOnRoomPlayers(roomId); // クリーン
+    };
   }, [roomId, navigate, playerName, isMatching]);
 
   // 画面が閉じられるかリロードされた場合にマッチングをキャンセル

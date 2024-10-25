@@ -6,6 +6,7 @@ import {
   remove,
   child,
   onChildAdded,
+  off,
 } from "firebase/database";
 import { auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
@@ -15,12 +16,19 @@ import { BattleLog, Message, PlayerData, RoomData } from "shared/dist/types";
 // ルームのデータを監視
 export const onRoomPlayersAdded = (
   roomId: string,
-  callback: (players: PlayerData[] | null) => void
+  callback: (players: PlayerData[] | null) => void,
+  stop: { current: boolean }
 ) => {
   const roomRef = ref(db, `rooms/${roomId}/players`);
-  onChildAdded(
+  const listener = onChildAdded(
     roomRef,
     (snapshot) => {
+      if (stop.current) {
+        // `stop` が `true` の場合、リスナーを解除して終了
+        off(roomRef, "child_added", listener);
+        console.log("リスナーが解除されました");
+        return;
+      }
       const PlayerData = snapshot.val() as PlayerData[] | null; // RoomData型にキャスト
       if (PlayerData) {
         callback(PlayerData); // データがある場合はコールバックを呼び出す
@@ -34,6 +42,17 @@ export const onRoomPlayersAdded = (
       callback(null);
     }
   );
+  const stopListening = () => {
+    off(roomRef);
+    console.log("addPlayerの監視を停止しました。");
+  };
+  return stopListening;
+};
+
+export const stopOnRoomPlayers = (roomId: string) => {
+  const roomRef = ref(db, `rooms/${roomId}/players`);
+  off(roomRef);
+  console.log("addPlayerの監視を停止しました。");
 };
 
 // ルームのデータを監視
