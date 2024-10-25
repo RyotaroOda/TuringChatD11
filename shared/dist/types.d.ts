@@ -5,11 +5,14 @@ export type BattleConfig = {
 };
 export declare enum BattleType {
     Single = 0,
-    Multi = 1
+    Double = 1,
+    Short = 2,
+    Werewolf = 3
 }
 export type Message = {
     senderId: string;
     message: string;
+    timestamp: number;
 };
 export type BattleLog = {
     currentTurn: number;
@@ -34,8 +37,8 @@ export type PlayerData = {
 };
 export type RoomData = {
     roomId: string;
-    player1: PlayerData;
-    player2?: PlayerData;
+    status: "waiting" | "playing" | "finished";
+    players: PlayerData[];
     battleConfig: BattleConfig;
     battleLog: BattleLog;
 };

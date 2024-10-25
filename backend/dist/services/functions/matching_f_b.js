@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelMatchFunction = exports.requestMatchFunction = exports.getNextRoomIdFromWaitingList = exports.removeFromWaitingList = exports.addToWaitingList = exports.testFunction = void 0;
 //src/services/functions/matching_f_b.ts
-// import * as functions from "firebase-functions";
 const types_1 = require("shared/dist/types");
 const firebase_b_1 = require("../firebase_b");
 const https_1 = require("firebase-functions/v2/https");
@@ -80,10 +79,13 @@ const createRoom = async (player) => {
     const roomId = firebase_b_1.db.ref("rooms").push().key;
     const roomData = {
         roomId: roomId,
-        player1: player,
+        status: "waiting",
+        players: [],
         battleConfig: battleConfig,
         battleLog: types_1.newBattleLog,
     };
+    roomData.battleLog.activePlayerId = player.id;
+    roomData.players.push(player);
     // ルーム情報をデータベースに保存
     await firebase_b_1.db.ref(`rooms/${roomId}`).set(roomData);
     console.log(`新しいルーム ${roomId} が作成されました。`);
@@ -104,9 +106,16 @@ const createRoom = async (player) => {
 // };
 const joinRoom = async (roomId, player) => {
     console.log("joinRoom", roomId, player);
+    // 現在のメッセージの数を取得して、次のインデックスを決定する
+    const snapshot = await firebase_b_1.db.ref(`rooms/${roomId}/players`).get;
+    console.log("snapshot", snapshot);
+    const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
+    console.log("playerCount", playerCount);
     try {
-        await firebase_b_1.db.ref(`rooms/${roomId}/player2`).set(player);
+        await firebase_b_1.db.ref(`rooms/${roomId}/players`).push(player);
+        await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("playing"); //TODO: battleTypeがSingleの場合のみ
         return true;
+        //TODO: トランザクションを使って安全にデータを更新する
         // // トランザクションを使用してルームに参加する
         // const result = await db.ref(`rooms/${roomId}`).transaction((roomData) => {
         //   if (roomData) {
@@ -139,6 +148,9 @@ const joinRoom = async (roomId, player) => {
         return false;
     }
 };
+const removeRoom = async (roomId) => {
+    await firebase_b_1.db.ref(`rooms/${roomId}`).remove();
+};
 //#endregion
 exports.requestMatchFunction = (0, https_1.onCall)(async (request) => {
     const playerId = authCheck(request.auth?.uid ?? ""); // マッチング処理を実行
@@ -154,6 +166,9 @@ exports.requestMatchFunction = (0, https_1.onCall)(async (request) => {
             startBattle: true,
             message: "success to match",
         };
+    }
+    if (roomId) {
+        removeRoom(roomId);
     }
     // マッチング相手がいなかった場合、新しいルームを作成
     const newRoomId = await createRoom(player);

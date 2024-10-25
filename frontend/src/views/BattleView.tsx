@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import {
   sendMessage,
-  onTurnUpdated,
+  onMessageAdded,
   onBattleEnd,
 } from "../services/firebase-realtime-database.ts";
 import { BattleLog, PlayerData, RoomData } from "shared/dist/types";
@@ -10,6 +10,7 @@ import { useAuth } from "../services/useAuth.tsx";
 
 const BattleView: React.FC = () => {
   //#region init
+  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
   const { roomId } = useParams<{ roomId: string }>();
 
   const { user } = useAuth();
@@ -18,11 +19,16 @@ const BattleView: React.FC = () => {
   // Location and Params
   const location = useLocation();
   const state: RoomData = location.state.roomData;
+  const playersKey = Object.keys(state.players);
+  const isHost = myId === state.players[0].id;
+  // const isHost = myId === state.players[playersKey[0]].id;
 
-  const myData: PlayerData =
-    myId === state.player1.id ? state.player1 : state.player2!;
-  const opponentData: PlayerData =
-    myId === state.player1.id ? state.player2! : state.player1;
+  const myData: PlayerData = isHost
+    ? state.players[playersKey[0]]
+    : state.players[playersKey[1]];
+  const opponentData: PlayerData = isHost
+    ? state.players[playersKey[1]]
+    : state.players[playersKey[0]];
 
   // Player Information
   const myName = `${myData.name} (あなた)` || "error";
@@ -33,7 +39,11 @@ const BattleView: React.FC = () => {
     battleConfig.oneTurnTime
   );
   //#endregion
-  console.log("data", state);
+
+  useEffect(() => {
+    console.log("battle view load complete", isHost);
+    setIsLoaded(true);
+  }, [battleConfig]);
 
   // Player names mapping
   const playerNames: Record<string, string> = {
@@ -44,53 +54,35 @@ const BattleView: React.FC = () => {
     { senderId: string; message: string }[]
   >([]);
   const [message, setMessage] = useState<string>("");
-  const [isMyTurn, setIsMyTurn] = useState<boolean>(true); // Initial turn state (placeholder)
+  const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost); // Initial turn state (placeholder)
   const [turnCount, setTurnCount] = useState<number>(0);
 
   // ゲームの進行状況を監視する
   useEffect(() => {
-    if (roomId) {
-      // ターンの更新を監視
-      // onTurnUpdated(roomId, (data: { battleLog: BattleLog }) => {
-      //   setIsMyTurn(data.battleLog.activePlayerId === myId); // 自分のターンかどうかを判定
-      //   setTurnCount(data.battleLog.currentTurn);
-      //   // 新しいメッセージが追加されていれば、それをチャットログに追加
-      //   const newMessage = data.battleLog.messages[data.battleLog.currentTurn];
-      //   if (newMessage) {
-      //     setChatLog((prevChatLog) => [
-      //       ...prevChatLog,
-      //       { senderId: newMessage.senderId, message: newMessage.message },
-      //     ]);
-      //   }
-      // });
+    if (roomId && isViewLoaded) {
+      // ターン更新をFirebaseから受け取る
+      onMessageAdded(roomId, (newMessage) => {
+        console.log("onMessageAdded:", newMessage);
+        setIsMyTurn(!isMyTurn);
+        setTurnCount(turnCount + 1);
+
+        setChatLog((prevChatLog) => [
+          ...prevChatLog,
+          { senderId: newMessage.senderId, message: newMessage.message },
+        ]);
+        if (message === "送信中...") setMessage("");
+      });
     }
-  }, [roomId, myId]);
+  }, [roomId]);
 
-  // useEffect(() => {
-  //   if (roomId) {
-  //     // ターン更新をFirebaseから受け取る
-  //     onTurnUpdated(roomId, (data: { battleLog: BattleLog }) => {
-  //       setIsMyTurn(data.battleLog.activePlayerId === myId);
-  //       setTurnCount(data.battleLog.currentTurn);
-
-  //       const newMessage = data.battleLog.messages[data.battleLog.currentTurn];
-  //       setChatLog((prevChatLog) => [
-  //         ...prevChatLog,
-  //         { senderId: newMessage.senderId, message: newMessage.message },
-  //       ]);
-  //       if (message === "送信中...") setMessage("");
-  //     });
-  //   }
-  // }, [roomId, myId, message]);
-
-  // // バトル終了の監視
-  // useEffect(() => {
-  //   if (roomId) {
-  //     onBattleEnd(roomId, () => {
-  //       alert("Battle Ended!");
-  //     });
-  //   }
-  // }, [roomId]);
+  // バトル終了の監視
+  useEffect(() => {
+    if (roomId) {
+      onBattleEnd(roomId, () => {
+        alert("Battle Ended!");
+      });
+    }
+  }, [roomId]);
 
   const handleSendMessage = async () => {
     if (message.trim() && isMyTurn && roomId) {

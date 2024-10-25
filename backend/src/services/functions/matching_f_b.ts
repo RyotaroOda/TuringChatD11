@@ -1,5 +1,4 @@
 //src/services/functions/matching_f_b.ts
-// import * as functions from "firebase-functions";
 import {
   BattleConfig,
   BattleType,
@@ -92,10 +91,13 @@ const createRoom = async (player: PlayerData) => {
 
   const roomData: RoomData = {
     roomId: roomId,
-    player1: player,
+    status: "waiting",
+    players: [],
     battleConfig: battleConfig,
     battleLog: newBattleLog,
   };
+  roomData.battleLog.activePlayerId = player.id;
+  roomData.players.push(player);
 
   // ルーム情報をデータベースに保存
   await db.ref(`rooms/${roomId}`).set(roomData);
@@ -124,8 +126,15 @@ const joinRoom = async (
   player: PlayerData
 ): Promise<Boolean> => {
   console.log("joinRoom", roomId, player);
+  // 現在のメッセージの数を取得して、次のインデックスを決定する
+  const snapshot = await db.ref(`rooms/${roomId}/players`).get;
+  console.log("snapshot", snapshot);
+  const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
+  console.log("playerCount", playerCount);
+
   try {
-    await db.ref(`rooms/${roomId}/player2`).set(player);
+    await db.ref(`rooms/${roomId}/players`).push(player);
+    await db.ref(`rooms/${roomId}/status`).set("playing"); //TODO: battleTypeがSingleの場合のみ
     return true;
     //TODO: トランザクションを使って安全にデータを更新する
     // // トランザクションを使用してルームに参加する

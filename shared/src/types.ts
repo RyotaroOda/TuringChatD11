@@ -7,13 +7,16 @@ export type BattleConfig = {
 
 export enum BattleType {
   Single,
-  Multi,
+  Double,
+  Short,
+  Werewolf,
 }
 
 //メッセージ
 export type Message = {
   senderId: string;
   message: string;
+  timestamp: number;
 };
 
 //バトルログ
@@ -49,8 +52,8 @@ export type PlayerData = {
 
 export type RoomData = {
   roomId: string;
-  player1: PlayerData;
-  player2?: PlayerData;
+  status: "waiting" | "playing" | "finished";
+  players: PlayerData[];
   battleConfig: BattleConfig;
   battleLog: BattleLog;
 };

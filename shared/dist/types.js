@@ -4,7 +4,9 @@ exports.AIModel = exports.newBattleLog = exports.BattleType = void 0;
 var BattleType;
 (function (BattleType) {
     BattleType[BattleType["Single"] = 0] = "Single";
-    BattleType[BattleType["Multi"] = 1] = "Multi";
+    BattleType[BattleType["Double"] = 1] = "Double";
+    BattleType[BattleType["Short"] = 2] = "Short";
+    BattleType[BattleType["Werewolf"] = 3] = "Werewolf";
 })(BattleType || (exports.BattleType = BattleType = {}));
 exports.newBattleLog = {
     currentTurn: 0,

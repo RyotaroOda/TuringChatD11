@@ -14,6 +14,7 @@ import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログア�
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
 import { AIModel, PlayerData, RoomData } from "shared/dist/types";
+import { set } from "firebase/database";
 
 const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(9999);
@@ -140,10 +141,12 @@ const HomeView: React.FC = () => {
     if (isMatching && roomId) {
       // ルームIDが設定されている場合、ルームのデータを監視
       onRoomUpdate(roomId, (roomData) => {
-        if (roomData && roomData.player2) {
+        console.log("Room updated:", roomData);
+        if (roomData && roomData.status === "playing") {
           // player2が設定されたらマッチング成立とみなす
           console.log("Match found with opponent:", roomData);
           toBattleViewSegue(roomData); // バトル画面に遷移
+          setIsMatching(false); // マッチング状態を解除
         } else if (!roomData) {
           // ルームが削除された場合
           console.error(
@@ -178,6 +181,7 @@ const HomeView: React.FC = () => {
   //#endregion
 
   const toBattleViewSegue = (roomData: RoomData) => {
+    console.log("toBattleViewSegue");
     navigate(`/battle/${roomData.roomId}`, {
       state: { roomData: roomData },
     });
