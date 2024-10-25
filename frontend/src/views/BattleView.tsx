@@ -70,10 +70,9 @@ const BattleView: React.FC = () => {
           ...prevChatLog,
           { senderId: newMessage.senderId, message: newMessage.message },
         ]);
-        if (message === "送信中...") setMessage("");
       });
     }
-  }, [roomId]);
+  }, [roomId, isViewLoaded]);
 
   // バトル終了の監視
   useEffect(() => {
@@ -86,9 +85,9 @@ const BattleView: React.FC = () => {
 
   const handleSendMessage = async () => {
     if (message.trim() && isMyTurn && roomId) {
-      await sendMessage(roomId, message);
       setMessage("送信中...");
-      setIsMyTurn(false);
+      await sendMessage(roomId, message);
+      setMessage("");
     }
   };
 
@@ -128,7 +127,7 @@ const BattleView: React.FC = () => {
           />
         </label>
         <button onClick={handleSendMessage} disabled={!isMyTurn}>
-          {isMyTurn ? "送信" : "Wait for your turn"}
+          {isMyTurn || message === "送信中..." ? "送信" : "Wait for your turn"}
         </button>
       </div>
       <Link to="/result">
