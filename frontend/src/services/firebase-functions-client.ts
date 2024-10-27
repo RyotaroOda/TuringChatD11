@@ -35,6 +35,7 @@ export const requestMatch = async (
             reject({ message: error.message });
           });
       });
+      console.log("マッチング成功:", result);
       return result;
     } catch (error) {
       console.error(

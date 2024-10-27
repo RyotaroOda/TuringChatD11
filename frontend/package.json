@@ -18,7 +18,7 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-scripts eject",
-    "clean": "rimraf build/* && rm -rf node_modules package-lock.json && npm cache clean && npm install"
+    "clean": "rimraf build/* && rm -rf node_modules package-lock.json && npm cache verify && npm install"
   },
   "devDependencies": {
     "react-app-rewired": "^2.2.1",

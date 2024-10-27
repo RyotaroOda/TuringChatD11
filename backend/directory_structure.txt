@@ -17,7 +17,7 @@
 │   └── ./src/services
 │       ├── ./src/services/firebase_b.ts
 │       └── ./src/services/functions
-│           └── ./src/services/functions/matching_f_b.ts
+│           └── ./src/services/functions/matchingFunctions.ts
 ├── ./tsconfig.backend.json
 └── ./ui-debug.log
 

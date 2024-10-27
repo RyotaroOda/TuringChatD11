@@ -1,25 +1,21 @@
 export type BattleConfig = {
     maxTurn: number;
-    battleType: BattleType;
+    battleType: "Single" | "Double" | "Short" | "Werewolf";
     oneTurnTime: number;
 };
-export declare enum BattleType {
-    Single = 0,
-    Double = 1,
-    Short = 2,
-    Werewolf = 3
-}
 export type Message = {
     senderId: string;
     message: string;
     timestamp: number;
 };
 export type BattleLog = {
+    phase: "waiting" | "chat" | "answer" | "finished";
     currentTurn: number;
     messages: Message[];
-    activePlayerId: string | null;
+    activePlayerId: string;
+    submitAnswer: SubmitAnswer[];
+    battleResult: BattleResult[];
 };
-export declare const newBattleLog: BattleLog;
 export declare enum AIModel {
     GPT3 = 0,
     GPT2 = 1,
@@ -46,4 +42,22 @@ export type MatchResult = {
     roomId: string;
     startBattle: Boolean;
     message?: string;
+};
+export type SubmitAnswer = {
+    identity: Boolean;
+    select: Boolean | null;
+    message: string;
+};
+export type BattleResult = {
+    corrects: Boolean[];
+    scores: number[];
+    answers: SubmitAnswer[];
+};
+export type ResultData = {
+    playerId: string;
+    myAnswer: SubmitAnswer;
+    opponentAnswer: SubmitAnswer;
+    corrects: Boolean[];
+    win: "win" | "lose" | "draw";
+    score: number;
 };

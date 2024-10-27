@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  onRoomUpdate,
   getRoomData,
-  stopOnRoomPlayers,
+  onRoomPlayersUpdated,
 } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
@@ -14,7 +13,9 @@ import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをイン�
 import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
-import { AIModel, PlayerData, RoomData } from "shared/dist/types";
+import { AIModel, MatchResult, PlayerData, RoomData } from "shared/dist/types";
+import e from "cors";
+import { log } from "console";
 import { set } from "firebase/database";
 
 const HomeView: React.FC = () => {
@@ -90,6 +91,8 @@ const HomeView: React.FC = () => {
   //#region マッチング
   const [isMatching, setIsMatching] = useState<boolean>(false);
   // マッチング開始処理
+  let match: MatchResult;
+
   const startMatch = async () => {
     try {
       const player: PlayerData = {
@@ -99,19 +102,10 @@ const HomeView: React.FC = () => {
         bot: { prompt: aiPrompt, model: AIModel.default },
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
-
       if (result.roomId !== "") {
-        setRoomId(result.roomId); // ルームIDを保存
+        await setRoomId(result.roomId); // ルームIDを設定
         if (result.startBattle) {
-          //バトル開始
-          const roomData = await getRoomData(result.roomId);
-          console.log("Match found with opponent:", roomData);
-          if (roomData) {
-            toBattleViewSegue(roomData); // バトル画面に遷移
-          } else {
-            console.error("ルームデータが取得できませんでした。");
-            cancelMatching();
-          }
+          await toBattleViewSegue(result.roomId); // バトル画面に遷移 //TODO: roomIdを更新してから
         } else {
           //ホスト
           setIsMatching(true); // マッチング状態を設定
@@ -141,29 +135,20 @@ const HomeView: React.FC = () => {
   useEffect(() => {
     if (isMatching && roomId) {
       // ルームIDが設定されている場合、ルームのデータを監視
-      onRoomUpdate(roomId, (roomData) => {
-        console.log("Room updated:", roomData);
-        if (roomData && roomData.status === "playing") {
+      const unsubscribe = onRoomPlayersUpdated(
+        roomId,
+        (players) => {
           // player2が設定されたらマッチング成立とみなす
-          console.log("Match found with opponent:", roomData);
-          toBattleViewSegue(roomData); // バトル画面に遷移
-          setIsMatching(false); // マッチング状態を解除
-        } else if (!roomData) {
-          // ルームが削除された場合
-          console.error(
-            "ルームが削除されました。マッチングがキャンセルされた可能性があります。"
-          );
-          cancelMatching();
-          alert(
-            "ルームが削除されました。マッチングがキャンセルされた可能性があります"
-          );
-        }
-      });
-      isMatching;
+          if (players && Object.keys(players).length === 2) {
+            toBattleViewSegue(roomId); // バトル画面に遷移
+          }
+        },
+        { current: !isMatching }
+      );
+      return () => {
+        unsubscribe();
+      };
     }
-    return () => {
-      if (roomId) stopOnRoomPlayers(roomId); // クリーン
-    };
   }, [roomId, navigate, playerName, isMatching]);
 
   // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
@@ -185,11 +170,29 @@ const HomeView: React.FC = () => {
 
   //#endregion
 
-  const toBattleViewSegue = (roomData: RoomData) => {
-    console.log("toBattleViewSegue");
-    navigate(`/battle/${roomData.roomId}`, {
-      state: { roomData: roomData },
-    });
+  const toBattleViewSegue = (roomId: string) => {
+    if (roomId) {
+      setIsMatching(false); // マッチング状態を解除
+      getRoomData(roomId).then((roomData) => {
+        if (roomData) {
+          if (roomData.status === "playing") {
+            console.log("バトル画面に遷移します");
+            navigate(`/battle/${roomId}`, {
+              state: { roomData: roomData },
+            });
+          } else {
+            console.error("ルームがプレイ中ではありません");
+            cancelMatching();
+          }
+        } else {
+          console.error("ルームデータが取得できません");
+          cancelMatching();
+        }
+      });
+    } else {
+      console.error("roomIdが取得できません");
+      cancelMatching();
+    }
   };
 
   return (

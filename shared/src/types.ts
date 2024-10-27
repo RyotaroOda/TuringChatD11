@@ -1,16 +1,9 @@
 //バトル設定
 export type BattleConfig = {
   maxTurn: number;
-  battleType: BattleType;
+  battleType: "Single" | "Double" | "Short" | "Werewolf";
   oneTurnTime: number;
 };
-
-export enum BattleType {
-  Single,
-  Double,
-  Short,
-  Werewolf,
-}
 
 //メッセージ
 export type Message = {
@@ -21,15 +14,12 @@ export type Message = {
 
 //バトルログ
 export type BattleLog = {
+  phase: "waiting" | "chat" | "answer" | "finished";
   currentTurn: number;
   messages: Message[]; //
-  activePlayerId: string | null;
-};
-
-export const newBattleLog: BattleLog = {
-  currentTurn: 0,
-  messages: [],
-  activePlayerId: null,
+  activePlayerId: string;
+  submitAnswer: SubmitAnswer[];
+  battleResult: BattleResult[];
 };
 
 export enum AIModel {
@@ -63,4 +53,25 @@ export type MatchResult = {
   roomId: string;
   startBattle: Boolean;
   message?: string;
+};
+
+export type SubmitAnswer = {
+  identity: Boolean; //isHuman?
+  select: Boolean | null;
+  message: string;
+};
+
+export type BattleResult = {
+  corrects: Boolean[];
+  scores: number[];
+  answers: SubmitAnswer[];
+};
+
+export type ResultData = {
+  playerId: string;
+  myAnswer: SubmitAnswer;
+  opponentAnswer: SubmitAnswer;
+  corrects: Boolean[];
+  win: "win" | "lose" | "draw";
+  score: number;
 };
