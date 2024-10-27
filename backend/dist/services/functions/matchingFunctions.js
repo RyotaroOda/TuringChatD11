@@ -116,9 +116,9 @@ const joinRoom = async (roomId, player) => {
     const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
     console.log("playerCount", playerCount);
     try {
-        await firebase_b_1.db.ref(`rooms/${roomId}/players`).push(player);
-        await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("playing"); //TODO: battleTypeがSingleの場合のみ
+        await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("playing");
         await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/phase`).set("chat");
+        await firebase_b_1.db.ref(`rooms/${roomId}/players`).push(player); //最後に追加
         return true;
         //TODO: トランザクションを使って安全にデータを更新する
         // // トランザクションを使用してルームに参加する

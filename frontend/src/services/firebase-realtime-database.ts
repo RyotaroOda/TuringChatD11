@@ -20,7 +20,7 @@ import {
   SubmitAnswer,
 } from "shared/dist/types";
 //#region HomeView
-// プレイヤーデータを監視 未使用
+// プレイヤーデータを監視
 export const onRoomPlayersUpdated = (
   roomId: string,
   callback: (players: PlayerData[] | null) => void,
@@ -170,7 +170,7 @@ export const sendAnswer = async (roomId: string, answer: SubmitAnswer) => {
     `rooms/${roomId}/battleLog/submittedAnswers/${user.uid}`
   );
   await push(answerRef, answer);
-  console.log("回答を送信しました。");
+  console.log("回答を送信しました。", answer);
 };
 
 // 両プレイヤーの回答が揃ったらサーバーレス関数wを呼び出す
@@ -185,6 +185,7 @@ export const checkAnswers = (roomId: string) => {
   get(answerRef)
     .then((answersSnapshot) => {
       if (Object.keys(answersSnapshot.val()).length == 2) {
+        console.log("両プレイヤーの回答が揃いました。");
         //TODO: firebase functionを呼び出す
         // func();
       } else {
@@ -195,7 +196,7 @@ export const checkAnswers = (roomId: string) => {
             ? Object.keys(updatedData).length
             : 0;
 
-          // 2つになったタイミングで `finc()` を実行し、リスナーを解除
+          // 2つになったタイミングで `func()` を実行し、リスナーを解除
           if (updatedCount >= 2) {
             // func();
             off(answerRef); // リスナーを解除

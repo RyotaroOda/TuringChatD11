@@ -139,9 +139,9 @@ const joinRoom = async (
   console.log("playerCount", playerCount);
 
   try {
-    await db.ref(`rooms/${roomId}/players`).push(player);
-    await db.ref(`rooms/${roomId}/status`).set("playing"); //TODO: battleTypeがSingleの場合のみ
+    await db.ref(`rooms/${roomId}/status`).set("playing");
     await db.ref(`rooms/${roomId}/battleLog/phase`).set("chat");
+    await db.ref(`rooms/${roomId}/players`).push(player); //最後に追加
     return true;
     //TODO: トランザクションを使って安全にデータを更新する
     // // トランザクションを使用してルームに参加する

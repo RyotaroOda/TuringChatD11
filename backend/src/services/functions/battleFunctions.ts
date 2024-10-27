@@ -14,10 +14,23 @@ export const calculateBattleResultFunction = functions.https.onCall(
     //回答を取得
     const answersSnapshot = await answerRef.once("value");
     const answers: SubmitAnswer[] = answersSnapshot.val() as SubmitAnswer[];
-    //
+    // //
+    // const keys = Object.keys(answers);
+    // const player1Answer =
+    //   answers[keys[0]].playerId === playerId
+    //     ? answers[keys[0]]
+    //     : answers[keys[1]];
+    // const player2Answer =
+    //   answers[keys[0]].playerId === playerId
+    //     ? answers[keys[1]]
+    //     : answers[keys[0]];
 
-    const player1Answer = answers[0];
-    const player2Answer = answers[1];
+    // 回答者を特定
+    const [firstAnswer, secondAnswer] = Object.values(answers);
+    const isFirstAnswerByPlayer = firstAnswer.playerId === playerId;
+
+    const player1Answer = isFirstAnswerByPlayer ? firstAnswer : secondAnswer;
+    const player2Answer = isFirstAnswerByPlayer ? secondAnswer : firstAnswer;
 
     const corrects = {
       player1Correct: player1Answer.select === player2Answer.identity,

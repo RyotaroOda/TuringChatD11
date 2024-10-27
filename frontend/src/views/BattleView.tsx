@@ -63,6 +63,7 @@ const BattleView: React.FC = () => {
   );
 
   const [answer, setAnswer] = useState<SubmitAnswer>({
+    playerId: myId,
     identity: true,
     select: null,
     message: "",
@@ -92,15 +93,13 @@ const BattleView: React.FC = () => {
     if (isViewLoaded) {
       setIsMyTurn((prevTurn) => !prevTurn);
       setRemainTurn((prevCount) => prevCount - 1);
-      if (remainTurn === 0) {
-        alert("Battle Ended!");
-      }
     }
   }, [chatLog]);
 
   // バトル終了時
   useEffect(() => {
     if (remainTurn === 0) {
+      alert("Battle Ended!");
     }
   }, [remainTurn]);
 
@@ -118,14 +117,12 @@ const BattleView: React.FC = () => {
     if (!answer.select || !answer.identity || !roomId || !myId) return;
 
     sendAnswer(roomId, answer);
-
     setIsSubmitted(true);
 
-    //両回答
+    //両回答が揃ったら結果を確認
     if (isHost) {
       checkAnswers(roomId);
     }
-
     console.log("入力が送信されました");
   };
 
@@ -184,16 +181,16 @@ const BattleView: React.FC = () => {
         </label>
         <button
           onClick={handleSendMessage}
-          disabled={remainTurn > 0 || !isMyTurn}
+          disabled={remainTurn <= 0 || !isMyTurn}
         >
           {isMyTurn || message === "送信中..." ? "送信" : "Wait for your turn"}
         </button>
       </div>
       {remainTurn === 0 && (
         <div>
-          <h2>選択肢とメッセージを入力してください</h2>
+          <h2>バトル終了 選択肢とメッセージを入力してください</h2>
           <label>
-            選択肢:
+            チャット相手は？:
             <select
               onChange={(e) =>
                 setAnswer((prevAnswer) => ({
@@ -203,14 +200,13 @@ const BattleView: React.FC = () => {
               }
               value={answer.select !== null ? String(answer.select) : ""}
             >
-              <option value="">選択してください</option>
-              <option value="true">選択肢A</option>
-              <option value="false">選択肢B</option>
+              <option value="">選んでください</option>
+              <option value="true">人間</option>
+              <option value="false">AI</option>
             </select>
           </label>
-
           <label>
-            メッセージ:
+            理由:
             <input
               type="text"
               value={answer.message}
@@ -223,7 +219,9 @@ const BattleView: React.FC = () => {
               placeholder="メッセージを入力してください"
             />
           </label>
-          <button onClick={handleSubmit}>送信</button>
+          <button onClick={handleSubmit} disabled={!isSubmitted}>
+            送信
+          </button>
         </div>
       )}
       <Link to="/result">

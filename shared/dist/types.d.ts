@@ -44,6 +44,7 @@ export type MatchResult = {
     message?: string;
 };
 export type SubmitAnswer = {
+    playerId: string;
     identity: Boolean;
     select: Boolean | null;
     message: string;

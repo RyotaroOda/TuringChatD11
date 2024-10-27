@@ -56,6 +56,7 @@ export type MatchResult = {
 };
 
 export type SubmitAnswer = {
+  playerId: string;
   identity: Boolean; //isHuman?
   select: Boolean | null;
   message: string;
