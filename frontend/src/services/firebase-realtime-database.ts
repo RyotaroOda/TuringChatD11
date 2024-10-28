@@ -184,7 +184,7 @@ export const checkAnswers = (roomId: string) => {
     .then((answersSnapshot) => {
       if (Object.keys(answersSnapshot.val()).length == 2) {
         console.log("両プレイヤーの回答が揃いました。", answersSnapshot.val());
-        calculateBattleResult(roomId);
+        calculateBattleResult(roomId); //awaitしない
       } else {
         // 要素数が2未満の場合、リスナーを設定して監視
         onValue(answerRef, (snapshot) => {
@@ -195,7 +195,7 @@ export const checkAnswers = (roomId: string) => {
 
           // 2つになったタイミングで `func()` を実行し、リスナーを解除
           if (updatedCount >= 2) {
-            calculateBattleResult(roomId);
+            calculateBattleResult(roomId); //awaitしない
             off(answerRef); // リスナーを解除
             console.log("off checkAnswers");
           }
@@ -207,7 +207,7 @@ export const checkAnswers = (roomId: string) => {
     });
 };
 
-//resultが返ってきたらバトル終了
+//resultが更新されたらバトル終了
 export const onResultUpdated = (
   roomId: string,
   playerNumber: number,

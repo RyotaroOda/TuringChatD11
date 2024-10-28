@@ -95,7 +95,7 @@ export const calculateBattleResult = async (roomId: string) => {
     "calculateBattleResultFunction"
   );
   console.log("calculating");
-  await calculateBattleResultFunction(roomId);
+  calculateBattleResultFunction(roomId); //awaitしない
 };
 //
 

@@ -34,9 +34,10 @@ const initializeDatabase = async () => {
   }
 };
 // サーバー起動時に初期化処理を実行
-// initializeDatabase();
+initializeDatabase();
 
 // Firestoreのインスタンス取得 (必要に応じて)
-export const firestore = getFirestore();
+export const storage = admin.storage();
+
 //認証情報のインスタンス取得
 export const auth = admin.auth();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   sendMessage,
   onMessageAdded,
@@ -14,6 +14,7 @@ import {
   SubmitAnswer,
 } from "shared/dist/types";
 import { useAuth } from "../services/useAuth.tsx";
+import { BattleResult, ResultData } from "shared/src/types.ts";
 
 const BattleView: React.FC = () => {
   //#region init
@@ -44,13 +45,13 @@ const BattleView: React.FC = () => {
   // Battle Configuration
   const battleConfig = state.battleConfig;
 
-  //#endregion
-
   // Player names mapping
   const playerNames: Record<string, string> = {
     [myId]: myName,
     [opponentData.id]: opponentData.name,
   };
+
+  const navigate = useNavigate();
   const [chatLog, setChatLog] = useState<
     { senderId: string; message: string }[]
   >([]);
@@ -70,15 +71,16 @@ const BattleView: React.FC = () => {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  //#endregion
 
   // ViewDidLoad
   useEffect(() => {
     setIsLoaded(true);
   }, [battleConfig]);
 
+  //メッセージ更新
   useEffect(() => {
     if (roomId && isViewLoaded) {
-      // ターン更新をFirebaseから受け取る
       onMessageAdded(roomId, (newMessage) => {
         console.log("onMessageAdded:", newMessage);
         setChatLog((prevChatLog) => [
@@ -103,6 +105,11 @@ const BattleView: React.FC = () => {
       // alert("Battle Ended!");
     }
   }, [remainTurn]);
+
+  //resultに遷移
+  const toResultSegue = (result: ResultData) => {
+    navigate("/result", { state: { result } });
+  };
 
   //#region ui
   const handleSendMessage = async () => {
@@ -136,10 +143,9 @@ const BattleView: React.FC = () => {
     if (isSubmitted && roomId) {
       const unsubscribe = onResultUpdated(roomId, myNumber, (result) => {
         if (result) {
-          console.log("Battle finished!");
           console.log("Result updated:", result);
           // バトル終了時の処理
-          alert("バトルが終了しました。");
+          toResultSegue(result);
         }
         console;
       });
@@ -231,6 +237,7 @@ const BattleView: React.FC = () => {
         </div>
       )}
       <Link to="/result">
+        // FIXME: navigate to result view
         <button onClick={handleFinishMatching}>バトル終了</button>
       </Link>
     </div>

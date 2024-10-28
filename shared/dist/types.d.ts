@@ -15,6 +15,10 @@ export type BattleLog = {
     activePlayerId: string;
     submitAnswer: SubmitAnswer[];
     battleResult: BattleResult[];
+    timeStamps: {
+        start: number;
+        end: number;
+    };
 };
 export declare enum AIModel {
     GPT3 = 0,

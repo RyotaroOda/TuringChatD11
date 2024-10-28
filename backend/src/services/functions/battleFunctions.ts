@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import { db } from "../firebase_b"; // Firebase 初期化ファイル
+import { db, storage } from "../firebase_b"; // Firebase 初期化ファイル
 import { BattleResult, SubmitAnswer } from "shared/dist/types";
 
 export const calculateBattleResultFunction = functions.https.onCall(
@@ -26,10 +26,8 @@ export const calculateBattleResultFunction = functions.https.onCall(
     const answerData: SubmitAnswer[] = answersSnapshot.val() as SubmitAnswer[];
 
     // 回答者を特定
-
     const [firstAnswer, secondAnswer] = Object.values(answerData);
     const isFirstAnswerByPlayer = firstAnswer.playerId === playerId;
-    console.log("firstAnswer", firstAnswer);
     const answers = isFirstAnswerByPlayer
       ? [firstAnswer, secondAnswer]
       : [secondAnswer, firstAnswer];
@@ -52,10 +50,85 @@ export const calculateBattleResultFunction = functions.https.onCall(
       scores: [scores.player1Score, scores.player2Score],
       answers: answers,
     };
-    console.log("result", result);
-    await db.ref(`rooms/${roomId}/battleLog/result`).set(result);
-    await db.ref(`rooms/${roomId}/status`).set("finished");
 
-    return { message: "Both players have submitted their choices." };
+    await db.ref(`rooms/${roomId}/battleLog/result`).set(result);
+    await db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(Date.now());
+    await db.ref(`rooms/${roomId}/status`).set("finished");
   }
 );
+
+const saveRoomData = async (roomId: string) => {
+  if (!roomId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "roomIdが必要です。"
+    );
+  }
+
+  try {
+    // 1. Firebase Realtime Databaseから`roomId`にあるデータを取得
+    const roomRef = db.ref(`rooms/${roomId}`);
+    const snapshot = await roomRef.once("value");
+    const roomData = snapshot.val();
+
+    if (!roomData) {
+      throw new functions.https.HttpsError(
+        "not-found",
+        "データが見つかりません。"
+      );
+    }
+
+    // 2. JSONデータとしてバッファに変換
+    const jsonData = JSON.stringify(roomData);
+    const buffer = Buffer.from(jsonData);
+
+    // 3. Firebase Storageの保存先パスを設定
+    const filePath = `backups/${roomId}_backup_${Date.now()}.json`;
+    const file = storage.bucket().file(filePath);
+
+    // 4. Firebase Storageにファイルとしてアップロード
+    await file.save(buffer, {
+      metadata: {
+        contentType: "application/json",
+      },
+    });
+
+    console.log(`バックアップが成功しました: ${filePath}`);
+    return {
+      success: true,
+      message: `バックアップが成功しました: ${filePath}`,
+    };
+  } catch (error) {
+    console.error("バックアップ中にエラーが発生しました:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "バックアップ中にエラーが発生しました。"
+    );
+  }
+};
+
+const removeRoomData = async (roomId: string) => {
+  if (!roomId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "roomIdが必要です。"
+    );
+  }
+
+  try {
+    // 1. Firebase Realtime Databaseから`roomId`にあるデータを削除
+    await db.ref(`rooms/${roomId}`).remove();
+
+    console.log(`データの削除が成功しました: ${roomId}`);
+    return {
+      success: true,
+      message: `データの削除が成功しました: ${roomId}`,
+    };
+  } catch (error) {
+    console.error("データの削除中にエラーが発生しました:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "データの削除中にエラーが発生しました。"
+    );
+  }
+};

@@ -15,11 +15,12 @@ export type Message = {
 //バトルログ
 export type BattleLog = {
   phase: "waiting" | "chat" | "answer" | "finished";
-  currentTurn: number;
-  messages: Message[]; //
+  currentTurn: number; //未使用
+  messages: Message[];
   activePlayerId: string;
   submitAnswer: SubmitAnswer[];
   battleResult: BattleResult[];
+  timeStamps: { start: number; end: number };
 };
 
 export enum AIModel {
@@ -55,6 +56,7 @@ export type MatchResult = {
   message?: string;
 };
 
+//プレイヤーの回答
 export type SubmitAnswer = {
   playerId: string;
   identity: Boolean; //isHuman?
@@ -62,12 +64,14 @@ export type SubmitAnswer = {
   message: string;
 };
 
+//データベース用
 export type BattleResult = {
   corrects: Boolean[];
   scores: number[];
   answers: SubmitAnswer[];
 };
 
+//各クライアント用
 export type ResultData = {
   playerId: string;
   myAnswer: SubmitAnswer;

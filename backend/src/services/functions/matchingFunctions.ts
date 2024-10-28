@@ -95,6 +95,7 @@ const createRoom = async (player: PlayerData) => {
     activePlayerId: "player.id",
     submitAnswer: [],
     battleResult: [],
+    timeStamps: { start: Date.now(), end: 0 },
   };
 
   const roomData: RoomData = {

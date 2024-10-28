@@ -23,9 +23,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.auth = exports.firestore = exports.db = exports.initFirebase = void 0;
+exports.auth = exports.storage = exports.db = exports.initFirebase = void 0;
 const admin = __importStar(require("firebase-admin"));
-const firestore_1 = require("firebase-admin/firestore");
 const dotenv = __importStar(require("dotenv"));
 dotenv.config(); // 環境変数のロード
 exports.initFirebase = admin.initializeApp({
@@ -56,8 +55,8 @@ const initializeDatabase = async () => {
     }
 };
 // サーバー起動時に初期化処理を実行
-// initializeDatabase();
+initializeDatabase();
 // Firestoreのインスタンス取得 (必要に応じて)
-exports.firestore = (0, firestore_1.getFirestore)();
+exports.storage = admin.storage();
 //認証情報のインスタンス取得
 exports.auth = admin.auth();
