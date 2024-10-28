@@ -57,6 +57,7 @@ export type BattleResult = {
     corrects: Boolean[];
     scores: number[];
     answers: SubmitAnswer[];
+    time: number;
 };
 export type ResultData = {
     playerId: string;
@@ -65,4 +66,5 @@ export type ResultData = {
     corrects: Boolean[];
     win: "win" | "lose" | "draw";
     score: number;
+    time: number;
 };

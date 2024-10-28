@@ -18,7 +18,7 @@ export const calculateBattleResultFunction = functions.https.onCall(
     if (!answersSnapshot.exists()) {
       throw new functions.https.HttpsError(
         "not-found",
-        "回答が見つかりませんでした"
+        "回答が見つかりませんでした. データベースの初期化をオフにしてください。"
       );
     }
 
@@ -45,14 +45,22 @@ export const calculateBattleResultFunction = functions.https.onCall(
         ? 1
         : 0 + (corrects.player1Correct ? 0 : 1),
     };
+    console.log("flg");
+    const end = Date.now();
+    const start = await db
+      .ref(`rooms/${roomId}/battleLog/timeStamps/start`)
+      .get();
+    const time = end - start.val();
+
     const result: BattleResult = {
       corrects: [corrects.player1Correct, corrects.player2Correct],
       scores: [scores.player1Score, scores.player2Score],
       answers: answers,
+      time: time,
     };
-
+    console.log("result", result);
     await db.ref(`rooms/${roomId}/battleLog/result`).set(result);
-    await db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(Date.now());
+    await db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(end);
     await db.ref(`rooms/${roomId}/status`).set("finished");
   }
 );

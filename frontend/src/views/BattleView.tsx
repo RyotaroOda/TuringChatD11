@@ -237,7 +237,6 @@ const BattleView: React.FC = () => {
         </div>
       )}
       <Link to="/result">
-        // FIXME: navigate to result view
         <button onClick={handleFinishMatching}>バトル終了</button>
       </Link>
     </div>

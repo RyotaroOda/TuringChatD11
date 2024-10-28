@@ -69,6 +69,7 @@ export type BattleResult = {
   corrects: Boolean[];
   scores: number[];
   answers: SubmitAnswer[];
+  time: number;
 };
 
 //各クライアント用
@@ -79,4 +80,5 @@ export type ResultData = {
   corrects: Boolean[];
   win: "win" | "lose" | "draw";
   score: number;
+  time: number;
 };

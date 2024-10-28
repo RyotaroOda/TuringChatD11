@@ -240,6 +240,7 @@ export const onResultUpdated = (
                   : "draw",
           score:
             playerNumber === 0 ? serverData.scores[0] : serverData.scores[1],
+          time: serverData.time,
         };
         callback(result);
       } else {

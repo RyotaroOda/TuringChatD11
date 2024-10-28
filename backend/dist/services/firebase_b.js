@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.auth = exports.storage = exports.db = exports.initFirebase = void 0;
+exports.storage = exports.db = exports.auth = exports.initFirebase = void 0;
 const admin = __importStar(require("firebase-admin"));
 const dotenv = __importStar(require("dotenv"));
 dotenv.config(); // 環境変数のロード
@@ -35,6 +35,8 @@ exports.initFirebase = admin.initializeApp({
     }),
     databaseURL: process.env.FD_DATABASE_URL, // Realtime DatabaseのURLを.envから取得
 });
+//認証情報のインスタンス取得
+exports.auth = admin.auth();
 // Realtime Databaseのインスタンス取得
 exports.db = admin.database();
 // 初期化処理：Realtime Database の初期化
@@ -54,9 +56,7 @@ const initializeDatabase = async () => {
         console.error("Realtime Database の初期化中にエラーが発生しました:", error);
     }
 };
-// サーバー起動時に初期化処理を実行
-initializeDatabase();
+//ANCHOR - CAUTION!  サーバー起動時に初期化処理を実行
+// initializeDatabase();
 // Firestoreのインスタンス取得 (必要に応じて)
 exports.storage = admin.storage();
-//認証情報のインスタンス取得
-exports.auth = admin.auth();

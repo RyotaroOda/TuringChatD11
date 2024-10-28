@@ -1,5 +1,4 @@
 import * as admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
 import * as dotenv from "dotenv";
 
 dotenv.config(); // 環境変数のロード
@@ -12,6 +11,9 @@ export const initFirebase = admin.initializeApp({
   }),
   databaseURL: process.env.FD_DATABASE_URL, // Realtime DatabaseのURLを.envから取得
 });
+
+//認証情報のインスタンス取得
+export const auth = admin.auth();
 
 // Realtime Databaseのインスタンス取得
 export const db = admin.database();
@@ -33,11 +35,9 @@ const initializeDatabase = async () => {
     console.error("Realtime Database の初期化中にエラーが発生しました:", error);
   }
 };
-// サーバー起動時に初期化処理を実行
-initializeDatabase();
+
+//ANCHOR - CAUTION!  サーバー起動時に初期化処理を実行
+// initializeDatabase();
 
 // Firestoreのインスタンス取得 (必要に応じて)
 export const storage = admin.storage();
-
-//認証情報のインスタンス取得
-export const auth = admin.auth();
