@@ -1,14 +1,18 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../services/useAuth.tsx";
+import { ResultData } from "shared/dist/types";
 
 const ResultView: React.FC = () => {
-  const playerAnswers: string[] = ["Answer1", "Answer2"]; // Example data
-  const opponentAnswers: string[] = ["Answer1", "Answer2"]; // Example data
-  const playerSuccess: boolean[] = [true, false]; // Example data
-  const opponentSuccess: boolean[] = [true, true]; // Example data
-  const playerScore: number = 1000; // Example data
-  const battleScore: number = 50; // Example data
+  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
 
+  const { user } = useAuth();
+  const myId = user?.uid || "error";
+
+  // Location and Params
+  const location = useLocation();
+  const result: ResultData = location.state.resultData;
+  console.log("ResultView result:", result);
   const handleGoHome = () => {
     console.log("Navigating to HomeView...");
     // Implement navigation logic here
@@ -16,32 +20,52 @@ const ResultView: React.FC = () => {
 
   return (
     <div>
-      <h1>リザルト画面</h1>
-      <div>
-        <h2>自分の回答と成否</h2>
-        <ul>
-          {playerAnswers.map((answer, index) => (
-            <li key={index}>
-              {answer} - {playerSuccess[index] ? "成功" : "失敗"}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div>
-        <h2>相手の回答と成否</h2>
-        <ul>
-          {opponentAnswers.map((answer, index) => (
-            <li key={index}>
-              {answer} - {opponentSuccess[index] ? "成功" : "失敗"}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <p>バトルスコア: {battleScore}</p>
-      <p>プレイヤースコア: {playerScore + battleScore}</p>
-      <Link to="/">
-        <button onClick={handleGoHome}>ホームへ</button>
-      </Link>
+      <h2>ゲーム結果</h2>
+
+      <p>
+        <strong>勝敗:</strong>{" "}
+        {result.win === "win"
+          ? "勝ち！"
+          : result.win === "lose"
+            ? "負け..."
+            : "引き分け"}
+      </p>
+      <p>
+        <strong>バトルスコア:</strong> {result.score}
+      </p>
+      <p>
+        <strong>バトル時間:</strong> {result.time} ms
+      </p>
+
+      <h3>判定</h3>
+      <ul>
+        <li>自分: {result.corrects[0] ? "正解" : "不正解"}</li>
+        <li>相手: {result.corrects[1] ? "正解" : "不正解"}</li>
+      </ul>
+
+      <h3>自分の回答</h3>
+      <p>
+        <strong>Identity:</strong> {result.myAnswer.identity ? "人間" : "AI"}
+      </p>
+      <p>
+        <strong>Selection:</strong> {result.myAnswer.select ? "人間" : "AI"}
+      </p>
+      <p>
+        <strong>理由:</strong> {result.myAnswer.message || "No message"}
+      </p>
+
+      <h3>相手の回答</h3>
+      <p>
+        <strong>Identity:</strong>{" "}
+        {result.opponentAnswer.identity ? "人間" : "AI"}
+      </p>
+      <p>
+        <strong>Selection:</strong>{" "}
+        {result.opponentAnswer.select ? "人間" : "AI"}
+      </p>
+      <p>
+        <strong>理由:</strong> {result.opponentAnswer.message || "No message"}
+      </p>
     </div>
   );
 };

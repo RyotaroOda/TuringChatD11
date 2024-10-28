@@ -12,9 +12,9 @@ import {
   PlayerData,
   RoomData,
   SubmitAnswer,
+  ResultData,
 } from "shared/dist/types";
 import { useAuth } from "../services/useAuth.tsx";
-import { BattleResult, ResultData } from "shared/src/types.ts";
 
 const BattleView: React.FC = () => {
   //#region init
@@ -108,7 +108,7 @@ const BattleView: React.FC = () => {
 
   //resultに遷移
   const toResultSegue = (result: ResultData) => {
-    navigate("/result", { state: { result } });
+    navigate("/result", { state: { resultData: result } });
   };
 
   //#region ui
