@@ -28,6 +28,7 @@ const BattleView: React.FC = () => {
   const state: RoomData = location.state.roomData;
   const playersKey = Object.keys(state.players);
   const isHost = myId === state.players[0].id;
+  const myNumber = isHost ? 0 : 1;
   // const isHost = myId === state.players[playersKey[0]].id;
 
   const myData: PlayerData = isHost
@@ -133,14 +134,14 @@ const BattleView: React.FC = () => {
   //リザルトを監視
   useEffect(() => {
     if (isSubmitted && roomId) {
-      const unsubscribe = onResultUpdated(roomId, (result) => {
-        console.log("Result updated:", result);
+      const unsubscribe = onResultUpdated(roomId, myNumber, (result) => {
         if (result) {
           console.log("Battle finished!");
-
+          console.log("Result updated:", result);
           // バトル終了時の処理
           alert("バトルが終了しました。");
         }
+        console;
       });
       return () => {
         unsubscribe();
@@ -209,7 +210,8 @@ const BattleView: React.FC = () => {
               <option value="false">AI</option>
             </select>
           </label>
-          <label>
+
+          <p>
             理由:
             <input
               type="text"
@@ -222,7 +224,7 @@ const BattleView: React.FC = () => {
               }
               placeholder="メッセージを入力してください"
             />
-          </label>
+          </p>
           <button onClick={handleSubmit} disabled={isSubmitted}>
             {isSubmitted ? "送信完了" : "送信"}
           </button>

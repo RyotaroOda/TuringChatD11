@@ -210,19 +210,40 @@ export const checkAnswers = (roomId: string) => {
 //resultが返ってきたらバトル終了
 export const onResultUpdated = (
   roomId: string,
-  callback: (players: ResultData[] | null) => void
+  playerNumber: number,
+  callback: (players: ResultData | null) => void
 ) => {
   const resultRef = ref(db, `rooms/${roomId}/battleLog/result`);
-  const listener = onChildAdded(
+  const listener = onValue(
     resultRef,
     (snapshot) => {
       const serverData = snapshot.val() as BattleResult; // RoomData型にキャスト
       if (serverData) {
         console.log("バトル結果が更新されました。", serverData);
-        // データがある場合
-        //TODO: データを整形して返す
+        const result: ResultData = {
+          playerId: auth.currentUser?.uid || "",
+          myAnswer: serverData.answers[playerNumber],
+          opponentAnswer:
+            playerNumber === 0 ? serverData.answers[1] : serverData.answers[0],
+          corrects: serverData.corrects,
+          win:
+            playerNumber === 0
+              ? serverData.scores[0] > serverData.scores[1]
+                ? "win"
+                : serverData.scores[0] < serverData.scores[1]
+                  ? "lose"
+                  : "draw"
+              : serverData.scores[1] > serverData.scores[0]
+                ? "win"
+                : serverData.scores[1] < serverData.scores[0]
+                  ? "lose"
+                  : "draw",
+          score:
+            playerNumber === 0 ? serverData.scores[0] : serverData.scores[1],
+        };
+        callback(result);
       } else {
-        console.error("ルームが存在しません。");
+        console.log("no result data");
         callback(null);
       }
     },
