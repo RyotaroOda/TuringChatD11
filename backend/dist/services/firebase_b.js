@@ -33,7 +33,8 @@ exports.initFirebase = admin.initializeApp({
         clientEmail: process.env.FD_CLIENT_EMAIL,
         privateKey: process.env.FD_PRIVATE_KEY?.replace(/\\n/g, "\n"),
     }),
-    databaseURL: process.env.FD_DATABASE_URL, // Realtime DatabaseのURLを.envから取得
+    databaseURL: process.env.FD_DATABASE_URL,
+    storageBucket: process.env.FD_STORAGE_BUCKET, // Firebase Storageのバケット名
 });
 //認証情報のインスタンス取得
 exports.auth = admin.auth();

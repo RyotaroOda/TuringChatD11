@@ -27,14 +27,12 @@ exports.calculateBattleResultFunction = void 0;
 const functions = __importStar(require("firebase-functions"));
 const firebase_b_1 = require("../firebase_b"); // Firebase 初期化ファイル
 exports.calculateBattleResultFunction = functions.https.onCall(async (request) => {
-    // console.log("request", request);
     const playerId = request.auth?.uid;
     if (!playerId) {
         throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
     }
     const roomId = request.data;
     const answerRef = firebase_b_1.db.ref(`rooms/${roomId}/battleLog/submittedAnswers`);
-    // const answerRef = db.ref(request.data);
     // `get` メソッドを呼び出して、スナップショットを取得
     const answersSnapshot = await answerRef.get();
     if (!answersSnapshot.exists()) {
@@ -62,7 +60,6 @@ exports.calculateBattleResultFunction = functions.https.onCall(async (request) =
             ? 1
             : 0 + (corrects.player1Correct ? 0 : 1),
     };
-    console.log("flg");
     const end = Date.now();
     const start = await firebase_b_1.db
         .ref(`rooms/${roomId}/battleLog/timeStamps/start`)
@@ -74,10 +71,11 @@ exports.calculateBattleResultFunction = functions.https.onCall(async (request) =
         answers: answers,
         time: time,
     };
-    console.log("result", result);
     await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/result`).set(result);
     await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(end);
     await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("finished");
+    await saveRoomData(roomId);
+    await removeRoomData(roomId);
 });
 const saveRoomData = async (roomId) => {
     if (!roomId) {
@@ -95,7 +93,7 @@ const saveRoomData = async (roomId) => {
         const jsonData = JSON.stringify(roomData);
         const buffer = Buffer.from(jsonData);
         // 3. Firebase Storageの保存先パスを設定
-        const filePath = `backups/${roomId}_backup_${Date.now()}.json`;
+        const filePath = `backups/room_data/${roomId}_backup_${Date.now()}.json`;
         const file = firebase_b_1.storage.bucket().file(filePath);
         // 4. Firebase Storageにファイルとしてアップロード
         await file.save(buffer, {

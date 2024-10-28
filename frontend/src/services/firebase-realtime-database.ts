@@ -259,16 +259,4 @@ export const onResultUpdated = (
   };
 };
 
-// バトル終了を監視するリスナー
-// export const onBattleEnd = (roomId: string, callback: () => void) => {
-//   const statusRef = ref(db, `rooms/${roomId}/status`);
-
-//   // バトルの終了を監視
-//   onValue(statusRef, (snapshot) => {
-//     const status = snapshot.val();
-//     if (status === "ended") {
-//       callback(); // バトルが終了したらコールバックを実行
-//     }
-//   });
-// };
 //#endregion

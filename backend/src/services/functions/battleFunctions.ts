@@ -4,14 +4,12 @@ import { BattleResult, SubmitAnswer } from "shared/dist/types";
 
 export const calculateBattleResultFunction = functions.https.onCall(
   async (request) => {
-    // console.log("request", request);
     const playerId = request.auth?.uid;
     if (!playerId) {
       throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
     }
     const roomId = request.data;
     const answerRef = db.ref(`rooms/${roomId}/battleLog/submittedAnswers`);
-    // const answerRef = db.ref(request.data);
 
     // `get` メソッドを呼び出して、スナップショットを取得
     const answersSnapshot = await answerRef.get();
@@ -45,7 +43,6 @@ export const calculateBattleResultFunction = functions.https.onCall(
         ? 1
         : 0 + (corrects.player1Correct ? 0 : 1),
     };
-    console.log("flg");
     const end = Date.now();
     const start = await db
       .ref(`rooms/${roomId}/battleLog/timeStamps/start`)
@@ -58,10 +55,12 @@ export const calculateBattleResultFunction = functions.https.onCall(
       answers: answers,
       time: time,
     };
-    console.log("result", result);
     await db.ref(`rooms/${roomId}/battleLog/result`).set(result);
     await db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(end);
     await db.ref(`rooms/${roomId}/status`).set("finished");
+
+    await saveRoomData(roomId);
+    await removeRoomData(roomId);
   }
 );
 
@@ -91,7 +90,7 @@ const saveRoomData = async (roomId: string) => {
     const buffer = Buffer.from(jsonData);
 
     // 3. Firebase Storageの保存先パスを設定
-    const filePath = `backups/${roomId}_backup_${Date.now()}.json`;
+    const filePath = `backups/room_data/${roomId}_backup_${Date.now()}.json`;
     const file = storage.bucket().file(filePath);
 
     // 4. Firebase Storageにファイルとしてアップロード
