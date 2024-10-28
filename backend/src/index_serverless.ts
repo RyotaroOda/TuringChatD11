@@ -3,3 +3,4 @@ export {
   cancelMatchFunction,
   testFunction,
 } from "./services/functions/matchingFunctions";
+export { calculateBattleResultFunction } from "./services/functions/battleFunctions";

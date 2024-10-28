@@ -99,13 +99,13 @@ const BattleView: React.FC = () => {
   // バトル終了時
   useEffect(() => {
     if (remainTurn === 0) {
-      alert("Battle Ended!");
+      // alert("Battle Ended!");
     }
   }, [remainTurn]);
 
   //#region ui
   const handleSendMessage = async () => {
-    if (message.trim() && isMyTurn && roomId) {
+    if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
       setMessage("送信中...");
       await sendMessage(roomId, message);
       setMessage("");
@@ -114,8 +114,13 @@ const BattleView: React.FC = () => {
 
   // 回答を送信
   const handleSubmit = async () => {
-    if (!answer.select || !answer.identity || !roomId || !myId) return;
-
+    if (answer.select === null || !answer.identity || !roomId || !myId) {
+      console.error("Invalid answer data");
+      return;
+    }
+    if (answer.message.trim() === "") {
+      //TODO: メッセージが空の場合の処理
+    }
     sendAnswer(roomId, answer);
     setIsSubmitted(true);
 
@@ -123,7 +128,6 @@ const BattleView: React.FC = () => {
     if (isHost) {
       checkAnswers(roomId);
     }
-    console.log("入力が送信されました");
   };
 
   //リザルトを監視
@@ -188,7 +192,7 @@ const BattleView: React.FC = () => {
       </div>
       {remainTurn === 0 && (
         <div>
-          <h2>バトル終了 選択肢とメッセージを入力してください</h2>
+          <h2>バトル終了</h2>
           <label>
             チャット相手は？:
             <select
@@ -219,8 +223,8 @@ const BattleView: React.FC = () => {
               placeholder="メッセージを入力してください"
             />
           </label>
-          <button onClick={handleSubmit} disabled={!isSubmitted}>
-            送信
+          <button onClick={handleSubmit} disabled={isSubmitted}>
+            {isSubmitted ? "送信完了" : "送信"}
           </button>
         </div>
       )}

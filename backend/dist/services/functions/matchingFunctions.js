@@ -5,7 +5,7 @@ const firebase_b_1 = require("../firebase_b");
 const https_1 = require("firebase-functions/v2/https");
 //バトル設定
 const battleConfig = {
-    maxTurn: 2 * 2,
+    maxTurn: 1 * 2,
     battleType: "Single",
     oneTurnTime: 60,
 };
@@ -109,10 +109,9 @@ const createRoom = async (player) => {
 //   });
 // };
 const joinRoom = async (roomId, player) => {
-    console.log("joinRoom", roomId, player);
+    console.log("joinRoom", roomId, player.name);
     // 現在のメッセージの数を取得して、次のインデックスを決定する
     const snapshot = await firebase_b_1.db.ref(`rooms/${roomId}/players`).get;
-    console.log("snapshot", snapshot);
     const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
     console.log("playerCount", playerCount);
     try {
@@ -198,22 +197,3 @@ exports.cancelMatchFunction = (0, https_1.onCall)(async (request) => {
         await firebase_b_1.db.ref(`rooms/${playerData.roomId}`).remove();
     }
 });
-// 初期化処理：Realtime Database の初期化
-const initializeDatabase = async () => {
-    try {
-        // 初期化するデータ構造 (例：rooms, waitingPlayers などをクリア)
-        const initialData = {
-            rooms: null,
-            randomMatching: null, // 待機中のプレイヤーデータを削除
-        };
-        // Firebase Realtime Database に初期データを設定
-        await firebase_b_1.db.ref().set(initialData);
-        console.log("Realtime Database の初期化が完了しました。");
-        console.log("Firebase Functions 準備中...ちょっとまってね...");
-    }
-    catch (error) {
-        console.error("Realtime Database の初期化中にエラーが発生しました:", error);
-    }
-};
-// サーバー起動時に初期化処理を実行
-initializeDatabase();

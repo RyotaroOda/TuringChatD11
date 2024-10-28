@@ -3,10 +3,11 @@ import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
 import { PlayerData, MatchResult } from "shared/dist/types";
 
+//#region HomeView
 // サーバーレス関数を使ってマッチングリクエストを送信する関数
 export const requestMatch = async (
   player: PlayerData,
-  retryCount = 3
+  retryCount = 10
 ): Promise<MatchResult> => {
   const requestMatchFunction = httpsCallable(functions, "requestMatchFunction");
 
@@ -38,10 +39,15 @@ export const requestMatch = async (
       console.log("マッチング成功:", result);
       return result;
     } catch (error) {
-      console.error(
-        `マッチングエラーまたはタイムアウト（試行${attempt}回目）:`,
-        error
-      );
+      if (attempt === retryCount) {
+        console.error(`タイムアウト!（試行${attempt}回目）:`, error);
+        return {
+          roomId: "",
+          startBattle: false,
+          message: `マッチングエラー（試行${attempt}回目）:`,
+        };
+      }
+      console.error(`マッチングエラー?（試行${attempt}回目）:`, error);
       if (attempt < retryCount) {
         // Exponential Backoff (指数バックオフ)
         await new Promise((resolve) =>
@@ -51,7 +57,7 @@ export const requestMatch = async (
         return {
           roomId: "",
           startBattle: false,
-          message: `マッチングエラーまたはタイムアウト（試行${attempt}回目）:`,
+          message: `タイムアウト（試行${attempt}回目）:`,
         };
       }
     }
@@ -74,3 +80,23 @@ export const cancelRequest = async () => {
   const cancelMatchFunction = httpsCallable(functions, "cancelMatchFunction");
   await cancelMatchFunction();
 };
+
+//#endregion
+
+//# region BattleView
+export const calculateBattleResult = async (roomId: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ログインしていないユーザーです。");
+  }
+
+  const calculateBattleResultFunction = httpsCallable(
+    functions,
+    "calculateBattleResultFunction"
+  );
+  console.log("calculating");
+  await calculateBattleResultFunction(roomId);
+};
+//
+
+//#endregion

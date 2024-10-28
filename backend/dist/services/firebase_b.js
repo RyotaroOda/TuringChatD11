@@ -38,6 +38,25 @@ exports.initFirebase = admin.initializeApp({
 });
 // Realtime Databaseのインスタンス取得
 exports.db = admin.database();
+// 初期化処理：Realtime Database の初期化
+const initializeDatabase = async () => {
+    try {
+        // 初期化するデータ構造 (例：rooms, waitingPlayers などをクリア)
+        const initialData = {
+            rooms: null,
+            randomMatching: null, // 待機中のプレイヤーデータを削除
+        };
+        // Firebase Realtime Database に初期データを設定
+        await exports.db.ref().set(initialData);
+        console.log("Realtime Database の初期化が完了しました。");
+        console.log("Firebase Functions 準備中...ちょっとまってね...");
+    }
+    catch (error) {
+        console.error("Realtime Database の初期化中にエラーが発生しました:", error);
+    }
+};
+// サーバー起動時に初期化処理を実行
+// initializeDatabase();
 // Firestoreのインスタンス取得 (必要に応じて)
 exports.firestore = (0, firestore_1.getFirestore)();
 //認証情報のインスタンス取得

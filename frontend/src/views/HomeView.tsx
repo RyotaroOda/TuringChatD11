@@ -90,10 +90,12 @@ const HomeView: React.FC = () => {
 
   //#region マッチング
   const [isMatching, setIsMatching] = useState<boolean>(false);
+  const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
   // マッチング開始処理
   let match: MatchResult;
 
   const startMatch = async () => {
+    setIsPushedMatching(true); // マッチングボタンを押した状態にする
     try {
       const player: PlayerData = {
         id: playerId, // プレイヤーID
@@ -122,6 +124,7 @@ const HomeView: React.FC = () => {
 
   // マッチングキャンセル処理
   const cancelMatching = async () => {
+    setIsPushedMatching(false); // マッチングボタンを押した状態を解除
     setIsMatching(false); // マッチング状態を解除
     setRoomId(null); // ルームIDをクリア
     try {
@@ -251,7 +254,7 @@ const HomeView: React.FC = () => {
       </div>
 
       {/* マッチング中にキャンセルボタンを表示 */}
-      {isMatching ? (
+      {isPushedMatching ? (
         <button onClick={cancelMatching}>キャンセル</button> // マッチングキャンセルボタン
       ) : (
         <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン

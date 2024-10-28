@@ -19,6 +19,7 @@ import {
   RoomData,
   SubmitAnswer,
 } from "shared/dist/types";
+import { calculateBattleResult } from "./firebase-functions-client.ts";
 //#region HomeView
 // プレイヤーデータを監視
 export const onRoomPlayersUpdated = (
@@ -98,7 +99,7 @@ export const onRoomUpdate = (
   };
 };
 
-// ルームデータを取得する関数 未使用
+// ルームデータを取得する関数
 export const getRoomData = async (roomId: string): Promise<RoomData | null> => {
   try {
     const roomRef = ref(db, `rooms/${roomId}`);
@@ -165,15 +166,12 @@ export const sendAnswer = async (roomId: string, answer: SubmitAnswer) => {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const answerRef = ref(
-    db,
-    `rooms/${roomId}/battleLog/submittedAnswers/${user.uid}`
-  );
+  const answerRef = ref(db, `rooms/${roomId}/battleLog/submittedAnswers`);
   await push(answerRef, answer);
   console.log("回答を送信しました。", answer);
 };
 
-// 両プレイヤーの回答が揃ったらサーバーレス関数wを呼び出す
+// 両プレイヤーの回答が揃ったらサーバーレス関数でスコア計算する
 export const checkAnswers = (roomId: string) => {
   const user = auth.currentUser;
   if (!user) {
@@ -185,9 +183,8 @@ export const checkAnswers = (roomId: string) => {
   get(answerRef)
     .then((answersSnapshot) => {
       if (Object.keys(answersSnapshot.val()).length == 2) {
-        console.log("両プレイヤーの回答が揃いました。");
-        //TODO: firebase functionを呼び出す
-        // func();
+        console.log("両プレイヤーの回答が揃いました。", answersSnapshot.val());
+        calculateBattleResult(roomId);
       } else {
         // 要素数が2未満の場合、リスナーを設定して監視
         onValue(answerRef, (snapshot) => {
@@ -198,8 +195,9 @@ export const checkAnswers = (roomId: string) => {
 
           // 2つになったタイミングで `func()` を実行し、リスナーを解除
           if (updatedCount >= 2) {
-            // func();
+            calculateBattleResult(roomId);
             off(answerRef); // リスナーを解除
+            console.log("off checkAnswers");
           }
         });
       }
@@ -220,6 +218,7 @@ export const onResultUpdated = (
     (snapshot) => {
       const serverData = snapshot.val() as BattleResult; // RoomData型にキャスト
       if (serverData) {
+        console.log("バトル結果が更新されました。", serverData);
         // データがある場合
         //TODO: データを整形して返す
       } else {
