@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import { db, storage } from "../firebase_b"; // Firebase 初期化ファイル
 import { BattleResult, SubmitAnswer } from "shared/dist/types";
+import { DATABASE_PATHS } from "shared/dist/database-paths";
 
 export const calculateBattleResultFunction = functions.https.onCall(
   async (request) => {
@@ -9,7 +10,7 @@ export const calculateBattleResultFunction = functions.https.onCall(
       throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
     }
     const roomId = request.data;
-    const answerRef = db.ref(`rooms/${roomId}/battleLog/submittedAnswers`);
+    const answerRef = db.ref(DATABASE_PATHS.submittedAnswers(roomId));
 
     // `get` メソッドを呼び出して、スナップショットを取得
     const answersSnapshot = await answerRef.get();
@@ -44,9 +45,7 @@ export const calculateBattleResultFunction = functions.https.onCall(
         : 0 + (corrects.player1Correct ? 0 : 1),
     };
     const end = Date.now();
-    const start = await db
-      .ref(`rooms/${roomId}/battleLog/timeStamps/start`)
-      .get();
+    const start = await db.ref(DATABASE_PATHS.startBattle(roomId)).get();
     const time = end - start.val();
 
     const result: BattleResult = {
@@ -55,9 +54,9 @@ export const calculateBattleResultFunction = functions.https.onCall(
       answers: answers,
       time: time,
     };
-    await db.ref(`rooms/${roomId}/battleLog/result`).set(result);
-    await db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(end);
-    await db.ref(`rooms/${roomId}/status`).set("finished");
+    await db.ref(DATABASE_PATHS.result(roomId)).set(result);
+    await db.ref(DATABASE_PATHS.endBattle(roomId)).set(end);
+    await db.ref(DATABASE_PATHS.status(roomId)).set("finished");
 
     await saveRoomData(roomId);
     await removeRoomData(roomId);
@@ -74,7 +73,7 @@ const saveRoomData = async (roomId: string) => {
 
   try {
     // 1. Firebase Realtime Databaseから`roomId`にあるデータを取得
-    const roomRef = db.ref(`rooms/${roomId}`);
+    const roomRef = db.ref(DATABASE_PATHS.room(roomId));
     const snapshot = await roomRef.once("value");
     const roomData = snapshot.val();
 
@@ -124,7 +123,7 @@ const removeRoomData = async (roomId: string) => {
 
   try {
     // 1. Firebase Realtime Databaseから`roomId`にあるデータを削除
-    await db.ref(`rooms/${roomId}`).remove();
+    await db.ref(DATABASE_PATHS.room(roomId)).remove();
 
     console.log(`データの削除が成功しました: ${roomId}`);
     return {

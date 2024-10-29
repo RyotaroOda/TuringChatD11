@@ -14,9 +14,6 @@ import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログア�
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
 import { AIModel, MatchResult, PlayerData, RoomData } from "shared/dist/types";
-import e from "cors";
-import { log } from "console";
-import { set } from "firebase/database";
 
 const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(9999);

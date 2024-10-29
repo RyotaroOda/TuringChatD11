@@ -1,3 +1,5 @@
+//types.ts
+
 //バトル設定
 export type BattleConfig = {
   maxTurn: number;
@@ -81,4 +83,31 @@ export type ResultData = {
   win: "win" | "lose" | "draw";
   score: number;
   time: number;
+};
+
+export type ProfileData = {
+  userId: string;
+  name: string;
+
+  rating: number;
+  bots: botData[];
+  questionnaire: QuestionnaireData;
+
+  signUpDate: number;
+  lastLoginDate: number;
+  age: number | null; // 年齢（オプション）
+  gender: "male" | "female" | "non-binary" | "other" | "prefer not to say"; // 性別（選択式）
+
+  // プラットフォームメタデータ
+  preferredLanguage: string; // 優先言語（例: "en", "ja"）
+  location: {
+    country: string; // 国
+    city: string | null; // 都市（オプション）
+  };
+  platform: "mobile" | "web" | "desktop"; // 利用プラットフォーム
+};
+
+export type QuestionnaireData = {
+  questions: string[];
+  answers: string[];
 };

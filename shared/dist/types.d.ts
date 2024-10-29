@@ -68,3 +68,24 @@ export type ResultData = {
     score: number;
     time: number;
 };
+export type ProfileData = {
+    userId: string;
+    name: string;
+    rating: number;
+    bots: botData[];
+    questionnaire: QuestionnaireData;
+    signUpDate: number;
+    lastLoginDate: number;
+    age: number | null;
+    gender: "male" | "female" | "non-binary" | "other" | "prefer not to say";
+    preferredLanguage: string;
+    location: {
+        country: string;
+        city: string | null;
+    };
+    platform: "mobile" | "web" | "desktop";
+};
+export type QuestionnaireData = {
+    questions: string[];
+    answers: string[];
+};

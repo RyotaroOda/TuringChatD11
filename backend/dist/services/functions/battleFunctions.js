@@ -26,13 +26,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.calculateBattleResultFunction = void 0;
 const functions = __importStar(require("firebase-functions"));
 const firebase_b_1 = require("../firebase_b"); // Firebase 初期化ファイル
+const database_paths_1 = require("shared/dist/database-paths");
 exports.calculateBattleResultFunction = functions.https.onCall(async (request) => {
     const playerId = request.auth?.uid;
     if (!playerId) {
         throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
     }
     const roomId = request.data;
-    const answerRef = firebase_b_1.db.ref(`rooms/${roomId}/battleLog/submittedAnswers`);
+    const answerRef = firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.submittedAnswers(roomId));
     // `get` メソッドを呼び出して、スナップショットを取得
     const answersSnapshot = await answerRef.get();
     if (!answersSnapshot.exists()) {
@@ -61,9 +62,7 @@ exports.calculateBattleResultFunction = functions.https.onCall(async (request) =
             : 0 + (corrects.player1Correct ? 0 : 1),
     };
     const end = Date.now();
-    const start = await firebase_b_1.db
-        .ref(`rooms/${roomId}/battleLog/timeStamps/start`)
-        .get();
+    const start = await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.startBattle(roomId)).get();
     const time = end - start.val();
     const result = {
         corrects: [corrects.player1Correct, corrects.player2Correct],
@@ -71,9 +70,9 @@ exports.calculateBattleResultFunction = functions.https.onCall(async (request) =
         answers: answers,
         time: time,
     };
-    await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/result`).set(result);
-    await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/timeStamps/end`).set(end);
-    await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("finished");
+    await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.result(roomId)).set(result);
+    await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.endBattle(roomId)).set(end);
+    await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.status(roomId)).set("finished");
     await saveRoomData(roomId);
     await removeRoomData(roomId);
 });
@@ -83,7 +82,7 @@ const saveRoomData = async (roomId) => {
     }
     try {
         // 1. Firebase Realtime Databaseから`roomId`にあるデータを取得
-        const roomRef = firebase_b_1.db.ref(`rooms/${roomId}`);
+        const roomRef = firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.room(roomId));
         const snapshot = await roomRef.once("value");
         const roomData = snapshot.val();
         if (!roomData) {
@@ -118,7 +117,7 @@ const removeRoomData = async (roomId) => {
     }
     try {
         // 1. Firebase Realtime Databaseから`roomId`にあるデータを削除
-        await firebase_b_1.db.ref(`rooms/${roomId}`).remove();
+        await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.room(roomId)).remove();
         console.log(`データの削除が成功しました: ${roomId}`);
         return {
             success: true,

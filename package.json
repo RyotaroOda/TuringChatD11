@@ -31,8 +31,8 @@
     "build:shared": "npm --prefix ./shared run build",
     "test": "react-scripts test",
     "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install",
-    "link shared": "npm --prefix ./shared link && npm --prefix ./frontend link shared && npm --prefix ./backend link shared",
-    "unlink shared": "npm --prefix ./shared unlink",
+    "link:shared": "npm --prefix ./shared link && npm --prefix ./frontend link shared && npm --prefix ./backend link shared",
+    "unlink:shared": "npm --prefix ./shared unlink",
     "clean": "rm -rf node_modules package-lock.json && npm cache verify && npm install",
     "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean"
   },

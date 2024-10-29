@@ -3,18 +3,22 @@
 ├── ./backend
 │   ├── ./backend/directory_structure.txt
 │   ├── ./backend/dist
-│   │   ├── ./backend/dist/backend
-│   │   │   └── ./backend/dist/backend/src
-│   │   │       └── ./backend/dist/backend/src/index_serverless.js
-│   │   └── ./backend/dist/shared
-│   │       └── ./backend/dist/shared/types.js
+│   │   ├── ./backend/dist/index_serverless.js
+│   │   └── ./backend/dist/services
+│   │       ├── ./backend/dist/services/encryption.js
+│   │       ├── ./backend/dist/services/firebase_b.js
+│   │       └── ./backend/dist/services/functions
+│   │           ├── ./backend/dist/services/functions/battleFunctions.js
+│   │           └── ./backend/dist/services/functions/matchingFunctions.js
 │   ├── ./backend/package-lock.json
 │   ├── ./backend/package.json
 │   ├── ./backend/src
 │   │   ├── ./backend/src/index_serverless.ts
 │   │   └── ./backend/src/services
+│   │       ├── ./backend/src/services/encryption.ts
 │   │       ├── ./backend/src/services/firebase_b.ts
 │   │       └── ./backend/src/services/functions
+│   │           ├── ./backend/src/services/functions/battleFunctions.ts
 │   │           └── ./backend/src/services/functions/matchingFunctions.ts
 │   ├── ./backend/tsconfig.backend.json
 │   └── ./backend/ui-debug.log
@@ -25,11 +29,23 @@
 ├── ./firestore.rules
 ├── ./frontend
 │   ├── ./frontend/build
+│   │   ├── ./frontend/build/asset-manifest.json
 │   │   ├── ./frontend/build/favicon.ico
+│   │   ├── ./frontend/build/index.html
 │   │   ├── ./frontend/build/logo192.png
 │   │   ├── ./frontend/build/logo512.png
 │   │   ├── ./frontend/build/manifest.json
-│   │   └── ./frontend/build/robots.txt
+│   │   ├── ./frontend/build/robots.txt
+│   │   └── ./frontend/build/static
+│   │       ├── ./frontend/build/static/css
+│   │       │   ├── ./frontend/build/static/css/main.e6c13ad2.css
+│   │       │   └── ./frontend/build/static/css/main.e6c13ad2.css.map
+│   │       └── ./frontend/build/static/js
+│   │           ├── ./frontend/build/static/js/563.fd8b9ea7.chunk.js
+│   │           ├── ./frontend/build/static/js/563.fd8b9ea7.chunk.js.map
+│   │           ├── ./frontend/build/static/js/main.d52808c9.js
+│   │           ├── ./frontend/build/static/js/main.d52808c9.js.LICENSE.txt
+│   │           └── ./frontend/build/static/js/main.d52808c9.js.map
 │   ├── ./frontend/config-overrides.js
 │   ├── ./frontend/directory_structure.txt
 │   ├── ./frontend/package-lock.json
@@ -58,6 +74,7 @@
 │   │   │   ├── ./frontend/src/services/firebase-functions-client.ts
 │   │   │   ├── ./frontend/src/services/firebase-realtime-database.ts
 │   │   │   ├── ./frontend/src/services/firebase_f.ts
+│   │   │   ├── ./frontend/src/services/player-profile.ts
 │   │   │   └── ./frontend/src/services/useAuth.tsx
 │   │   ├── ./frontend/src/setupTests.ts
 │   │   └── ./frontend/src/views
@@ -70,10 +87,19 @@
 ├── ./public
 │   └── ./public/index.html
 ├── ./shared
-│   ├── ./shared/types.js
-│   └── ./shared/types.ts
+│   ├── ./shared/dist
+│   │   ├── ./shared/dist/database-paths.d.ts
+│   │   ├── ./shared/dist/database-paths.js
+│   │   ├── ./shared/dist/types.d.ts
+│   │   └── ./shared/dist/types.js
+│   ├── ./shared/package-lock.json
+│   ├── ./shared/package.json
+│   ├── ./shared/src
+│   │   ├── ./shared/src/database-paths.ts
+│   │   └── ./shared/src/types.ts
+│   └── ./shared/tsconfig.shared.json
 ├── ./storage.rules
 ├── ./tsconfig.base.json
 └── ./ui-debug.log
 
-18 directories, 59 files
+22 directories, 81 files

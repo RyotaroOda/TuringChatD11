@@ -6,6 +6,7 @@ import {
   MatchResult,
   BattleLog,
 } from "shared/dist/types";
+import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 
@@ -36,7 +37,7 @@ const authCheck = (playerId: string) => {
 };
 
 //#region waitingPlayers
-const waitingPlayersRef = db.ref("randomMatching/waitingPlayers/");
+const waitingPlayersRef = db.ref(DATABASE_PATHS.waitingPlayers);
 
 // プレイヤーを待機リストに追加する関数
 export const addToWaitingList = async (playerId: string, roomId: string) => {
@@ -86,7 +87,7 @@ export const getNextRoomIdFromWaitingList = async (): Promise<
 
 //#region rooms
 const createRoom = async (player: PlayerData) => {
-  const roomId = db.ref("rooms").push().key as string;
+  const roomId = db.ref(DATABASE_PATHS.route_rooms).push().key as string;
 
   const newBattleLog: BattleLog = {
     phase: "waiting",
@@ -107,7 +108,7 @@ const createRoom = async (player: PlayerData) => {
   };
 
   // ルーム情報をデータベースに保存
-  await db.ref(`rooms/${roomId}`).set(roomData);
+  await db.ref(DATABASE_PATHS.room(roomId)).set(roomData);
   console.log(`新しいルーム ${roomId} が作成されました。`);
   return roomId;
 };
@@ -134,14 +135,14 @@ const joinRoom = async (
 ): Promise<Boolean> => {
   console.log("joinRoom", roomId, player.name);
   // 現在のメッセージの数を取得して、次のインデックスを決定する
-  const snapshot = await db.ref(`rooms/${roomId}/players`).get;
+  const snapshot = await db.ref(DATABASE_PATHS.players(roomId)).get;
   const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
   console.log("playerCount", playerCount);
 
   try {
-    await db.ref(`rooms/${roomId}/status`).set("playing");
-    await db.ref(`rooms/${roomId}/battleLog/phase`).set("chat");
-    await db.ref(`rooms/${roomId}/players`).push(player); //最後に追加
+    await db.ref(DATABASE_PATHS.status(roomId)).set("playing");
+    await db.ref(DATABASE_PATHS.phase(roomId)).set("chat");
+    await db.ref(DATABASE_PATHS.players(roomId)).push(player); //最後に追加
     return true;
     //TODO: トランザクションを使って安全にデータを更新する
     // // トランザクションを使用してルームに参加する
@@ -179,7 +180,7 @@ const joinRoom = async (
 };
 
 const removeRoom = async (roomId: string) => {
-  await db.ref(`rooms/${roomId}`).remove();
+  await db.ref(DATABASE_PATHS.room(roomId)).remove();
 };
 
 //#endregion
@@ -231,6 +232,6 @@ export const cancelMatchFunction = onCall(async (request) => {
   const playerData = playerSnapshot.val();
 
   if (playerData && playerData.roomId) {
-    await db.ref(`rooms/${playerData.roomId}`).remove();
+    await db.ref(DATABASE_PATHS.room(playerData.roomId)).remove();
   }
 });

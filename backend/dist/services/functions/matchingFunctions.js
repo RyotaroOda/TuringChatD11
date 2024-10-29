@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.cancelMatchFunction = exports.requestMatchFunction = exports.getNextRoomIdFromWaitingList = exports.removeFromWaitingList = exports.addToWaitingList = exports.testFunction = void 0;
+const database_paths_1 = require("shared/dist/database-paths");
 const firebase_b_1 = require("../firebase_b");
 const https_1 = require("firebase-functions/v2/https");
 //バトル設定
@@ -27,7 +28,7 @@ const authCheck = (playerId) => {
     return playerId;
 };
 //#region waitingPlayers
-const waitingPlayersRef = firebase_b_1.db.ref("randomMatching/waitingPlayers/");
+const waitingPlayersRef = firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.waitingPlayers);
 // プレイヤーを待機リストに追加する関数
 const addToWaitingList = async (playerId, roomId) => {
     const waitingData = { id: playerId, roomId, timeWaiting: Date.now() };
@@ -74,7 +75,7 @@ exports.getNextRoomIdFromWaitingList = getNextRoomIdFromWaitingList;
 //#endregion
 //#region rooms
 const createRoom = async (player) => {
-    const roomId = firebase_b_1.db.ref("rooms").push().key;
+    const roomId = firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.route_rooms).push().key;
     const newBattleLog = {
         phase: "waiting",
         currentTurn: 0,
@@ -92,7 +93,7 @@ const createRoom = async (player) => {
         battleLog: newBattleLog,
     };
     // ルーム情報をデータベースに保存
-    await firebase_b_1.db.ref(`rooms/${roomId}`).set(roomData);
+    await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.room(roomId)).set(roomData);
     console.log(`新しいルーム ${roomId} が作成されました。`);
     return roomId;
 };
@@ -112,13 +113,13 @@ const createRoom = async (player) => {
 const joinRoom = async (roomId, player) => {
     console.log("joinRoom", roomId, player.name);
     // 現在のメッセージの数を取得して、次のインデックスを決定する
-    const snapshot = await firebase_b_1.db.ref(`rooms/${roomId}/players`).get;
+    const snapshot = await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.players(roomId)).get;
     const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
     console.log("playerCount", playerCount);
     try {
-        await firebase_b_1.db.ref(`rooms/${roomId}/status`).set("playing");
-        await firebase_b_1.db.ref(`rooms/${roomId}/battleLog/phase`).set("chat");
-        await firebase_b_1.db.ref(`rooms/${roomId}/players`).push(player); //最後に追加
+        await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.status(roomId)).set("playing");
+        await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.phase(roomId)).set("chat");
+        await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.players(roomId)).push(player); //最後に追加
         return true;
         //TODO: トランザクションを使って安全にデータを更新する
         // // トランザクションを使用してルームに参加する
@@ -154,7 +155,7 @@ const joinRoom = async (roomId, player) => {
     }
 };
 const removeRoom = async (roomId) => {
-    await firebase_b_1.db.ref(`rooms/${roomId}`).remove();
+    await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.room(roomId)).remove();
 };
 //#endregion
 exports.requestMatchFunction = (0, https_1.onCall)(async (request) => {
@@ -195,6 +196,6 @@ exports.cancelMatchFunction = (0, https_1.onCall)(async (request) => {
         .once("value");
     const playerData = playerSnapshot.val();
     if (playerData && playerData.roomId) {
-        await firebase_b_1.db.ref(`rooms/${playerData.roomId}`).remove();
+        await firebase_b_1.db.ref(database_paths_1.DATABASE_PATHS.room(playerData.roomId)).remove();
     }
 });

@@ -66,6 +66,9 @@ const ResultView: React.FC = () => {
       <p>
         <strong>理由:</strong> {result.opponentAnswer.message || "No message"}
       </p>
+      <Link to="/">
+        <button>バトル終了</button>
+      </Link>
     </div>
   );
 };
