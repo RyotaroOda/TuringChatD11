@@ -2,6 +2,9 @@
 
 .env
 firebase-service-account.json
+
+node_modules/
+
 # dependencies
 /node_modules
 /.pnp
