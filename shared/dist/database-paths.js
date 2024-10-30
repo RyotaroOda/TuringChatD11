@@ -16,5 +16,7 @@ exports.DATABASE_PATHS = {
     submittedAnswers: (roomId) => `rooms/${roomId}/battleLog/submitAnswer`,
     result: (roomId) => `rooms/${roomId}/battleLog/battleResult`,
     waitingPlayers: `randomMatching/waitingPlayers`,
+    //firestore
+    route_profiles: "profiles",
     profiles: (userId) => `profiles/${userId}`,
 };

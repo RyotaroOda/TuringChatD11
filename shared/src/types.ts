@@ -89,21 +89,26 @@ export type ProfileData = {
   userId: string;
   name: string;
 
-  rating: number;
-  bots: botData[];
-  questionnaire: QuestionnaireData;
-
   signUpDate: number;
   lastLoginDate: number;
+
+  rating: number;
+  win: number;
+  lose: number;
+
+  bots: botData[] | null;
+  questionnaire: QuestionnaireData | null;
+
   age: number | null; // 年齢（オプション）
-  gender: "male" | "female" | "non-binary" | "other" | "prefer not to say"; // 性別（選択式）
+  gender: "male" | "female" | "other" | "no_answer"; // 性別（選択式）
 
   // プラットフォームメタデータ
-  preferredLanguage: string; // 優先言語（例: "en", "ja"）
+  language: string; // 言語（例: "en", "ja"）
   location: {
     country: string; // 国
     city: string | null; // 都市（オプション）
   };
+
   platform: "mobile" | "web" | "desktop"; // 利用プラットフォーム
 };
 

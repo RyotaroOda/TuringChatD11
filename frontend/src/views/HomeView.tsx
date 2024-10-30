@@ -170,6 +170,11 @@ const HomeView: React.FC = () => {
 
   //#endregion
 
+  // プロフィール編集ボタンのクリック処理
+  const handleProfileEditClick = () => {
+    navigate("/profile_edit"); // プロフィール編集画面に遷移
+  };
+
   const toBattleViewSegue = (roomId: string) => {
     if (roomId) {
       setIsMatching(false); // マッチング状態を解除
@@ -204,22 +209,7 @@ const HomeView: React.FC = () => {
           {!user.isAnonymous && (
             <div>
               <p>こんにちは、{playerName}さん</p>
-              <button onClick={handleNameChangeClick}>
-                {isEditingName ? "キャンセル" : "名前変更"}
-              </button>
-
-              {/* 名前編集モード時にのみテキストフィールドを表示 */}
-              {isEditingName && (
-                <div>
-                  <input
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)} // テキストフィールドの値を更新
-                    placeholder="新しい名前を入力"
-                  />
-                  <button onClick={handleNameSubmit}>名前を保存</button>
-                </div>
-              )}
+              <button onClick={handleProfileEditClick}>プロフィール編集</button>
             </div>
           )}
           <button onClick={handleLogout}>ログアウト</button>

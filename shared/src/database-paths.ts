@@ -3,6 +3,7 @@
 // Firebase Databaseの共通パスを管理
 export const DATABASE_PATHS = {
   route_rooms: "rooms",
+
   room: (roomId: string) => `rooms/${roomId}`,
   players: (roomId: string) => `rooms/${roomId}/players`,
   status: (roomId: string) => `rooms/${roomId}/status`,
@@ -16,5 +17,7 @@ export const DATABASE_PATHS = {
   result: (roomId: string) => `rooms/${roomId}/battleLog/battleResult`,
   waitingPlayers: `randomMatching/waitingPlayers`,
 
+  //firestore
+  route_profiles: "profiles",
   profiles: (userId: string) => `profiles/${userId}`,
 };

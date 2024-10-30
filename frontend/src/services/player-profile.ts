@@ -1,11 +1,12 @@
-import { set, update, get, ref } from "firebase/database";
-import { getAuth, updateProfile } from "firebase/auth";
-import { db } from "./firebase_f.ts"; // Firebase初期化ファイルからデータベースをインポート
+// frontend/src/services/player-profile.ts
+import { updateProfile, User } from "firebase/auth";
+import { doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
 import { ProfileData } from "shared/dist/types";
-import { DATABASE_PATHS } from "shared/dist/database-paths.ts";
-import { getFunctions, httpsCallable } from "firebase/functions";
-const auth = getAuth();
+import { DATABASE_PATHS } from "shared/dist/database-paths";
+import { auth, firestore } from "./firebase_f.ts";
 
+//region Authプロフィール
+// Authプロフィールの更新
 const updateAuthProfile = async (displayName: string, photoURL: string) => {
   if (auth.currentUser) {
     await updateProfile(auth.currentUser, { displayName, photoURL });
@@ -13,23 +14,31 @@ const updateAuthProfile = async (displayName: string, photoURL: string) => {
   }
 };
 
-export const createUserProfile = async (
-  userId: string,
-  username: string,
-  avatarUrl: string
-) => {
-  const profileRef = ref(db, DATABASE_PATHS.profiles(userId));
-  const initialProfileData = {
-    username,
-    avatarUrl,
-    level: 1,
-    winCount: 0,
-    lossCount: 0,
-    score: 0,
-    lastLogin: new Date().toISOString(),
+//#endregion
+
+export const createUserProfile = async (user: User) => {
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, user.uid); // Firestoreのプロファイルドキュメント参照
+  const initialProfileData: ProfileData = {
+    userId: user.uid,
+    name: user.displayName || "未設定",
+    rating: 0,
+    bots: [],
+    questionnaire: null,
+    signUpDate: Date.now(),
+    lastLoginDate: Date.now(),
+    age: null,
+    gender: "no_answer",
+    language: "Japanese",
+    location: {
+      country: "japan",
+      city: null,
+    },
+    platform: "web",
+    win: 0,
+    lose: 0,
   };
-  await set(profileRef, initialProfileData);
-  console.log("新規プロフィールが作成されました:", userId);
+  await setDoc(profileRef, initialProfileData);
+  console.log("新規プロフィールが作成されました:", user.uid);
 };
 
 // プロフィールの更新
@@ -37,8 +46,8 @@ export const updateUserProfile = async (
   userId: string,
   data: Partial<ProfileData>
 ) => {
-  const profileRef = ref(db, DATABASE_PATHS.profiles(userId));
-  await update(profileRef, {
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
+  await updateDoc(profileRef, {
     ...data,
     lastLogin: new Date().toISOString(),
   });
@@ -47,20 +56,17 @@ export const updateUserProfile = async (
 
 // プロフィールの取得
 export const getUserProfile = async (userId: string) => {
-  const profileRef = ref(db, DATABASE_PATHS.profiles(userId));
-  const snapshot = await get(profileRef);
-  return snapshot.val();
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
+  const snapshot = await getDoc(profileRef);
+  if (snapshot.exists()) {
+    return snapshot.data();
+  } else {
+    console.log("ユーザープロフィールが見つかりません:", userId);
+    return null;
+  }
 };
 
-const functions = getFunctions();
-const createProfile = httpsCallable(functions, "createUserProfile");
-
-await createProfile({
-  userId: "userId1",
-  username: "Player1",
-  avatarUrl: "https://example.com/avatar1.png",
-});
-
+// プロフィールの表示
 const displayProfile = async (userId: string) => {
   const profile = await getUserProfile(userId);
   console.log("ユーザープロフィール:", profile);

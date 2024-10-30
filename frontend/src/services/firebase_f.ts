@@ -1,11 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { child, get, getDatabase, ref } from "firebase/database";
+import { getDatabase } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
-import {
-  getFunctions,
-  connectFunctionsEmulator,
-  httpsCallable,
-} from "firebase/functions";
+import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getFirestore } from "firebase/firestore";
 
 // フロントエンド用にREACT_APP_プレフィックスをつけた環境変数を使う
 const firebaseConfig = {
@@ -20,6 +17,9 @@ const firebaseConfig = {
 
 // Firebaseアプリを初期化
 const app = initializeApp(firebaseConfig);
+
+// Firestoreのインスタンスを作成
+export const firestore = getFirestore(app);
 
 // Realtime Databaseインスタンスを作成
 export const db = getDatabase(app);

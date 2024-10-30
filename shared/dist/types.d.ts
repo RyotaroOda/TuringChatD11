@@ -71,14 +71,16 @@ export type ResultData = {
 export type ProfileData = {
     userId: string;
     name: string;
-    rating: number;
-    bots: botData[];
-    questionnaire: QuestionnaireData;
     signUpDate: number;
     lastLoginDate: number;
+    rating: number;
+    win: number;
+    lose: number;
+    bots: botData[] | null;
+    questionnaire: QuestionnaireData | null;
     age: number | null;
-    gender: "male" | "female" | "non-binary" | "other" | "prefer not to say";
-    preferredLanguage: string;
+    gender: "male" | "female" | "other" | "no_answer";
+    language: string;
     location: {
         country: string;
         city: string | null;

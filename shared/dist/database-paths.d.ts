@@ -11,5 +11,6 @@ export declare const DATABASE_PATHS: {
     submittedAnswers: (roomId: string) => string;
     result: (roomId: string) => string;
     waitingPlayers: string;
+    route_profiles: string;
     profiles: (userId: string) => string;
 };
