@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-import { db, storage } from "../firebase_b"; // Firebase 初期化ファイル
+import { db, storage, firestore } from "../firebase_b"; // Firebase 初期化ファイル
 import { BattleResult, SubmitAnswer } from "shared/dist/types";
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 
@@ -58,12 +58,56 @@ export const calculateBattleResultFunction = functions.https.onCall(
     await db.ref(DATABASE_PATHS.endBattle(roomId)).set(end);
     await db.ref(DATABASE_PATHS.status(roomId)).set("finished");
 
-    await saveRoomData(roomId);
+    await saveRoomDataToStore(roomId);
     await removeRoomData(roomId);
   }
 );
 
-const saveRoomData = async (roomId: string) => {
+const saveRoomDataToStore = async (roomId: string) => {
+  if (!roomId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "roomIdが必要です。"
+    );
+  }
+
+  try {
+    // 1. Firebase Realtime Databaseから`roomId`にあるデータを取得
+    const roomRef = db.ref(DATABASE_PATHS.room(roomId));
+    const snapshot = await roomRef.once("value");
+    const roomData = snapshot.val();
+
+    if (!roomData) {
+      throw new functions.https.HttpsError(
+        "not-found",
+        "データが見つかりません。"
+      );
+    }
+
+    // 2. Firestoreにデータを保存する
+    const firestoreRef = firestore()
+      .collection("backup")
+      .doc("rooms")
+      .collection(roomId)
+      .doc(); // Create a new document reference
+    await firestoreRef.set(roomData);
+
+    console.log(`Firestoreへの保存が成功しました: roomId ${roomId}`);
+    return {
+      success: true,
+      message: `Firestoreへの保存が成功しました: roomId ${roomId}`,
+    };
+  } catch (error) {
+    console.error("バックアップ中にエラーが発生しました:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "バックアップ中にエラーが発生しました。"
+    );
+  }
+};
+
+//save to storage
+const saveRoomDatToStorage = async (roomId: string) => {
   if (!roomId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
