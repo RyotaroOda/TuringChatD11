@@ -4,6 +4,7 @@
 firebase-service-account.json
 
 node_modules/
+.cache/
 
 # dependencies
 /node_modules
