@@ -19,7 +19,7 @@
     "serve": "firebase emulators:start --only functions",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index_b.ts",
     "tsc": "tsc --project tsconfig.backend.json",
-    "clean": "rimraf dist/* && rm -rf node_modules package-lock.json && npm cache verify && npm install",
+    "clean": "rimraf dist/* && rm -rf node_modules package-lock.json && npm cache verify",
     "build": "npm run clean && npm run tsc",
     "deploy": "firebase deploy --only functions"
   }

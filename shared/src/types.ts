@@ -19,7 +19,7 @@ export type BattleLog = {
   phase: "waiting" | "chat" | "answer" | "finished";
   currentTurn: number; //未使用
   messages: Message[];
-  activePlayerId: string;
+  activePlayerId: string; //未使用
   submitAnswer: SubmitAnswer[];
   battleResult: BattleResult[];
   timeStamps: { start: number; end: number };

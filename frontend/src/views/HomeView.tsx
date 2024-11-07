@@ -104,7 +104,8 @@ const HomeView: React.FC = () => {
       if (result.roomId !== "") {
         await setRoomId(result.roomId); // ルームIDを設定
         if (result.startBattle) {
-          await toBattleViewSegue(result.roomId); // バトル画面に遷移 //TODO: roomIdを更新してから
+          await toBattleViewSegue(result.roomId); // バトル画面に遷移
+          //TODO: roomIdを更新してから
         } else {
           //ホスト
           setIsMatching(true); // マッチング状態を設定
