@@ -9,13 +9,7 @@ import {
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-
-//バトル設定
-const battleConfig: BattleConfig = {
-  maxTurn: 1 * 2,
-  battleType: "Single",
-  oneTurnTime: 60,
-};
+import { generateTopic } from "../chatGPT";
 
 // テスト関数
 export const testFunction = onCall((request) => {
@@ -99,11 +93,18 @@ const createRoom = async (player: PlayerData) => {
     timeStamps: { start: Date.now(), end: 0 },
   };
 
+  const newBattleConfig: BattleConfig = {
+    maxTurn: 1 * 2,
+    battleType: "Single",
+    oneTurnTime: 60,
+    topic: (await generateTopic()) ?? "default topic",
+  };
+
   const roomData: RoomData = {
     roomId: roomId,
     status: "waiting",
     players: [player],
-    battleConfig: battleConfig,
+    battleConfig: newBattleConfig,
     battleLog: newBattleLog,
   };
 
@@ -138,41 +139,12 @@ const joinRoom = async (
   const snapshot = await db.ref(DATABASE_PATHS.players(roomId)).get;
   const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
   console.log("playerCount", playerCount);
-
   try {
     await db.ref(DATABASE_PATHS.status(roomId)).set("playing");
     await db.ref(DATABASE_PATHS.phase(roomId)).set("chat");
     await db.ref(DATABASE_PATHS.players(roomId)).push(player); //最後に追加
     return true;
     //TODO: トランザクションを使って安全にデータを更新する
-    // // トランザクションを使用してルームに参加する
-    // const result = await db.ref(`rooms/${roomId}`).transaction((roomData) => {
-    //   if (roomData) {
-    //     console.log("roomData", roomData);
-    //     if (roomData.player2) {
-    //       console.log("既にプレイヤー2が存在します", roomData.player2);
-    //       return roomData; // 既にplayer2がいる場合、そのまま返す
-    //     }
-    //     roomData.player2 = player; // player2を追加
-    //     return roomData; // 更新したデータを返す
-    //   } else {
-    //     console.log("ルームが存在しません");
-    //     return; // ルームが存在しない場合は何も返さない
-    //   }
-    // });
-
-    // // トランザクションが成功し、データがコミットされたか確認
-    // if (result.committed) {
-    //   console.log("トランザクション成功: ", result.snapshot.val());
-    //   return true;
-    // }
-
-    // // コミットされなかった場合
-    // console.log(
-    //   "データの書き込みに失敗しました。result",
-    //   result.snapshot.val()
-    // );
-    // return false;
   } catch (error) {
     console.log("競合が発生しました。", error);
     return false;

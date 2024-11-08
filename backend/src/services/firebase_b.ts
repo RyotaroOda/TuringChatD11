@@ -1,10 +1,7 @@
 import * as admin from "firebase-admin";
 import * as dotenv from "dotenv";
-import { generateChatTopic } from "./chatGPT";
 
 dotenv.config(); // 環境変数のロード
-
-generateChatTopic();
 
 export const initFirebase = admin.initializeApp({
   credential: admin.credential.cert({

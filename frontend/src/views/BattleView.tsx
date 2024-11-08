@@ -166,6 +166,7 @@ const BattleView: React.FC = () => {
       <h1>対戦画面</h1>
       <p>ルームID: {roomId}</p>
       <div>
+        <h2>{battleConfig.topic}</h2>
         <h2>チャットログ</h2>
         <ul>
           {chatLog.map((msg, index) => (

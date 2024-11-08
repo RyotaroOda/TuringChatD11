@@ -2,6 +2,7 @@ export type BattleConfig = {
     maxTurn: number;
     battleType: "Single" | "Double" | "Short" | "Werewolf";
     oneTurnTime: number;
+    topic: string;
 };
 export type Message = {
     senderId: string;
