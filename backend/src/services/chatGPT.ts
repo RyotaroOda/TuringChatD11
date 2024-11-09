@@ -1,5 +1,6 @@
 //backend/src/services/chatGPT.ts
 import * as dotenv from "dotenv";
+import { AIModel } from "shared/dist/types";
 
 dotenv.config(); // 環境変数のロード
 
@@ -19,7 +20,7 @@ interface Message {
 }
 
 interface ChatGPTRequest {
-  model: "gpt-4" | "gpt-4-turbo" | "gpt-3.5-turbo";
+  model: AIModel; // 使用するAIモデル
   messages: Message[];
   max_tokens: number; // レスポンスの最大トークン数
   temperature: number; // 応答の創造性の度合い
@@ -101,7 +102,7 @@ export const generateTopic = async (): Promise<string | undefined> => {
   ];
 
   const prompt: ChatGPTRequest = {
-    model: "gpt-4",
+    model: AIModel["gpt-4"],
     messages: message,
     max_tokens: 100,
     temperature: 1.0, // 高めのランダム性を設定

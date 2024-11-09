@@ -8,11 +8,13 @@ import {
 import HomeView from "./views/HomeView.tsx";
 import BattleView from "./views/BattleView.tsx";
 import ResultView from "./views/ResultView.tsx";
+import OnlineRoomView from "./views/OnlineRoomView.tsx";
 import Auth from "./components/Auth.tsx";
 import Profile from "./components/Profile.tsx"; // 任意のプロフィールページ
 import ProtectedRoute from "./components/ProtectedRoute.tsx"; // 認証保護されたルート
-import { AuthProvider } from "./services/useAuth.tsx"; // 認証状態のコンテキスト
+import { AuthProvider } from "./components/AuthProvider.tsx"; // 認証状態のコンテキスト
 import ProfileEdit from "./components/ProfileEdit.tsx";
+import PromptEdit from "./components/PromptEdit.tsx";
 
 function App() {
   return (
@@ -23,6 +25,14 @@ function App() {
         <Routes>
           <Route path="/" element={<HomeView />} />
           {/* 認証が必要なルート */}
+          <Route
+            path="/online_room"
+            element={
+              <ProtectedRoute>
+                <OnlineRoomView />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/battle/:roomId"
             element={
@@ -51,6 +61,8 @@ function App() {
           />
           <Route path="/profile_edit" element={<ProfileEdit />} />{" "}
           {/* プロフィール編集ページのルートを追加 */}
+          <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
+          {/* プロンプト編集ページのルートを追加 */}
           {/* 認証済みでない場合のリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />{" "}
           {/* その他のパスはホームにリダイレクト */}

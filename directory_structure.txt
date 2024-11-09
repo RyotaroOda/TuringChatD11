@@ -75,7 +75,7 @@
 │   │   │   ├── ./frontend/src/services/firebase-realtime-database.ts
 │   │   │   ├── ./frontend/src/services/firebase_f.ts
 │   │   │   ├── ./frontend/src/services/player-profile.ts
-│   │   │   └── ./frontend/src/services/useAuth.tsx
+│   │   │   └── ./frontend/src/services/AuthProvider.tsx
 │   │   ├── ./frontend/src/setupTests.ts
 │   │   └── ./frontend/src/views
 │   │       ├── ./frontend/src/views/BattleView.tsx

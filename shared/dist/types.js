@@ -4,7 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIModel = void 0;
 var AIModel;
 (function (AIModel) {
-    AIModel[AIModel["GPT3"] = 0] = "GPT3";
-    AIModel[AIModel["GPT2"] = 1] = "GPT2";
-    AIModel[AIModel["default"] = 2] = "default";
+    AIModel[AIModel["gpt-4"] = 0] = "gpt-4";
+    AIModel[AIModel["gpt-4-turbo"] = 1] = "gpt-4-turbo";
+    AIModel[AIModel["gpt-3.5-turbo"] = 2] = "gpt-3.5-turbo";
 })(AIModel || (exports.AIModel = AIModel = {}));

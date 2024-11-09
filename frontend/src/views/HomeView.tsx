@@ -9,7 +9,7 @@ import {
   cancelRequest,
 } from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
-import { useAuth } from "../services/useAuth.tsx"; // useAuthフックをインポート
+import { useAuth } from "../components/AuthProvider.tsx"; // AuthProviderフックをインポート
 import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
@@ -23,7 +23,7 @@ const HomeView: React.FC = () => {
   const [playerId, setPlayerId] = useState<string>(""); // プレイヤーID
 
   const navigate = useNavigate();
-  const { user } = useAuth(); // useAuthフックで認証状態を取得
+  const { user } = useAuth(); // AuthProviderフックで認証状態を取得
 
   //#region ログイン状態
   useEffect(() => {
@@ -98,7 +98,13 @@ const HomeView: React.FC = () => {
         id: playerId, // プレイヤーID
         name: playerName,
         rating: score,
-        bot: { prompt: aiPrompt, model: AIModel.default },
+        bot: {
+          prompt: aiPrompt,
+          model: AIModel["gpt-4"],
+          name: "",
+          temperature: 0,
+          top_p: 0,
+        },
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId !== "") {

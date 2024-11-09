@@ -22,13 +22,16 @@ export type BattleLog = {
     };
 };
 export declare enum AIModel {
-    GPT3 = 0,
-    GPT2 = 1,
-    default = 2
+    "gpt-4" = 0,
+    "gpt-4-turbo" = 1,
+    "gpt-3.5-turbo" = 2
 }
 export type botData = {
+    name: string;
     prompt: string;
     model: AIModel;
+    temperature: number;
+    top_p: number;
 };
 export type PlayerData = {
     id: string;

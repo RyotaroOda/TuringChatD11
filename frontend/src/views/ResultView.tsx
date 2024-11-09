@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../services/useAuth.tsx";
+import { useAuth } from "../components/AuthProvider.tsx";
 import { ResultData } from "shared/dist/types";
 
 const ResultView: React.FC = () => {

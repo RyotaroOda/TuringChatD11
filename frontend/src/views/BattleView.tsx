@@ -14,7 +14,7 @@ import {
   SubmitAnswer,
   ResultData,
 } from "shared/dist/types";
-import { useAuth } from "../services/useAuth.tsx";
+import { useAuth } from "../components/AuthProvider.tsx";
 
 const BattleView: React.FC = () => {
   //#region init
