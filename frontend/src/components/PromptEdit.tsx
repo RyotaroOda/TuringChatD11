@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { AIModel, BotSetting, BotData } from "shared/dist/types";
-import { useAuth } from "./AuthProvider.tsx";
 import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/profileAPI.ts";
 
@@ -30,9 +29,6 @@ const EditPromptView: React.FC = () => {
   // テストチャット
   const [chatMessage, setChatMessage] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<string[]>([]);
-
-  const { user } = useAuth();
-  const userId = user?.uid || "error";
 
   // // firestoreからbotsをロード
   // useEffect(() => {
@@ -112,7 +108,7 @@ const EditPromptView: React.FC = () => {
   };
 
   useEffect(() => {
-    updateUserProfile(userId, {
+    updateUserProfile({
       bots: {
         defaultId: defaultBotId,
         data: botSettings,
@@ -133,7 +129,7 @@ const EditPromptView: React.FC = () => {
   };
 
   useEffect(() => {
-    updateUserProfile(userId, {
+    updateUserProfile({
       bots: {
         defaultId: defaultBotId,
         data: botSettings,

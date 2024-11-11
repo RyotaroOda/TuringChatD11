@@ -1,10 +1,10 @@
-// frontend/src/components/Auth.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInAnonymously,
   updateProfile,
+  fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
 import { useNavigate } from "react-router-dom";
@@ -14,13 +14,40 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-
   const [isRegister, setIsRegister] = useState(false); // サインアップかログインかの状態
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // エラーメッセージ
+  const [isEmailValid, setIsEmailValid] = useState(false); // メールアドレスの有効性
   const navigate = useNavigate(); // navigateフックの使用
-
   const [isPushSignup, setIsPushSignup] = useState(false);
   const [isPushLogin, setIsPushLogin] = useState(false);
+
+  // メールアドレスの有効性を確認する関数
+  const checkEmailValidity = async (email: string) => {
+    if (!email) {
+      setIsEmailValid(false);
+      setErrorMessage(null);
+      return;
+    }
+    try {
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      if (signInMethods.length > 0) {
+        setIsEmailValid(false);
+        setErrorMessage("登録済みのメールアドレスです。");
+      } else {
+        setIsEmailValid(true);
+        setErrorMessage(null);
+      }
+    } catch (error) {
+      setIsEmailValid(false);
+      setErrorMessage("メールアドレスが無効です。");
+    }
+  };
+
+  useEffect(() => {
+    if (isRegister) {
+      checkEmailValidity(email);
+    }
+  }, [email, isRegister]);
 
   // メールアドレスとパスワードでのログイン・サインアップ処理
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +76,7 @@ const Auth: React.FC = () => {
         const user = userCredential.user;
         await updateProfile(user, { displayName: username }); // FirebaseAuthで名前を更新
         // プロフィール作成
-        await createUserProfile(user);
+        await createUserProfile();
         alert("ユーザーが登録され、プロフィールが作成されました");
 
         // ? to profile edit page
@@ -59,6 +86,7 @@ const Auth: React.FC = () => {
         setIsPushLogin(true);
         await signInWithEmailAndPassword(auth, email, password);
         alert("ログインに成功しました");
+        navigate("/");
       }
     } catch (error) {
       console.error(error);
@@ -105,14 +133,19 @@ const Auth: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <input
-          type="password"
-          placeholder="パスワード"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit">{isRegister ? "登録" : "ログイン"}</button>
+        <p>
+          <input
+            type="password"
+            placeholder="パスワード"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </p>
+        <button type="submit" disabled={isRegister && !isEmailValid}>
+          {isRegister ? "登録" : "ログイン"}
+        </button>
       </form>
+      <h3>または</h3>
       <button onClick={() => setIsRegister(!isRegister)}>
         {isRegister
           ? "既にアカウントをお持ちですか？ログイン"

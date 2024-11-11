@@ -9,9 +9,8 @@ import {
   cancelRequest,
 } from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
-import { useAuth } from "../components/AuthProvider.tsx"; // AuthProviderフックをインポート
-import { signInAnonymously, signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
-import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
+import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
+import { auth } from "../services/firebase_f.ts";
 
 import {
   MatchResult,
@@ -29,7 +28,7 @@ const HomeView: React.FC = () => {
   const [playerId, setPlayerId] = useState<string>(""); // プレイヤーID
 
   const navigate = useNavigate();
-  const { user } = useAuth(); // AuthProviderフックで認証状態を取得
+  const user = auth.currentUser; // ログインユーザー情報
   const [profile, setProfile] = useState<ProfileData | null>(null);
 
   //#region ログイン状態
@@ -82,7 +81,7 @@ const HomeView: React.FC = () => {
       setNewName(displayName); // 名前編集用のテキストフィールドにも設定
       const fetchProfile = async () => {
         if (user) {
-          const data = await getUserProfile(user.uid);
+          const data = await getUserProfile();
           if (data) {
             setProfile(data);
           } else {

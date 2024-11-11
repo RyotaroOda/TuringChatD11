@@ -1,13 +1,6 @@
 // frontend/src/services/player-profile.ts
-import { updateProfile, User } from "firebase/auth";
-import {
-  doc,
-  setDoc,
-  updateDoc,
-  getDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
+import { updateProfile } from "firebase/auth";
+import { doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
 import { AIModel, BotData, BotSetting, ProfileData } from "shared/dist/types";
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { auth, firestore } from "./firebase_f.ts";
@@ -34,7 +27,11 @@ const detectPlatform = () => {
   return "web";
 };
 
-export const createUserProfile = async (user: User) => {
+export const createUserProfile = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ユーザーが認証されていません");
+  }
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, user.uid); // Firestoreのプロファイルドキュメント参照
   const botData: BotSetting[] = [
     {
@@ -114,7 +111,11 @@ export const createUserProfile = async (user: User) => {
 };
 
 // プロフィールの更新
-export const updateUserProfile = async (userId: string, data: any) => {
+export const updateUserProfile = async (data: any) => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    throw new Error("ユーザーIDが見つかりません");
+  }
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
     ...data,
@@ -124,7 +125,12 @@ export const updateUserProfile = async (userId: string, data: any) => {
 };
 
 // プロフィールの取得
-export const getUserProfile = async (userId: string): Promise<ProfileData> => {
+export const getUserProfile = async (): Promise<ProfileData> => {
+  const userId = auth.currentUser?.uid;
+
+  if (!userId) {
+    throw new Error("ユーザーIDが見つかりません");
+  }
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   const snapshot = await getDoc(profileRef);
   if (snapshot.exists()) {

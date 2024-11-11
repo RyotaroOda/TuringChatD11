@@ -3,10 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { getFirestore, doc, onSnapshot, setDoc } from "firebase/firestore";
-import { getFunctions, httpsCallable } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 
 const firestore = getFirestore();
-const functions = getFunctions();
 
 const OnlineRoomView: React.FC = () => {
   const [isReady, setIsReady] = useState(false);

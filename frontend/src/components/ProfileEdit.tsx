@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { updateUserProfile } from "../services/profileAPI.ts";
@@ -46,7 +46,7 @@ const ProfileEdit: React.FC = () => {
     e.preventDefault();
     if (profile && user) {
       try {
-        await updateUserProfile(profile.userId, profile);
+        await updateUserProfile(profile);
         // Firebase AuthのdisplayNameも更新
         if (profile.name !== user.displayName) {
           await updateProfile(user, { displayName: profile.name });

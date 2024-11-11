@@ -14,14 +14,14 @@ import {
   SubmitAnswer,
   ResultData,
 } from "shared/dist/types";
-import { useAuth } from "../components/AuthProvider.tsx";
+import { auth } from "../services/firebase_f.ts";
 
 const BattleView: React.FC = () => {
   //#region init
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
   const { roomId } = useParams<{ roomId: string }>();
 
-  const { user } = useAuth();
+  const user = auth.currentUser;
   const myId = user?.uid || "error";
 
   // Location and Params

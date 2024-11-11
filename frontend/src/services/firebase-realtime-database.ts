@@ -1,13 +1,4 @@
-import {
-  ref,
-  push,
-  get,
-  onValue,
-  remove,
-  child,
-  onChildAdded,
-  off,
-} from "firebase/database";
+import { ref, push, get, onValue, onChildAdded, off } from "firebase/database";
 import { db, auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import {
   BattleLog,

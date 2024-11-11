@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { useAuth } from "../components/AuthProvider.tsx";
+import { auth } from "../services/firebase_f.ts";
 import { ResultData } from "shared/dist/types";
 
 const ResultView: React.FC = () => {
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
 
-  const { user } = useAuth();
+  const user = auth.currentUser;
   const myId = user?.uid || "error";
 
   // Location and Params
