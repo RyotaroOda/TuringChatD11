@@ -1,4 +1,4 @@
-//backend/src/services/chatGPT.ts
+//frontend/src/services/chatGPT_f.ts
 import * as dotenv from "dotenv";
 import { AIModel } from "shared/dist/types";
 
@@ -89,7 +89,7 @@ const generateChat = async (
 
 // トピックを生成するエクスポート関数
 export const generateTopic = async (): Promise<string | undefined> => {
-  // 現在の日時を取得してプロンプトに追加
+  // 現在の日時を取得
   const currentDate = new Date().toLocaleString("ja-JP", {
     timeZone: "Asia/Tokyo",
   });

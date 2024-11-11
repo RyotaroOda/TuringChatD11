@@ -47,7 +47,7 @@ export const signInAnonymouslyUser = () => {
 if (window.location.hostname === "localhost") {
   // Functionsエミュレーター
   connectFunctionsEmulator(functions, "127.0.0.1", 5001); // ポートはエミュレータのポートに合わせる
-  console.log("Functions emulator connected", functions);
+  // console.log("Functions emulator connected", functions);
 
   // #region testFunction
   // const testFunction = httpsCallable(functions, "testFunction");

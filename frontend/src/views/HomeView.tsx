@@ -10,10 +10,16 @@ import {
 } from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
 
 import { useAuth } from "../components/AuthProvider.tsx"; // AuthProviderフックをインポート
-import { signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
+import { signInAnonymously, signOut, updateProfile } from "firebase/auth"; // Firebaseのログアウト機能をインポート
 import { auth } from "../services/firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 
-import { AIModel, MatchResult, PlayerData, RoomData } from "shared/dist/types";
+import {
+  MatchResult,
+  PlayerData,
+  ProfileData,
+  RoomData,
+} from "shared/dist/types";
+import { getUserProfile } from "../services/profileAPI.ts";
 
 const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(9999);
@@ -24,6 +30,7 @@ const HomeView: React.FC = () => {
 
   const navigate = useNavigate();
   const { user } = useAuth(); // AuthProviderフックで認証状態を取得
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
   //#region ログイン状態
   useEffect(() => {
@@ -50,6 +57,17 @@ const HomeView: React.FC = () => {
       console.error("ログアウトエラー:", error);
     }
   };
+
+  // 匿名ログイン処理
+  const handleAnonymousLogin = async () => {
+    try {
+      await signInAnonymously(auth);
+      alert("ゲストでログインしました");
+      navigate("/"); // ログイン後にホーム画面にリダイレクト
+    } catch (error) {
+      console.error("ゲストログインエラー:", error);
+    }
+  };
   //#endregion
 
   //#region プレイヤーネーム
@@ -62,6 +80,17 @@ const HomeView: React.FC = () => {
         user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
       setPlayerName(displayName); // 既存のプレイヤーネームを設定
       setNewName(displayName); // 名前編集用のテキストフィールドにも設定
+      const fetchProfile = async () => {
+        if (user) {
+          const data = await getUserProfile(user.uid);
+          if (data) {
+            setProfile(data);
+          } else {
+            console.error("プロフィール情報の取得に失敗しました。", data);
+          }
+        }
+      };
+      fetchProfile();
     }
   }, [user]);
 
@@ -98,13 +127,6 @@ const HomeView: React.FC = () => {
         id: playerId, // プレイヤーID
         name: playerName,
         rating: score,
-        bot: {
-          prompt: aiPrompt,
-          model: AIModel["gpt-4"],
-          name: "",
-          temperature: 0,
-          top_p: 0,
-        },
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId !== "") {
@@ -179,7 +201,15 @@ const HomeView: React.FC = () => {
 
   // プロフィール編集ボタンのクリック処理
   const handleProfileEditClick = () => {
-    navigate("/profile_edit"); // プロフィール編集画面に遷移
+    navigate("/profile_edit", {
+      state: profile,
+    }); // プロフィール編集画面に遷移
+  };
+
+  const handlePromptEdit = () => {
+    navigate("/prompt_edit", {
+      state: profile?.bots,
+    }); // プロンプト編集画面に遷移
   };
 
   const toBattleViewSegue = (roomId: string) => {
@@ -213,47 +243,62 @@ const HomeView: React.FC = () => {
       {user ? (
         <div>
           {/* ゲストユーザー（匿名）ではない場合に名前を表示 */}
-          {!user.isAnonymous && (
+          {!user.isAnonymous ? (
             <div>
               <p>こんにちは、{playerName}さん</p>
+              <button onClick={handleLogout}>ログアウト</button>
               <button onClick={handleProfileEditClick}>プロフィール編集</button>
+              <p>Score: {score}</p>
+
+              <div>
+                <label>
+                  AIプロンプト:
+                  {aiPrompt}
+                  <button onClick={handlePromptEdit}>編集</button>
+                </label>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p>匿名でプレイ中</p>
+              <button onClick={() => navigate("/login")}>ログイン</button>{" "}
+              <div>
+                PlayerName:{" "}
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+                <button onClick={handleNameChangeClick}>名前変更</button>
+              </div>
+              <div style={{ marginBottom: "20px" }}>
+                <h3>プロンプト編集</h3>
+                <textarea
+                  rows={4}
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  style={{ width: "100%", padding: "8px" }}
+                />
+              </div>
             </div>
           )}
-          <button onClick={handleLogout}>ログアウト</button>
+
+          {/* マッチング中にキャンセルボタンを表示 */}
+          {isPushedMatching ? (
+            <button onClick={cancelMatching}>キャンセル</button> // マッチングキャンセルボタン
+          ) : (
+            <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
+          )}
+          {isMatching ? <p>"Matching ..."</p> : <p></p>}
         </div>
       ) : (
         <div>
           <button onClick={() => navigate("/login")}>ログイン</button>{" "}
-          {/* ログインボタン */}
+          <button onClick={handleAnonymousLogin}>
+            ゲストアカウントでプレイ
+          </button>
         </div>
       )}
-
-      {/* プレイヤーネームの入力はログイン済みユーザーのみ表示 */}
-      {user && !user.isAnonymous ? null : (
-        <div>
-          <p>PlayerName: ゲスト</p>
-        </div>
-      )}
-
-      <p>Score: {score}</p>
-      <div>
-        <label>
-          AIプロンプト:
-          <input
-            type="text"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {/* マッチング中にキャンセルボタンを表示 */}
-      {isPushedMatching ? (
-        <button onClick={cancelMatching}>キャンセル</button> // マッチングキャンセルボタン
-      ) : (
-        <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
-      )}
-      {isMatching ? <p>"Matching ..."</p> : <p></p>}
     </div>
   );
 };

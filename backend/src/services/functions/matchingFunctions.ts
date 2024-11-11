@@ -9,7 +9,7 @@ import {
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { generateTopic } from "../chatGPT";
+import { generateTopic } from "../chatGPT_b";
 
 // テスト関数
 export const testFunction = onCall((request) => {

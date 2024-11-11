@@ -32,7 +32,8 @@ export enum AIModel {
   "gpt-3.5-turbo",
 }
 
-export type botData = {
+export type BotSetting = {
+  id: number;
   name: string;
   prompt: string;
   model: AIModel;
@@ -40,11 +41,15 @@ export type botData = {
   top_p: number;
 };
 
+export type BotData = {
+  defaultId: number;
+  data: BotSetting[];
+};
+
 export type PlayerData = {
   id: string;
   name: string;
   rating: number;
-  bot: botData;
 };
 
 export type RoomData = {
@@ -100,7 +105,8 @@ export type ProfileData = {
   win: number;
   lose: number;
 
-  bots: botData[] | null;
+  bots: BotData | null;
+
   questionnaire: QuestionnaireData | null;
 
   age: number | null; // 年齢（オプション）

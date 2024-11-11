@@ -8,7 +8,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
 import { useNavigate } from "react-router-dom";
-import { createUserProfile } from "../services/player-profile.ts";
+import { createUserProfile } from "../services/profileAPI.ts";
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -18,6 +18,9 @@ const Auth: React.FC = () => {
   const [isRegister, setIsRegister] = useState(false); // サインアップかログインかの状態
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // エラーメッセージ
   const navigate = useNavigate(); // navigateフックの使用
+
+  const [isPushSignup, setIsPushSignup] = useState(false);
+  const [isPushLogin, setIsPushLogin] = useState(false);
 
   // メールアドレスとパスワードでのログイン・サインアップ処理
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +40,7 @@ const Auth: React.FC = () => {
     try {
       if (isRegister && username.trim() !== "") {
         // サインアップ
+        setIsPushSignup(true);
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -48,10 +52,11 @@ const Auth: React.FC = () => {
         await createUserProfile(user);
         alert("ユーザーが登録され、プロフィールが作成されました");
 
-        // プロフィール編集画面へ遷移
-        navigate("/profile_edit");
+        // ? to profile edit page
+        navigate("/");
       } else {
         // ログイン
+        setIsPushLogin(true);
         await signInWithEmailAndPassword(auth, email, password);
         alert("ログインに成功しました");
       }
@@ -72,6 +77,13 @@ const Auth: React.FC = () => {
       setErrorMessage("ゲストログイン中にエラーが発生しました");
     }
   };
+
+  if (isPushLogin) {
+    return <p>ログイン中...</p>;
+  }
+  if (isPushSignup) {
+    return <p>登録中...</p>;
+  }
 
   return (
     <div>

@@ -60,9 +60,8 @@ function App() {
             }
           />
           <Route path="/profile_edit" element={<ProfileEdit />} />{" "}
-          {/* プロフィール編集ページのルートを追加 */}
           <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
-          {/* プロンプト編集ページのルートを追加 */}
+          {/* <Route path="/questionnaire_edit" element={< />} />{" "} */}
           {/* 認証済みでない場合のリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />{" "}
           {/* その他のパスはホームにリダイレクト */}

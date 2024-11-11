@@ -19,4 +19,5 @@ exports.DATABASE_PATHS = {
     //firestore
     route_profiles: "profiles",
     profiles: (userId) => `profiles/${userId}`,
+    bots: (userId) => `profiles/${userId}/bots`,
 };

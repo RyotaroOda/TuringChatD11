@@ -1,58 +1,78 @@
-// frontend/src/components/PromptEdit.tsx
-import React, { useState, useEffect } from "react";
-
-// プロンプトのインターフェース定義
-interface Prompt {
-  id: number;
-  name: string;
-  content: string;
-}
+import React, { useEffect, useState } from "react";
+import { AIModel, BotSetting, BotData } from "shared/dist/types";
+import { useAuth } from "./AuthProvider.tsx";
+import { useLocation } from "react-router-dom";
+import { updateUserProfile } from "../services/profileAPI.ts";
 
 const EditPromptView: React.FC = () => {
-  // プロンプトのリストを管理する状態
-  const [prompts, setPrompts] = useState<Prompt[]>([]);
-  // 選択されたプロンプトのIDを管理する状態
-  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
-  // 現在編集中のプロンプトの内容を管理する状態
-  const [currentPrompt, setCurrentPrompt] = useState<string>("");
-  // モデルの選択を管理する状態
-  const [model, setModel] = useState<string>("gpt-4");
-  // 創造性の値を管理する状態（0から1まで）
-  const [creativity, setCreativity] = useState<number>(0.7);
-  // 確実性の値を管理する状態（0から1まで）
-  const [certainty, setCertainty] = useState<number>(1);
-  // 保存ボタンの有効/無効を管理する状態
+  const bots: BotData = useLocation().state;
+  const [botSettings, setBotSettings] = useState<BotSetting[]>(bots.data);
+  const [defaultBotId, setDefaultBotId] = useState<number>(bots.defaultId);
+
+  // 編集中のデータ
+  const [selectedBotId, setSelectedBotId] = useState<number>(defaultBotId);
+  const [prompt, setPrompt] = useState<string>(
+    botSettings[selectedBotId].prompt
+  );
+  const [botName, setBotName] = useState<string>(
+    botSettings[selectedBotId].name
+  );
+  const [model, setModel] = useState<AIModel>(botSettings[selectedBotId].model);
+  const [creativity, setCreativity] = useState<number>(
+    botSettings[selectedBotId].temperature
+  );
+  const [certainty, setCertainty] = useState<number>(
+    botSettings[selectedBotId].top_p
+  );
+
   const [isSaveEnabled, setIsSaveEnabled] = useState<boolean>(false);
-  // チャットメッセージの入力を管理する状態
+
+  // テストチャット
   const [chatMessage, setChatMessage] = useState<string>("");
-  // チャット履歴を管理する状態
   const [chatHistory, setChatHistory] = useState<string[]>([]);
 
-  // コンポーネントのマウント時に保存されたプロンプトをロード
-  useEffect(() => {
-    const savedPrompts: Prompt[] = [
-      { id: 1, name: "Default Prompt", content: "This is the default prompt." },
-      {
-        id: 2,
-        name: "Creative Prompt",
-        content: "A prompt with more creative energy.",
-      },
-    ];
-    setPrompts(savedPrompts);
-    // 初期選択として「Default Prompt」を設定
-    setSelectedPromptId(savedPrompts[0].id);
-    setCurrentPrompt(savedPrompts[0].content);
-  }, []);
+  const { user } = useAuth();
+  const userId = user?.uid || "error";
 
-  // プロンプトの選択が変更されたときの処理
-  const handlePromptSelection = (
-    event: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  // // firestoreからbotsをロード
+  // useEffect(() => {
+  //   if (!user) {
+  //     return;
+  //   }
+  //   console.log("User ID:", user);
+  //   const fetchBots = async () => {
+  //     const bots: BotData | null = await getBots(userId);
+  //     if (bots !== null) {
+  //       // 初期選択として「Default」を設定
+  //       setSelectedBotId(bots.defaultId);
+  //       setDefaultBotId(bots.defaultId);
+  //       setBotSettings(bots.data);
+  //       const defaultBot = bots.data.find(
+  //         (bot: BotSetting) => bot.id === bots.defaultId
+  //       );
+  //       if (defaultBot) {
+  //         setCurrentPrompt(defaultBot.prompt);
+  //         setCurrentBotName(defaultBot.name);
+  //         setModel(defaultBot.model);
+  //         setCreativity(defaultBot.temperature);
+  //         setCertainty(defaultBot.top_p);
+  //       }
+  //     }
+  //   };
+  //   fetchBots();
+  // }, [user]);
+
+  // ボット設定の選択が変更されたときの処理
+  const handleBotSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = parseInt(event.target.value, 10);
-    const selectedPrompt = prompts.find((prompt) => prompt.id === value);
-    if (selectedPrompt) {
-      setSelectedPromptId(selectedPrompt.id);
-      setCurrentPrompt(selectedPrompt.content);
+    const selectedBot = botSettings.find((bot) => bot.id === value);
+    if (selectedBot) {
+      setSelectedBotId(selectedBot.id);
+      setPrompt(selectedBot.prompt);
+      setBotName(selectedBot.name);
+      setModel(selectedBot.model);
+      setCreativity(selectedBot.temperature);
+      setCertainty(selectedBot.top_p);
       setIsSaveEnabled(false);
     }
   };
@@ -61,33 +81,69 @@ const EditPromptView: React.FC = () => {
   const handlePromptChange = (
     event: React.ChangeEvent<HTMLTextAreaElement>
   ) => {
-    setCurrentPrompt(event.target.value);
+    setPrompt(event.target.value);
     setIsSaveEnabled(true);
   };
 
-  // プロンプトを保存する処理
+  // ボット名が変更されたときの処理
+  const handleBotNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setBotName(event.target.value);
+    setIsSaveEnabled(true);
+  };
+
+  // ボット設定を保存する処理
   const handleSave = () => {
-    if (selectedPromptId !== null) {
-      setPrompts((prevPrompts) =>
-        prevPrompts.map((prompt) =>
-          prompt.id === selectedPromptId
-            ? { ...prompt, content: currentPrompt }
-            : prompt
+    if (selectedBotId !== null) {
+      setBotSettings(
+        botSettings.map((bot) =>
+          bot.id === selectedBotId
+            ? {
+                ...bot,
+                name: botName,
+                prompt: prompt,
+                model: model,
+                temperature: creativity,
+                top_p: certainty,
+              }
+            : bot
         )
       );
-      setIsSaveEnabled(false);
-      saveBot();
-      setChatHistory((prevHistory) => [
-        ...prevHistory,
-        "システム: プロンプトが更新されました",
-      ]);
     }
   };
 
-  // プロンプトを保存するためのプレースホルダ関数
-  const saveBot = () => {
-    console.log("Prompt saved:", currentPrompt);
+  useEffect(() => {
+    updateUserProfile(userId, {
+      bots: {
+        defaultId: defaultBotId,
+        data: botSettings,
+      },
+    });
+    setChatHistory((prevHistory) => [
+      ...prevHistory,
+      "システム: 新しいプロンプトが設定されました",
+    ]);
+    setIsSaveEnabled(false);
+  }, [botSettings]);
+
+  // デフォルトに設定する処理
+  const handleSetDefault = () => {
+    if (selectedBotId !== null) {
+      setDefaultBotId(selectedBotId);
+    }
   };
+
+  useEffect(() => {
+    updateUserProfile(userId, {
+      bots: {
+        defaultId: defaultBotId,
+        data: botSettings,
+      },
+    });
+    setChatHistory((prevHistory) => [
+      ...prevHistory,
+      "システム: デフォルトに設定されました",
+    ]);
+  }, [defaultBotId]);
 
   // チャットメッセージを送信する処理
   const handleSendMessage = () => {
@@ -108,22 +164,31 @@ const EditPromptView: React.FC = () => {
       <div style={{ marginBottom: "20px" }}>
         <h3>保存されているプロンプト</h3>
         <select
-          value={selectedPromptId || undefined}
+          value={selectedBotId || undefined}
           style={{ width: "100%", padding: "8px" }}
-          onChange={handlePromptSelection}
+          onChange={handleBotSelection}
         >
-          {prompts.map((prompt) => (
-            <option key={prompt.id} value={prompt.id}>
-              {prompt.name}
+          {botSettings.map((bot) => (
+            <option key={bot.id} value={bot.id}>
+              {bot.name}
             </option>
           ))}
         </select>
       </div>
       <div style={{ marginBottom: "20px" }}>
+        <h3>名前編集</h3>
+        <input
+          type="text"
+          value={botName}
+          onChange={handleBotNameChange}
+          style={{ width: "100%", padding: "8px" }}
+        />
+      </div>
+      <div style={{ marginBottom: "20px" }}>
         <h3>プロンプト編集</h3>
         <textarea
           rows={4}
-          value={currentPrompt}
+          value={prompt}
           onChange={handlePromptChange}
           style={{ width: "100%", padding: "8px" }}
         />
@@ -134,11 +199,12 @@ const EditPromptView: React.FC = () => {
           <label>モデル: </label>
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => setModel(e.target.value as unknown as AIModel)}
             style={{ width: "200px", padding: "8px" }}
           >
-            <option value="gpt-4">GPT-4</option>
-            <option value="gpt-3.5">GPT-3.5</option>
+            <option value={AIModel["gpt-4"]}>GPT-4</option>
+            <option value={AIModel["gpt-4-turbo"]}>GPT-4 Turbo</option>
+            <option value={AIModel["gpt-3.5-turbo"]}>GPT-3.5 Turbo</option>
           </select>
         </div>
         <div style={{ marginBottom: "10px" }}>
@@ -179,6 +245,18 @@ const EditPromptView: React.FC = () => {
           }}
         >
           保存
+        </button>
+        <button
+          onClick={handleSetDefault}
+          disabled={defaultBotId === selectedBotId}
+          style={{
+            padding: "10px 20px",
+            cursor: defaultBotId === selectedBotId ? "not-allowed" : "pointer",
+          }}
+        >
+          {defaultBotId === selectedBotId
+            ? "デフォルトに設定中"
+            : "デフォルトに設定"}
         </button>
       </div>
       <div style={{ marginTop: "20px" }}>

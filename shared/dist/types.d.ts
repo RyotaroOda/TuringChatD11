@@ -26,18 +26,22 @@ export declare enum AIModel {
     "gpt-4-turbo" = 1,
     "gpt-3.5-turbo" = 2
 }
-export type botData = {
+export type BotSetting = {
+    id: number;
     name: string;
     prompt: string;
     model: AIModel;
     temperature: number;
     top_p: number;
 };
+export type BotData = {
+    defaultId: number;
+    data: BotSetting[];
+};
 export type PlayerData = {
     id: string;
     name: string;
     rating: number;
-    bot: botData;
 };
 export type RoomData = {
     roomId: string;
@@ -80,7 +84,7 @@ export type ProfileData = {
     rating: number;
     win: number;
     lose: number;
-    bots: botData[] | null;
+    bots: BotData | null;
     questionnaire: QuestionnaireData | null;
     age: number | null;
     gender: "male" | "female" | "other" | "no_answer";
