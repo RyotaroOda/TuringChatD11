@@ -1,10 +1,6 @@
 //frontend/src/services/chatGPT_f.ts
-import * as dotenv from "dotenv";
-import { AIModel } from "shared/dist/types";
+import { AIModel, GPTMessage } from "shared/dist/types";
 
-dotenv.config(); // 環境変数のロード
-
-// 型定義
 interface ChatGPTResponse {
   choices: Array<{
     message: {
@@ -13,15 +9,9 @@ interface ChatGPTResponse {
     };
   }>;
 }
-
-interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
 interface ChatGPTRequest {
   model: AIModel; // 使用するAIモデル
-  messages: Message[];
+  messages: GPTMessage[];
   max_tokens: number; // レスポンスの最大トークン数
   temperature: number; // 応答の創造性の度合い
   top_p: number; // サンプリング時の確率マスのカットオフ
@@ -30,9 +20,7 @@ interface ChatGPTRequest {
 }
 
 // ChatGPTにリクエストを送信する関数
-const generateChat = async (
-  prompt: ChatGPTRequest
-): Promise<string | undefined> => {
+const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   try {
     const apiUrl = process.env.CHATGPT_API_URL;
     const apiKey = process.env.OPENAI_API_KEY;
@@ -79,22 +67,20 @@ const generateChat = async (
         return topic;
       }
     }
-
-    console.error("No content found in ChatGPT response.");
-    return;
+    throw new Error("No content found in ChatGPT response.");
   } catch (error) {
-    console.error("Error communicating with ChatGPT API:", error);
+    throw new Error("Error communicating with ChatGPT API: " + error);
   }
 };
 
 // トピックを生成するエクスポート関数
-export const generateTopic = async (): Promise<string | undefined> => {
+export const generateTopic = async (): Promise<string> => {
   // 現在の日時を取得
   const currentDate = new Date().toLocaleString("ja-JP", {
     timeZone: "Asia/Tokyo",
   });
 
-  const message: Message[] = [
+  const message: GPTMessage[] = [
     {
       role: "system",
       content: `子供向けにランダムに会話の話題を設定してください。回答の形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
@@ -111,13 +97,29 @@ export const generateTopic = async (): Promise<string | undefined> => {
     stop: null,
   };
 
-  const topic = await generateChat(prompt);
+  const topic = await generate(prompt);
 
   if (topic) {
     console.log("Generated topic:", topic);
+    return topic;
   } else {
     console.log("Failed to generate topic.");
+    throw new Error("Failed to generate topic.");
   }
+};
 
-  return topic;
+export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
+  // Implement the function logic here
+  const prompt: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: messages,
+    max_tokens: 100,
+    temperature: 1.0, // 高めのランダム性を設定
+    top_p: 0.9, // サンプリング時に多様なトークンを選ぶようにする
+    n: 1,
+    stop: null,
+  };
+  const answer = generate(prompt);
+  console.log("Generated answer:", answer);
+  return answer;
 };

@@ -99,3 +99,7 @@ export type QuestionnaireData = {
     questions: string[];
     answers: string[];
 };
+export type GPTMessage = {
+    role: "system" | "user" | "assistant";
+    content: string;
+};

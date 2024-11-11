@@ -26,9 +26,7 @@ const countries = [
 
 const ProfileEdit: React.FC = () => {
   //HomeViewからProfileDataを取得
-  const [profile, setProfile] = useState<ProfileData | null>(
-    useLocation().state
-  );
+  const [profile, setProfile] = useState<ProfileData>(useLocation().state);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const user = auth.currentUser;

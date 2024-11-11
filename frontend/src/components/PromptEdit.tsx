@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { AIModel, BotSetting, BotData } from "shared/dist/types";
+import { AIModel, BotSetting, BotData, GPTMessage } from "shared/dist/types";
 import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/profileAPI.ts";
+import { generateChat } from "../services/chatGPT_f.ts";
 
 const EditPromptView: React.FC = () => {
   const bots: BotData = useLocation().state;
@@ -27,36 +28,11 @@ const EditPromptView: React.FC = () => {
   const [isSaveEnabled, setIsSaveEnabled] = useState<boolean>(false);
 
   // テストチャット
-  const [chatMessage, setChatMessage] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<string[]>([]);
-
-  // // firestoreからbotsをロード
-  // useEffect(() => {
-  //   if (!user) {
-  //     return;
-  //   }
-  //   console.log("User ID:", user);
-  //   const fetchBots = async () => {
-  //     const bots: BotData | null = await getBots(userId);
-  //     if (bots !== null) {
-  //       // 初期選択として「Default」を設定
-  //       setSelectedBotId(bots.defaultId);
-  //       setDefaultBotId(bots.defaultId);
-  //       setBotSettings(bots.data);
-  //       const defaultBot = bots.data.find(
-  //         (bot: BotSetting) => bot.id === bots.defaultId
-  //       );
-  //       if (defaultBot) {
-  //         setCurrentPrompt(defaultBot.prompt);
-  //         setCurrentBotName(defaultBot.name);
-  //         setModel(defaultBot.model);
-  //         setCreativity(defaultBot.temperature);
-  //         setCertainty(defaultBot.top_p);
-  //       }
-  //     }
-  //   };
-  //   fetchBots();
-  // }, [user]);
+  const [chatMessage, setChatMessage] = useState<GPTMessage>({
+    role: "user",
+    content: "",
+  });
+  const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
 
   // ボット設定の選択が変更されたときの処理
   const handleBotSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -116,7 +92,7 @@ const EditPromptView: React.FC = () => {
     });
     setChatHistory((prevHistory) => [
       ...prevHistory,
-      "システム: 新しいプロンプトが設定されました",
+      { role: "system", content: "新しいプロンプトが設定されました" },
     ]);
     setIsSaveEnabled(false);
   }, [botSettings]);
@@ -137,19 +113,26 @@ const EditPromptView: React.FC = () => {
     });
     setChatHistory((prevHistory) => [
       ...prevHistory,
-      "システム: デフォルトに設定されました",
+      { role: "system", content: "デフォルトに設定されました" },
     ]);
   }, [defaultBotId]);
 
   // チャットメッセージを送信する処理
-  const handleSendMessage = () => {
-    if (chatMessage.trim() !== "") {
-      setChatHistory((prevHistory) => [...prevHistory, `User: ${chatMessage}`]);
-      setChatMessage("");
+  const handleSendMessage = async () => {
+    if (chatMessage.content.trim() !== "") {
+      setChatHistory((prevHistory) => [
+        ...prevHistory,
+        { role: "user", content: chatMessage.content },
+      ]);
+      setChatMessage({ role: "user", content: "" });
+      const response = await generateChat(chatHistory);
       // ボットからの応答をシミュレート
       setChatHistory((prevHistory) => [
         ...prevHistory,
-        `Bot: Response to "${chatMessage}" based on current prompt.`,
+        {
+          role: "assistant",
+          content: response,
+        },
       ]);
     }
   };
@@ -267,13 +250,25 @@ const EditPromptView: React.FC = () => {
           }}
         >
           {chatHistory.map((message, index) => (
-            <div key={index}>{message}</div>
+            <div key={index}>
+              <strong>
+                {message.role === "user"
+                  ? "User"
+                  : message.role === "assistant"
+                    ? "Bot"
+                    : "System"}
+                :
+              </strong>{" "}
+              {message.content}
+            </div>
           ))}
         </div>
         <input
           type="text"
-          value={chatMessage}
-          onChange={(e) => setChatMessage(e.target.value)}
+          value={chatMessage.content}
+          onChange={(e) =>
+            setChatMessage({ role: "user", content: e.target.value })
+          }
           style={{ width: "80%", padding: "8px", marginRight: "10px" }}
         />
         <button onClick={handleSendMessage} style={{ padding: "10px 20px" }}>

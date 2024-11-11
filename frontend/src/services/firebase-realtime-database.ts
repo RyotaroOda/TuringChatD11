@@ -91,22 +91,17 @@ export const onRoomUpdate = (
 };
 
 // ルームデータを取得する関数
-export const getRoomData = async (roomId: string): Promise<RoomData | null> => {
-  try {
-    const roomRef = ref(db, DATABASE_PATHS.room(roomId));
-    const snapshot = await get(roomRef);
+export const getRoomData = async (roomId: string): Promise<RoomData> => {
+  const roomRef = ref(db, DATABASE_PATHS.room(roomId));
+  const snapshot = await get(roomRef);
 
-    if (snapshot.exists()) {
-      const roomData = snapshot.val();
-      console.log("ルームデータを取得しました:", roomData);
-      return roomData as RoomData; // RoomData型にキャストして返す
-    } else {
-      console.error("ルームが存在しません");
-      return null;
-    }
-  } catch (error) {
-    console.error("ルームデータの取得に失敗しました:", error);
-    return null;
+  if (snapshot.exists()) {
+    const roomData = snapshot.val();
+    console.log("ルームデータを取得しました:", roomData);
+    return roomData as RoomData; // RoomData型にキャストして返す
+  } else {
+    console.error("ルームが存在しません");
+    throw new Error("ルームが存在しません");
   }
 };
 //#endregion

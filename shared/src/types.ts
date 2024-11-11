@@ -126,3 +126,9 @@ export type QuestionnaireData = {
   questions: string[];
   answers: string[];
 };
+
+// GPT
+export type GPTMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};

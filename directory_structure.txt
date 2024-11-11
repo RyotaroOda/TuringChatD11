@@ -5,16 +5,17 @@
 │   ├── ./backend/dist
 │   │   ├── ./backend/dist/index_serverless.js
 │   │   └── ./backend/dist/services
+│   │       ├── ./backend/dist/services/chatGPT_b.js
 │   │       ├── ./backend/dist/services/encryption.js
 │   │       ├── ./backend/dist/services/firebase_b.js
 │   │       └── ./backend/dist/services/functions
 │   │           ├── ./backend/dist/services/functions/battleFunctions.js
 │   │           └── ./backend/dist/services/functions/matchingFunctions.js
-│   ├── ./backend/package-lock.json
 │   ├── ./backend/package.json
 │   ├── ./backend/src
 │   │   ├── ./backend/src/index_serverless.ts
 │   │   └── ./backend/src/services
+│   │       ├── ./backend/src/services/chatGPT_b.ts
 │   │       ├── ./backend/src/services/encryption.ts
 │   │       ├── ./backend/src/services/firebase_b.ts
 │   │       └── ./backend/src/services/functions
@@ -43,9 +44,9 @@
 │   │       └── ./frontend/build/static/js
 │   │           ├── ./frontend/build/static/js/563.fd8b9ea7.chunk.js
 │   │           ├── ./frontend/build/static/js/563.fd8b9ea7.chunk.js.map
-│   │           ├── ./frontend/build/static/js/main.63c69016.js
-│   │           ├── ./frontend/build/static/js/main.63c69016.js.LICENSE.txt
-│   │           └── ./frontend/build/static/js/main.63c69016.js.map
+│   │           ├── ./frontend/build/static/js/main.fa468889.js
+│   │           ├── ./frontend/build/static/js/main.fa468889.js.LICENSE.txt
+│   │           └── ./frontend/build/static/js/main.fa468889.js.map
 │   ├── ./frontend/config-overrides.js
 │   ├── ./frontend/directory_structure.txt
 │   ├── ./frontend/package-lock.json
@@ -62,7 +63,10 @@
 │   │   ├── ./frontend/src/App.tsx
 │   │   ├── ./frontend/src/components
 │   │   │   ├── ./frontend/src/components/Auth.tsx
+│   │   │   ├── ./frontend/src/components/AuthProvider.tsx
 │   │   │   ├── ./frontend/src/components/Profile.tsx
+│   │   │   ├── ./frontend/src/components/ProfileEdit.tsx
+│   │   │   ├── ./frontend/src/components/PromptEdit.tsx
 │   │   │   └── ./frontend/src/components/ProtectedRoute.tsx
 │   │   ├── ./frontend/src/index.css
 │   │   ├── ./frontend/src/index.tsx
@@ -71,15 +75,16 @@
 │   │   ├── ./frontend/src/reportWebVitals.ts
 │   │   ├── ./frontend/src/sample.js
 │   │   ├── ./frontend/src/services
+│   │   │   ├── ./frontend/src/services/chatGPT_f.ts
 │   │   │   ├── ./frontend/src/services/firebase-functions-client.ts
 │   │   │   ├── ./frontend/src/services/firebase-realtime-database.ts
 │   │   │   ├── ./frontend/src/services/firebase_f.ts
-│   │   │   ├── ./frontend/src/services/player-profile.ts
-│   │   │   └── ./frontend/src/services/AuthProvider.tsx
+│   │   │   └── ./frontend/src/services/profileAPI.ts
 │   │   ├── ./frontend/src/setupTests.ts
 │   │   └── ./frontend/src/views
 │   │       ├── ./frontend/src/views/BattleView.tsx
 │   │       ├── ./frontend/src/views/HomeView.tsx
+│   │       ├── ./frontend/src/views/OnlineRoomView.tsx
 │   │       └── ./frontend/src/views/ResultView.tsx
 │   └── ./frontend/tsconfig.frontend.json
 ├── ./package-lock.json
@@ -102,4 +107,4 @@
 ├── ./tsconfig.base.json
 └── ./ui-debug.log
 
-22 directories, 81 files
+22 directories, 86 files

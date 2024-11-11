@@ -6,6 +6,7 @@
     "dotenv": "^16.4.5",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1",
+    "node-fetch": "^3.3.2",
     "shared": "file:../shared",
     "tsx": "^4.19.1",
     "uuid": "^10.0.0"
@@ -19,8 +20,9 @@
     "serve": "firebase emulators:start --only functions",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'tsx' src/index_b.ts",
     "tsc": "tsc --project tsconfig.backend.json",
+    "clean:dist": "rimraf dist/*",
     "clean": "rimraf dist/* && rm -rf node_modules package-lock.json && npm cache verify",
-    "build": "npm run clean && npm run tsc",
+    "build": "npm run clean:dist && npm run tsc",
     "deploy": "firebase deploy --only functions"
   }
 }

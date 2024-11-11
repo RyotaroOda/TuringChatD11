@@ -13,7 +13,11 @@
     "target": "ES2020", // 出力するJavaScriptのバージョン
     "allowSyntheticDefaultImports": true, // default importを許可
     "resolveJsonModule": true, // JSONファイルのインポートを許可
-    "diagnostics": true // エラー診断情報の出力
+    "diagnostics": true, // エラー診断情報の出力
+    "baseUrl": ".",
+    "paths": {
+      "shared/*": ["../shared/dist/*"]
+    }
   },
   "include": [
     "src/**/*" // src 配下のすべてのファイルを含める
