@@ -1,7 +1,7 @@
 // frontend/src/services/player-profile.ts
 import { updateProfile } from "firebase/auth";
 import { doc, setDoc, updateDoc, getDoc } from "firebase/firestore";
-import { AIModel, BotData, BotSetting, ProfileData } from "shared/dist/types";
+import { AIModel, BotSetting, ProfileData } from "shared/dist/types";
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { auth, firestore } from "./firebase_f.ts";
 
@@ -124,6 +124,18 @@ export const updateUserProfile = async (data: any) => {
   console.log("プロフィールが更新されました:", userId);
 };
 
+export const updateLastLogin = async () => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    throw new Error("ユーザーIDが見つかりません");
+  }
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
+  await updateDoc(profileRef, {
+    lastLogin: new Date().toISOString(),
+  });
+  console.log("最終ログインが更新されました:", userId);
+};
+
 // プロフィールの取得
 export const getUserProfile = async (): Promise<ProfileData> => {
   const userId = auth.currentUser?.uid;
@@ -135,6 +147,7 @@ export const getUserProfile = async (): Promise<ProfileData> => {
   const snapshot = await getDoc(profileRef);
   if (snapshot.exists()) {
     console.log("プロフィールが見つかりました:", snapshot.data());
+    updateLastLogin();
     return snapshot.data() as ProfileData;
   } else {
     throw new Error(`ユーザープロフィールが見つかりません: ${userId}`);

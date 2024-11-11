@@ -22,9 +22,9 @@ export type BattleLog = {
     };
 };
 export declare enum AIModel {
-    "gpt-4" = 0,
-    "gpt-4-turbo" = 1,
-    "gpt-3.5-turbo" = 2
+    "gpt-4" = "gpt-4",
+    "gpt-4-turbo" = "gpt-4-turbo",
+    "gpt-3.5-turbo" = "gpt-3.5-turbo"
 }
 export type BotSetting = {
     id: number;

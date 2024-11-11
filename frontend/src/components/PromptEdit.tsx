@@ -3,6 +3,7 @@ import { AIModel, BotSetting, BotData, GPTMessage } from "shared/dist/types";
 import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/profileAPI.ts";
 import { generateChat } from "../services/chatGPT_f.ts";
+import { set } from "firebase/database";
 
 const EditPromptView: React.FC = () => {
   const bots: BotData = useLocation().state;
@@ -33,6 +34,7 @@ const EditPromptView: React.FC = () => {
     content: "",
   });
   const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
+  const [isSending, setIsSending] = useState<boolean>(false);
 
   // ボット設定の選択が変更されたときの処理
   const handleBotSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -113,7 +115,7 @@ const EditPromptView: React.FC = () => {
     });
     setChatHistory((prevHistory) => [
       ...prevHistory,
-      { role: "system", content: "デフォルトに設定されました" },
+      { role: "system", content: `${botName}がデフォルトに設定されました` },
     ]);
   }, [defaultBotId]);
 
@@ -124,9 +126,21 @@ const EditPromptView: React.FC = () => {
         ...prevHistory,
         { role: "user", content: chatMessage.content },
       ]);
+      // role が "system" でないメッセージのみを抽出
       setChatMessage({ role: "user", content: "" });
-      const response = await generateChat(chatHistory);
+
+      setIsSending(true);
+    }
+  };
+
+  useEffect(() => {
+    const sendChatMessage = async () => {
+      const filteredMessages = chatHistory.filter(
+        (message) => message.role !== "system"
+      );
+      const response = await generateChat(filteredMessages);
       // ボットからの応答をシミュレート
+      setIsSending(false);
       setChatHistory((prevHistory) => [
         ...prevHistory,
         {
@@ -134,8 +148,13 @@ const EditPromptView: React.FC = () => {
           content: response,
         },
       ]);
+      setIsSending(false);
+    };
+
+    if (isSending) {
+      sendChatMessage();
     }
-  };
+  }, [isSending, chatHistory]);
 
   return (
     <div style={{ padding: "20px" }}>
@@ -255,7 +274,7 @@ const EditPromptView: React.FC = () => {
                 {message.role === "user"
                   ? "User"
                   : message.role === "assistant"
-                    ? "Bot"
+                    ? `${botName}`
                     : "System"}
                 :
               </strong>{" "}
@@ -271,8 +290,12 @@ const EditPromptView: React.FC = () => {
           }
           style={{ width: "80%", padding: "8px", marginRight: "10px" }}
         />
-        <button onClick={handleSendMessage} style={{ padding: "10px 20px" }}>
-          送信
+        <button
+          onClick={handleSendMessage}
+          disabled={isSending}
+          style={{ padding: "10px 20px" }}
+        >
+          {isSending ? "送信中" : "送信"}
         </button>
       </div>
     </div>

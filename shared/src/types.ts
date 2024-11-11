@@ -27,9 +27,9 @@ export type BattleLog = {
 };
 
 export enum AIModel {
-  "gpt-4",
-  "gpt-4-turbo",
-  "gpt-3.5-turbo",
+  "gpt-4" = "gpt-4",
+  "gpt-4-turbo" = "gpt-4-turbo",
+  "gpt-3.5-turbo" = "gpt-3.5-turbo",
 }
 
 export type BotSetting = {

@@ -9,6 +9,7 @@ interface ChatGPTResponse {
     };
   }>;
 }
+
 interface ChatGPTRequest {
   model: AIModel; // 使用するAIモデル
   messages: GPTMessage[];
@@ -21,91 +22,55 @@ interface ChatGPTRequest {
 
 // ChatGPTにリクエストを送信する関数
 const generate = async (prompt: ChatGPTRequest): Promise<string> => {
-  try {
-    const apiUrl = process.env.CHATGPT_API_URL;
-    const apiKey = process.env.OPENAI_API_KEY;
+  const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
+  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
-    // 環境変数のチェック
-    if (!apiUrl) {
-      throw new Error(
-        "CHATGPT_API_URL is not defined in the environment variables."
-      );
-    }
-
-    if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY is not defined in the environment variables."
-      );
-    }
-
-    // ChatGPT APIにリクエストを送信
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(prompt),
-    });
-
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error("Error details:", errorDetails);
-      throw new Error(
-        `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
-      );
-    }
-
-    // レスポンスからデータを取得
-    const dataResponse = (await response.json()) as ChatGPTResponse;
-
-    // トピックを取り出す
-    if (dataResponse.choices && dataResponse.choices.length > 0) {
-      const message = dataResponse.choices[0].message;
-      if (message && message.content) {
-        const topic = message.content.trim();
-        return topic;
-      }
-    }
-    throw new Error("No content found in ChatGPT response.");
-  } catch (error) {
-    throw new Error("Error communicating with ChatGPT API: " + error);
+  // 環境変数のチェック
+  if (!apiUrl) {
+    throw new Error(
+      "CHATGPT_API_URL is not defined in the environment variables."
+    );
   }
-};
 
-// トピックを生成するエクスポート関数
-export const generateTopic = async (): Promise<string> => {
-  // 現在の日時を取得
-  const currentDate = new Date().toLocaleString("ja-JP", {
-    timeZone: "Asia/Tokyo",
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY is not defined in the environment variables."
+    );
+  }
+
+  // リクエスト内容をログに出力して確認
+  console.log("Prompt being sent:", JSON.stringify(prompt, null, 2));
+
+  // ChatGPT APIにリクエストを送信
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(prompt),
   });
 
-  const message: GPTMessage[] = [
-    {
-      role: "system",
-      content: `子供向けにランダムに会話の話題を設定してください。回答の形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
-    },
-  ];
-
-  const prompt: ChatGPTRequest = {
-    model: AIModel["gpt-4"],
-    messages: message,
-    max_tokens: 100,
-    temperature: 1.0, // 高めのランダム性を設定
-    top_p: 0.9, // サンプリング時に多様なトークンを選ぶようにする
-    n: 1,
-    stop: null,
-  };
-
-  const topic = await generate(prompt);
-
-  if (topic) {
-    console.log("Generated topic:", topic);
-    return topic;
-  } else {
-    console.log("Failed to generate topic.");
-    throw new Error("Failed to generate topic.");
+  if (!response.ok) {
+    const errorDetails = await response.text();
+    console.error("Error details:", errorDetails);
+    throw new Error(
+      `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
+    );
   }
+
+  // レスポンスからデータを取得
+  const dataResponse = (await response.json()) as ChatGPTResponse;
+
+  // トピックを取り出す
+  if (dataResponse.choices && dataResponse.choices.length > 0) {
+    const message = dataResponse.choices[0].message;
+    if (message && message.content) {
+      const topic = message.content.trim();
+      return topic;
+    }
+  }
+  throw new Error("No content found in ChatGPT response.");
 };
 
 export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
@@ -119,7 +84,7 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
     n: 1,
     stop: null,
   };
-  const answer = generate(prompt);
+  const answer = await generate(prompt);
   console.log("Generated answer:", answer);
   return answer;
 };
