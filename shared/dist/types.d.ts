@@ -1,3 +1,16 @@
+export type RoomData = {
+    roomId: string;
+    status: "waiting" | "playing" | "finished";
+    players: PlayerData[];
+    battleConfig: BattleConfig;
+    battleLog: BattleLog;
+};
+export type PlayerData = {
+    id: string;
+    name: string;
+    isReady: boolean;
+    rating: number;
+};
 export type BattleConfig = {
     maxTurn: number;
     battleType: "Single" | "Double" | "Short" | "Werewolf";
@@ -21,40 +34,6 @@ export type BattleLog = {
         end: number;
     };
 };
-export declare enum AIModel {
-    "gpt-4" = "gpt-4",
-    "gpt-4-turbo" = "gpt-4-turbo",
-    "gpt-3.5-turbo" = "gpt-3.5-turbo"
-}
-export type BotSetting = {
-    id: number;
-    name: string;
-    prompt: string;
-    model: AIModel;
-    temperature: number;
-    top_p: number;
-};
-export type BotData = {
-    defaultId: number;
-    data: BotSetting[];
-};
-export type PlayerData = {
-    id: string;
-    name: string;
-    rating: number;
-};
-export type RoomData = {
-    roomId: string;
-    status: "waiting" | "playing" | "finished";
-    players: PlayerData[];
-    battleConfig: BattleConfig;
-    battleLog: BattleLog;
-};
-export type MatchResult = {
-    roomId: string;
-    startBattle: Boolean;
-    message?: string;
-};
 export type SubmitAnswer = {
     playerId: string;
     identity: Boolean;
@@ -66,6 +45,11 @@ export type BattleResult = {
     scores: number[];
     answers: SubmitAnswer[];
     time: number;
+};
+export type MatchResult = {
+    roomId: string;
+    startBattle: Boolean;
+    message?: string;
 };
 export type ResultData = {
     playerId: string;
@@ -84,7 +68,7 @@ export type ProfileData = {
     rating: number;
     win: number;
     lose: number;
-    bots: BotData | null;
+    bots: BotData;
     questionnaire: QuestionnaireData | null;
     age: number | null;
     gender: "male" | "female" | "other" | "no_answer";
@@ -95,6 +79,23 @@ export type ProfileData = {
     };
     platform: "mobile" | "web" | "desktop";
 };
+export type BotData = {
+    defaultId: number;
+    data: BotSetting[];
+};
+export type BotSetting = {
+    id: number;
+    name: string;
+    prompt: string;
+    model: AIModel;
+    temperature: number;
+    top_p: number;
+};
+export declare enum AIModel {
+    "gpt-4" = "gpt-4",
+    "gpt-4-turbo" = "gpt-4-turbo",
+    "gpt-3.5-turbo" = "gpt-3.5-turbo"
+}
 export type QuestionnaireData = {
     questions: string[];
     answers: string[];

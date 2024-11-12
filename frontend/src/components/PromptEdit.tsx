@@ -3,7 +3,6 @@ import { AIModel, BotSetting, BotData, GPTMessage } from "shared/dist/types";
 import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/profileAPI.ts";
 import { generateChat } from "../services/chatGPT_f.ts";
-import { set } from "firebase/database";
 
 const EditPromptView: React.FC = () => {
   const bots: BotData = useLocation().state;

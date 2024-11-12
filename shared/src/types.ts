@@ -1,5 +1,21 @@
 //types.ts
 
+//#region RoomData
+export type RoomData = {
+  roomId: string;
+  status: "waiting" | "playing" | "finished";
+  players: PlayerData[];
+  battleConfig: BattleConfig;
+  battleLog: BattleLog;
+};
+
+export type PlayerData = {
+  id: string;
+  name: string;
+  isReady: boolean;
+  rating: number;
+};
+
 //バトル設定
 export type BattleConfig = {
   maxTurn: number;
@@ -26,47 +42,6 @@ export type BattleLog = {
   timeStamps: { start: number; end: number };
 };
 
-export enum AIModel {
-  "gpt-4" = "gpt-4",
-  "gpt-4-turbo" = "gpt-4-turbo",
-  "gpt-3.5-turbo" = "gpt-3.5-turbo",
-}
-
-export type BotSetting = {
-  id: number;
-  name: string;
-  prompt: string;
-  model: AIModel;
-  temperature: number;
-  top_p: number;
-};
-
-export type BotData = {
-  defaultId: number;
-  data: BotSetting[];
-};
-
-export type PlayerData = {
-  id: string;
-  name: string;
-  rating: number;
-};
-
-export type RoomData = {
-  roomId: string;
-  status: "waiting" | "playing" | "finished";
-  players: PlayerData[];
-  battleConfig: BattleConfig;
-  battleLog: BattleLog;
-};
-
-//firebase functions
-export type MatchResult = {
-  roomId: string;
-  startBattle: Boolean;
-  message?: string;
-};
-
 //プレイヤーの回答
 export type SubmitAnswer = {
   playerId: string;
@@ -83,6 +58,15 @@ export type BattleResult = {
   time: number;
 };
 
+//#endregion
+
+//firebase functions
+export type MatchResult = {
+  roomId: string;
+  startBattle: Boolean;
+  message?: string;
+};
+
 //各クライアント用
 export type ResultData = {
   playerId: string;
@@ -94,6 +78,7 @@ export type ResultData = {
   time: number;
 };
 
+//#region ProfileData
 export type ProfileData = {
   userId: string;
   name: string;
@@ -105,7 +90,7 @@ export type ProfileData = {
   win: number;
   lose: number;
 
-  bots: BotData | null;
+  bots: BotData;
 
   questionnaire: QuestionnaireData | null;
 
@@ -122,10 +107,32 @@ export type ProfileData = {
   platform: "mobile" | "web" | "desktop"; // 利用プラットフォーム
 };
 
+export type BotData = {
+  defaultId: number;
+  data: BotSetting[];
+};
+
+export type BotSetting = {
+  id: number;
+  name: string;
+  prompt: string;
+  model: AIModel;
+  temperature: number;
+  top_p: number;
+};
+
+export enum AIModel {
+  "gpt-4" = "gpt-4",
+  "gpt-4-turbo" = "gpt-4-turbo",
+  "gpt-3.5-turbo" = "gpt-3.5-turbo",
+}
+
 export type QuestionnaireData = {
   questions: string[];
   answers: string[];
 };
+
+//#endregion
 
 // GPT
 export type GPTMessage = {

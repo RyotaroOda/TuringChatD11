@@ -1,3 +1,4 @@
+// frontend/src/views/ResultView.tsx
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";

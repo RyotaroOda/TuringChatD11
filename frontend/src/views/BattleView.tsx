@@ -1,3 +1,4 @@
+// frontend/src/views/BattleView.tsx
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
@@ -15,6 +16,14 @@ import {
   ResultData,
 } from "shared/dist/types";
 import { auth } from "../services/firebase_f.ts";
+import { BotSetting } from "shared/src/types.ts";
+
+export interface BattleViewProps {
+  roomId: string;
+  roomData: RoomData;
+  isHuman: boolean;
+  bot: BotSetting | null;
+}
 
 const BattleView: React.FC = () => {
   //#region init

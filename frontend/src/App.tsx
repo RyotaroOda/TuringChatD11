@@ -1,3 +1,4 @@
+//frontend/src/App.tsx
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -8,7 +9,7 @@ import {
 import HomeView from "./views/HomeView.tsx";
 import BattleView from "./views/BattleView.tsx";
 import ResultView from "./views/ResultView.tsx";
-import OnlineRoomView from "./views/OnlineRoomView.tsx";
+import RoomView from "./views/RoomView.tsx";
 import Auth from "./components/Auth.tsx";
 import Profile from "./components/Profile.tsx"; // 任意のプロフィールページ
 import ProtectedRoute from "./components/ProtectedRoute.tsx"; // 認証保護されたルート
@@ -26,15 +27,15 @@ function App() {
           <Route path="/" element={<HomeView />} />
           {/* 認証が必要なルート */}
           <Route
-            path="/online_room"
+            path="/:roomId"
             element={
               <ProtectedRoute>
-                <OnlineRoomView />
+                <RoomView />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/battle/:roomId"
+            path="/:roomId/battle"
             element={
               <ProtectedRoute>
                 <BattleView />

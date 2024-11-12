@@ -1,3 +1,4 @@
+// frontend/src/views/HomeView.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -13,12 +14,16 @@ import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
 
 import {
+  AIModel,
+  BotData,
   MatchResult,
   PlayerData,
   ProfileData,
   RoomData,
 } from "shared/dist/types";
 import { getUserProfile } from "../services/profileAPI.ts";
+import { OnlineRoomViewProps } from "./RoomView.tsx";
+import { BotSetting } from "shared/src/types.ts";
 
 const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(9999);
@@ -30,6 +35,7 @@ const HomeView: React.FC = () => {
   const navigate = useNavigate();
   const user = auth.currentUser; // ログインユーザー情報
   const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [bots, setBots] = useState<BotData | null>(null);
 
   //#region ログイン状態
   useEffect(() => {
@@ -38,10 +44,34 @@ const HomeView: React.FC = () => {
       // ログイン済みユーザーならFirebaseからプレイヤー名を取得
       if (user.isAnonymous) {
         setPlayerName("ゲスト"); // 匿名ユーザーの場合はゲスト表示
-      } else if (user.displayName) {
-        setPlayerName(user.displayName); // 名前が登録されている場合は表示
+        const newBot: BotData = {
+          defaultId: 0,
+          data: [
+            {
+              id: 0,
+              name: "default",
+              prompt: aiPrompt,
+              model: AIModel["gpt-4"],
+              temperature: 0,
+              top_p: 0,
+            },
+          ],
+        };
+        setBots(newBot);
       } else {
-        setPlayerName(user.email || ""); // 名前がない場合はメールアドレスを表示
+        setPlayerName(user.displayName || ""); // 名前が登録されている場合は表示
+        const fetchProfile = async () => {
+          if (user) {
+            const data = await getUserProfile();
+            if (data) {
+              setProfile(data);
+              setBots(data.bots);
+            } else {
+              console.error("プロフィール情報の取得に失敗しました。", data);
+            }
+          }
+        };
+        fetchProfile();
       }
     }
   }, [user]);
@@ -62,7 +92,7 @@ const HomeView: React.FC = () => {
     try {
       await signInAnonymously(auth);
       alert("ゲストでログインしました");
-      navigate("/"); // ログイン後にホーム画面にリダイレクト
+      // navigate("/"); // ログイン後にホーム画面にリダイレクト
     } catch (error) {
       console.error("ゲストログインエラー:", error);
     }
@@ -79,17 +109,6 @@ const HomeView: React.FC = () => {
         user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
       setPlayerName(displayName); // 既存のプレイヤーネームを設定
       setNewName(displayName); // 名前編集用のテキストフィールドにも設定
-      const fetchProfile = async () => {
-        if (user) {
-          const data = await getUserProfile();
-          if (data) {
-            setProfile(data);
-          } else {
-            console.error("プロフィール情報の取得に失敗しました。", data);
-          }
-        }
-      };
-      fetchProfile();
     }
   }, [user]);
 
@@ -126,12 +145,13 @@ const HomeView: React.FC = () => {
         id: playerId, // プレイヤーID
         name: playerName,
         rating: score,
+        isReady: false,
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId !== "") {
         await setRoomId(result.roomId); // ルームIDを設定
         if (result.startBattle) {
-          await toBattleViewSegue(result.roomId); // バトル画面に遷移
+          toRoomViewSegue(result.roomId); // バトル画面に遷移
           //TODO: roomIdを更新してから
         } else {
           //ホスト
@@ -168,7 +188,7 @@ const HomeView: React.FC = () => {
         (players) => {
           // player2が設定されたらマッチング成立とみなす
           if (players && Object.keys(players).length === 2) {
-            toBattleViewSegue(roomId); // バトル画面に遷移
+            toRoomViewSegue(roomId); // バトル画面に遷移
           }
         },
         { current: !isMatching }
@@ -198,6 +218,7 @@ const HomeView: React.FC = () => {
 
   //#endregion
 
+  //#region 画面遷移
   // プロフィール編集ボタンのクリック処理
   const handleProfileEditClick = () => {
     navigate("/profile_edit", {
@@ -207,34 +228,44 @@ const HomeView: React.FC = () => {
 
   const handlePromptEdit = () => {
     navigate("/prompt_edit", {
-      state: profile?.bots,
+      state: bots,
     }); // プロンプト編集画面に遷移
   };
 
-  const toBattleViewSegue = (roomId: string) => {
-    if (roomId) {
-      setIsMatching(false); // マッチング状態を解除
-      getRoomData(roomId).then((roomData) => {
-        if (roomData) {
-          if (roomData.status === "playing") {
-            console.log("バトル画面に遷移します");
-            navigate(`/battle/${roomId}`, {
-              state: { roomData: roomData },
-            });
-          } else {
-            console.error("ルームがプレイ中ではありません");
-            cancelMatching();
-          }
-        } else {
-          console.error("ルームデータが取得できません");
-          cancelMatching();
-        }
-      });
-    } else {
-      console.error("roomIdが取得できません");
-      cancelMatching();
-    }
+  const toBattleViewSegue = (roomId: string, roomData: RoomData) => {
+    setIsMatching(false); // マッチング状態を解除
+    getRoomData(roomId).then((roomData) => {
+      if (roomData.status === "playing") {
+        console.log("バトル画面に遷移します");
+        navigate(`/battle/${roomId}`, {
+          state: { roomData: roomData },
+        });
+      } else {
+        console.error("ルームがプレイ中ではありません");
+        cancelMatching();
+      }
+    });
   };
+
+  const toRoomViewSegue = (roomId: string) => {
+    setIsMatching(false); // マッチング状態を解除
+    getRoomData(roomId).then((roomData) => {
+      if (roomData.status === "playing" && bots) {
+        console.log("バトル画面に遷移します");
+        const props: OnlineRoomViewProps = {
+          roomData: roomData,
+          botData: bots,
+        };
+        navigate(`/${roomId}`, {
+          state: props,
+        });
+      } else {
+        console.error("ルームがプレイ中ではありません");
+        cancelMatching();
+      }
+    });
+  };
+  //#endregion
 
   return (
     <div>
