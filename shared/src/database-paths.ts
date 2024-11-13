@@ -6,6 +6,8 @@ export const DATABASE_PATHS = {
 
   room: (roomId: string) => `rooms/${roomId}`,
   players: (roomId: string) => `rooms/${roomId}/players`,
+  ready: (roomId: string, playerId: string) =>
+    `rooms/${roomId}/players/${playerId}`,
   status: (roomId: string) => `rooms/${roomId}/status`,
   battleLog: (roomId: string) => `rooms/${roomId}/battleLog`,
   messages: (roomId: string) => `rooms/${roomId}/battleLog/messages`,

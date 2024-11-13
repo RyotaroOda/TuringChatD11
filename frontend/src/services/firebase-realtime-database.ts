@@ -1,4 +1,12 @@
-import { ref, push, get, onValue, onChildAdded, off } from "firebase/database";
+import {
+  ref,
+  push,
+  get,
+  onValue,
+  onChildAdded,
+  off,
+  update,
+} from "firebase/database";
 import { db, auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import {
   BattleLog,
@@ -11,6 +19,7 @@ import {
 } from "shared/dist/types";
 import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { calculateBattleResult } from "./firebase-functions-client.ts";
+
 //#region HomeView
 // プレイヤーデータを監視
 export const onRoomPlayersUpdated = (
@@ -106,6 +115,37 @@ export const getRoomData = async (roomId: string): Promise<RoomData> => {
 };
 //#endregion
 
+//#region RoomView
+export const preparationComplete = async (roomId: string, playerId: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ログインしていないユーザーです。");
+  }
+  const readyRef = ref(db, DATABASE_PATHS.ready(roomId, playerId));
+  const playerData = {
+    isReady: true,
+  };
+  await update(readyRef, playerData);
+  console.log("プレイヤーデータを更新しました。", playerData);
+};
+
+export const onPlayerPrepared = (
+  roomId: string,
+  callback: (players: PlayerData[]) => void
+) => {
+  // プレイヤーリストの参照
+  const playersRef = ref(db, DATABASE_PATHS.players(roomId));
+
+  // プレイヤーが追加されたときの監視
+  onValue(playersRef, (snapshot) => {
+    const newPlayer = snapshot.val();
+    console.log("プレイヤーが追加されました。", newPlayer);
+    callback(newPlayer); // 新しいプレイヤーをコールバックで返す
+  });
+};
+
+//#endregion
+
 //#region BattleView
 
 //#region メッセージ
@@ -196,7 +236,7 @@ export const checkAnswers = (roomId: string) => {
 //resultが更新されたらバトル終了
 export const onResultUpdated = (
   roomId: string,
-  playerNumber: number,
+  isHost: boolean,
   callback: (players: ResultData | null) => void
 ) => {
   const resultRef = ref(db, DATABASE_PATHS.result(roomId));
@@ -208,24 +248,23 @@ export const onResultUpdated = (
         console.log("バトル結果が更新されました。", serverData);
         const result: ResultData = {
           playerId: auth.currentUser?.uid || "",
-          myAnswer: serverData.answers[playerNumber],
-          opponentAnswer:
-            playerNumber === 0 ? serverData.answers[1] : serverData.answers[0],
+          myAnswer: isHost ? serverData.answers[0] : serverData.answers[1],
+          opponentAnswer: isHost
+            ? serverData.answers[1]
+            : serverData.answers[0],
           corrects: serverData.corrects,
-          win:
-            playerNumber === 0
-              ? serverData.scores[0] > serverData.scores[1]
-                ? "win"
-                : serverData.scores[0] < serverData.scores[1]
-                  ? "lose"
-                  : "draw"
-              : serverData.scores[1] > serverData.scores[0]
-                ? "win"
-                : serverData.scores[1] < serverData.scores[0]
-                  ? "lose"
-                  : "draw",
-          score:
-            playerNumber === 0 ? serverData.scores[0] : serverData.scores[1],
+          win: isHost
+            ? serverData.scores[0] > serverData.scores[1]
+              ? "win"
+              : serverData.scores[0] < serverData.scores[1]
+                ? "lose"
+                : "draw"
+            : serverData.scores[1] > serverData.scores[0]
+              ? "win"
+              : serverData.scores[1] < serverData.scores[0]
+                ? "lose"
+                : "draw",
+          score: isHost ? serverData.scores[0] : serverData.scores[1],
           time: serverData.time,
         };
         callback(result);

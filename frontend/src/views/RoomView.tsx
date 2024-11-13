@@ -1,8 +1,13 @@
 // frontend/src/views/RoomView.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { RoomData, BotData } from "shared/dist/types";
-import { BattleViewProps } from "./BattleView";
+import { RoomData, BotData, PlayerData } from "shared/dist/types";
+import { BattleViewProps } from "./BattleView.tsx";
+import {
+  onPlayerPrepared,
+  preparationComplete,
+} from "../services/firebase-realtime-database.ts";
+import { auth } from "../services/firebase_f.ts";
 export interface OnlineRoomViewProps {
   roomData: RoomData;
   botData: BotData;
@@ -14,6 +19,15 @@ const RoomView: React.FC = () => {
     roomData: RoomData;
     botData: BotData;
   };
+  const roomId = roomData.roomId;
+  const myId = auth.currentUser?.uid;
+
+  const myKey =
+    Object.keys(roomData.players).find(
+      (key) => roomData.players[key].id === myId
+    ) ?? "";
+
+  const [players, setPlayers] = useState(Object.values(roomData.players));
   const navigate = useNavigate();
   const [selectedMode, setSelectedMode] = useState<"human" | "ai">("human");
   const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
@@ -33,6 +47,16 @@ const RoomView: React.FC = () => {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  // Handle player readiness
+  const handleReadyClick = () => {
+    if (selectedMode === "ai" && selectedBotId === null) {
+      alert("Please select an AI bot.");
+      return;
+    }
+    setIsReady(true);
+    preparationComplete(roomId, myKey);
+  };
+
   // Handle force ready when time is up
   const handleForceReady = () => {
     if (!isReady) {
@@ -45,27 +69,34 @@ const RoomView: React.FC = () => {
         setSelectedBotId(botData.defaultId);
       }
       setIsReady(true);
+      preparationComplete(roomId, myKey);
     }
   };
 
-  // Handle player readiness
-  const handleReadyClick = () => {
-    if (selectedMode === "ai" && selectedBotId === null) {
-      alert("Please select an AI bot.");
-      return;
+  useEffect(() => {
+    if (isReady) {
+      const unsubscribe = onPlayerPrepared(roomId, (result) => {
+        if (result) {
+          console.log("preparations updated:", result);
+          setPlayers(Object.values(result));
+          // if (
+          //   Array.isArray(result) &&
+          //   result.every((player) => player.isReady)
+          // ) {
+          //   toBattleViewSegue();
+          // }
+        }
+      });
     }
-    setIsReady(true);
-  };
+  }, [isReady]);
 
   // Navigate to BattleView when all players are ready
   useEffect(() => {
-    if (
-      Array.isArray(roomData.players) &&
-      roomData.players.every((player) => player.isReady)
-    ) {
+    console.log("Players updated:", players);
+    if (players.every((player) => player.isReady)) {
       toBattleViewSegue();
     }
-  }, [roomData.players, navigate]);
+  }, [players]);
 
   const toBattleViewSegue = () => {
     const props: BattleViewProps = {
@@ -77,19 +108,12 @@ const RoomView: React.FC = () => {
           ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)
           : null,
     };
-    navigate(`/battle`, { state: props });
+    navigate(`/${roomData.roomId}/battle`, { state: props });
   };
 
   return (
     <div className="online-room-view">
       <h2>Room ID: {roomData.roomId}</h2>
-      <div className="battle-config">
-        <h3>バトル設定</h3>
-        {/* <p>Battle Type: {roomData.battleConfig.battleType}</p> */}
-        {/* <p>Topic: {roomData.battleConfig.topic}</p> */}
-        <p>ターン数: {roomData.battleConfig.maxTurn}</p>
-        <p>思考時間: {roomData.battleConfig.oneTurnTime} seconds</p>
-      </div>
 
       <div className="battle-preparation">
         <h3>バトル準備</h3>
@@ -138,15 +162,25 @@ const RoomView: React.FC = () => {
         </button>
       </div>
 
+      <div className="battle-config">
+        <h3>バトル設定</h3>
+        {/* <p>Battle Type: {roomData.battleConfig.battleType}</p> */}
+        {/* <p>Topic: {roomData.battleConfig.topic}</p> */}
+        <p>
+          ターン数: {roomData.battleConfig.maxTurn}ターン ×{" "}
+          {roomData.battleConfig.oneTurnTime} 秒
+        </p>
+        {/* <p>ターン時間: {roomData.battleConfig.oneTurnTime} 秒</p> */}
+      </div>
+
       <div className="players-status">
-        <h3>他プレイヤー</h3>
+        <h3>プレイヤー一覧</h3>
         <ul>
-          {Array.isArray(roomData.players) &&
-            roomData.players.map((player) => (
-              <li key={player.id}>
-                {player.name} - {player.isReady ? "Ready" : "Preparing..."}
-              </li>
-            ))}
+          {players.map((player) => (
+            <li key={player.id}>
+              {player.name} - {player.isReady ? "準備完了！" : "準備中..."}
+            </li>
+          ))}
         </ul>
       </div>
     </div>

@@ -7,6 +7,7 @@ exports.DATABASE_PATHS = {
     route_rooms: "rooms",
     room: (roomId) => `rooms/${roomId}`,
     players: (roomId) => `rooms/${roomId}/players`,
+    ready: (roomId, playerId) => `rooms/${roomId}/players/${playerId}`,
     status: (roomId) => `rooms/${roomId}/status`,
     battleLog: (roomId) => `rooms/${roomId}/battleLog`,
     messages: (roomId) => `rooms/${roomId}/battleLog/messages`,

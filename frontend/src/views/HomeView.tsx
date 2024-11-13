@@ -23,19 +23,20 @@ import {
 } from "shared/dist/types";
 import { getUserProfile } from "../services/profileAPI.ts";
 import { OnlineRoomViewProps } from "./RoomView.tsx";
-import { BotSetting } from "shared/src/types.ts";
 
 const HomeView: React.FC = () => {
-  const [score, setScore] = useState<number>(9999);
   const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
   const [roomId, setRoomId] = useState<string | null>(null); // ルームID
   const [playerName, setPlayerName] = useState<string>(""); // プレイヤーネームを保持
   const [playerId, setPlayerId] = useState<string>(""); // プレイヤーID
+  const [score, setScore] = useState<number>(0);
 
   const navigate = useNavigate();
   const user = auth.currentUser; // ログインユーザー情報
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [bots, setBots] = useState<BotData | null>(null);
+
+  const [room, setRoom] = useState<RoomData | null>(null); // ルームデータ
 
   //#region ログイン状態
   useEffect(() => {
@@ -65,7 +66,6 @@ const HomeView: React.FC = () => {
             const data = await getUserProfile();
             if (data) {
               setProfile(data);
-              setBots(data.bots);
             } else {
               console.error("プロフィール情報の取得に失敗しました。", data);
             }
@@ -75,6 +75,14 @@ const HomeView: React.FC = () => {
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    if (profile) {
+      setBots(profile.bots);
+      setAiPrompt(profile.bots.data[profile.bots.defaultId].prompt);
+      setScore(profile.rating);
+    }
+  }, [profile]);
 
   // ログアウト処理
   const handleLogout = async () => {
@@ -102,15 +110,15 @@ const HomeView: React.FC = () => {
   //#region プレイヤーネーム
   const [isEditingName, setIsEditingName] = useState<boolean>(false); // 名前編集モード
   const [newName, setNewName] = useState<string>(""); // 新しい名前
-  // ユーザー情報が変わるたびにプレイヤーネームを更新
-  useEffect(() => {
-    if (user) {
-      const displayName =
-        user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
-      setPlayerName(displayName); // 既存のプレイヤーネームを設定
-      setNewName(displayName); // 名前編集用のテキストフィールドにも設定
-    }
-  }, [user]);
+  // // ユーザー情報が変わるたびにプレイヤーネームを更新
+  // useEffect(() => {
+  //   if (user) {
+  //     const displayName =
+  //       user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
+  //     setPlayerName(displayName); // 既存のプレイヤーネームを設定
+  //     setNewName(displayName); // 名前編集用のテキストフィールドにも設定
+  //   }
+  // }, [user]);
 
   // 名前変更ボタンを押した時の処理
   const handleNameChangeClick = () => {
@@ -135,30 +143,22 @@ const HomeView: React.FC = () => {
   //#region マッチング
   const [isMatching, setIsMatching] = useState<boolean>(false);
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
-  // マッチング開始処理
-  let match: MatchResult;
 
   const startMatch = async () => {
     setIsPushedMatching(true); // マッチングボタンを押した状態にする
     try {
       const player: PlayerData = {
-        id: playerId, // プレイヤーID
+        id: playerId,
         name: playerName,
-        rating: score,
         isReady: false,
+        rating: score,
       };
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId !== "") {
-        await setRoomId(result.roomId); // ルームIDを設定
-        if (result.startBattle) {
-          toRoomViewSegue(result.roomId); // バトル画面に遷移
-          //TODO: roomIdを更新してから
-        } else {
-          //ホスト
-          setIsMatching(true); // マッチング状態を設定
-        }
+        setRoomId(result.roomId); // ルームIDを設定
+        setIsMatching(true); // マッチング状態にする
       } else {
-        console.error("マッチングエラー", result.message);
+        console.error("マッチングエラーー", result.message);
         cancelMatching();
       }
     } catch (error) {
@@ -167,19 +167,7 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // マッチングキャンセル処理
-  const cancelMatching = async () => {
-    setIsPushedMatching(false); // マッチングボタンを押した状態を解除
-    setIsMatching(false); // マッチング状態を解除
-    setRoomId(null); // ルームIDをクリア
-    try {
-      await cancelRequest(); // サーバーレス関数でキャンセル
-    } catch (error) {
-      console.error("キャンセルエラー:", error);
-    }
-  };
-
-  //ルーム監視
+  //ルーム監視 (ホスト)
   useEffect(() => {
     if (isMatching && roomId) {
       // ルームIDが設定されている場合、ルームのデータを監視
@@ -197,7 +185,19 @@ const HomeView: React.FC = () => {
         unsubscribe();
       };
     }
-  }, [roomId, navigate, playerName, isMatching]);
+  }, [roomId, isMatching]);
+
+  // マッチングキャンセル処理
+  const cancelMatching = async () => {
+    setIsPushedMatching(false); // マッチングボタンを押した状態を解除
+    setIsMatching(false); // マッチング状態を解除
+    setRoomId(null); // ルームIDをクリア
+    try {
+      await cancelRequest(); // サーバーレス関数でキャンセル
+    } catch (error) {
+      console.error("キャンセルエラー:", error);
+    }
+  };
 
   // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
   useEffect(() => {
@@ -232,20 +232,20 @@ const HomeView: React.FC = () => {
     }); // プロンプト編集画面に遷移
   };
 
-  const toBattleViewSegue = (roomId: string, roomData: RoomData) => {
-    setIsMatching(false); // マッチング状態を解除
-    getRoomData(roomId).then((roomData) => {
-      if (roomData.status === "playing") {
-        console.log("バトル画面に遷移します");
-        navigate(`/battle/${roomId}`, {
-          state: { roomData: roomData },
-        });
-      } else {
-        console.error("ルームがプレイ中ではありません");
-        cancelMatching();
-      }
-    });
-  };
+  // const toBattleViewSegue = (roomId: string, roomData: RoomData) => {
+  //   setIsMatching(false); // マッチング状態を解除
+  //   getRoomData(roomId).then((roomData) => {
+  //     if (roomData.status === "playing") {
+  //       console.log("バトル画面に遷移します");
+  //       navigate(`/battle/${roomId}`, {
+  //         state: { roomData: roomData },
+  //       });
+  //     } else {
+  //       console.error("ルームがプレイ中ではありません");
+  //       cancelMatching();
+  //     }
+  //   });
+  // };
 
   const toRoomViewSegue = (roomId: string) => {
     setIsMatching(false); // マッチング状態を解除
@@ -284,7 +284,8 @@ const HomeView: React.FC = () => {
                 <label>
                   AIプロンプト:
                   {aiPrompt}
-                  <button onClick={handlePromptEdit}>編集</button>
+                  <br />
+                  <button onClick={handlePromptEdit}>プロンプト編集</button>
                 </label>
               </div>
             </div>

@@ -43,7 +43,7 @@ function App() {
             }
           />
           <Route
-            path="/result"
+            path="/:roomId/battle/result"
             element={
               <ProtectedRoute>
                 <ResultView />

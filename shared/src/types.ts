@@ -4,6 +4,7 @@
 export type RoomData = {
   roomId: string;
   status: "waiting" | "playing" | "finished";
+  hostId: string;
   players: PlayerData[];
   battleConfig: BattleConfig;
   battleLog: BattleLog;

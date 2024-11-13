@@ -4,6 +4,10 @@ import { Link, useLocation } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { ResultData } from "shared/dist/types";
 
+export interface ResultViewProps {
+  resultData: ResultData;
+}
+
 const ResultView: React.FC = () => {
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
 

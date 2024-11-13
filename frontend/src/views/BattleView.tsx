@@ -17,6 +17,7 @@ import {
 } from "shared/dist/types";
 import { auth } from "../services/firebase_f.ts";
 import { BotSetting } from "shared/src/types.ts";
+import { ResultViewProps } from "./ResultView.tsx";
 
 export interface BattleViewProps {
   roomId: string;
@@ -28,31 +29,35 @@ export interface BattleViewProps {
 const BattleView: React.FC = () => {
   //#region init
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
-  const { roomId } = useParams<{ roomId: string }>();
+  const location = useLocation();
+  const { roomId, roomData, isHuman, bot } = location.state as {
+    roomId: string;
+    roomData: RoomData;
+    isHuman: boolean;
+    bot: BotSetting | null;
+  };
 
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
   // Location and Params
-  const location = useLocation();
-  const state: RoomData = location.state.roomData;
-  const playersKey = Object.keys(state.players);
-  const isHost = myId === state.players[0].id;
-  const myNumber = isHost ? 0 : 1;
+  const playersKey = Object.keys(roomData.players);
+  const isHost = myId === roomData.hostId;
+  // const myNumber = isHost ? 0 : 1;
   // const isHost = myId === state.players[playersKey[0]].id;
 
   const myData: PlayerData = isHost
-    ? state.players[playersKey[0]]
-    : state.players[playersKey[1]];
+    ? roomData.players[playersKey[0]]
+    : roomData.players[playersKey[1]];
   const opponentData: PlayerData = isHost
-    ? state.players[playersKey[1]]
-    : state.players[playersKey[0]];
+    ? roomData.players[playersKey[1]]
+    : roomData.players[playersKey[0]];
 
   // Player Information
   const myName = `${myData.name} (あなた)` || "error";
 
   // Battle Configuration
-  const battleConfig = state.battleConfig;
+  const battleConfig = roomData.battleConfig;
 
   // Player names mapping
   const playerNames: Record<string, string> = {
@@ -67,7 +72,7 @@ const BattleView: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost); // Initial turn state (placeholder)
   const [remainTurn, setRemainTurn] = useState<number>(
-    state.battleConfig.maxTurn
+    roomData.battleConfig.maxTurn
   );
   const [remainingTime, setRemainingTime] = useState<number>(
     battleConfig.oneTurnTime
@@ -115,11 +120,6 @@ const BattleView: React.FC = () => {
     }
   }, [remainTurn]);
 
-  //resultに遷移
-  const toResultSegue = (result: ResultData) => {
-    navigate("/result", { state: { resultData: result } });
-  };
-
   //#region ui
   const handleSendMessage = async () => {
     if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
@@ -150,19 +150,26 @@ const BattleView: React.FC = () => {
   //リザルトを監視
   useEffect(() => {
     if (isSubmitted && roomId) {
-      const unsubscribe = onResultUpdated(roomId, myNumber, (result) => {
+      const unsubscribe = onResultUpdated(roomId, isHost, (result) => {
         if (result) {
           console.log("Result updated:", result);
           // バトル終了時の処理
           toResultSegue(result);
         }
-        console;
       });
       return () => {
         unsubscribe();
       };
     }
   }, [isSubmitted]);
+
+  //resultに遷移
+  const toResultSegue = (result: ResultData) => {
+    const props: ResultViewProps = {
+      resultData: result,
+    };
+    navigate("`/${roomId}`/battle/result", { state: { resultData: result } });
+  };
 
   const handleFinishMatching = () => {
     console.log("Finishing battle...");

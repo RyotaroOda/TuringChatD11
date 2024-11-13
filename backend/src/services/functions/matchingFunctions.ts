@@ -103,13 +103,15 @@ const createRoom = async (player: PlayerData) => {
   const roomData: RoomData = {
     roomId: roomId,
     status: "waiting",
-    players: [player],
+    hostId: player.id,
+    players: [], //ここでplayerを入れるとIDが0になる
     battleConfig: newBattleConfig,
     battleLog: newBattleLog,
   };
 
   // ルーム情報をデータベースに保存
   await db.ref(DATABASE_PATHS.room(roomId)).set(roomData);
+  await db.ref(DATABASE_PATHS.players(roomId)).push(player);
   console.log(`新しいルーム ${roomId} が作成されました。`);
   return roomId;
 };

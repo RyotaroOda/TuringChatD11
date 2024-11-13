@@ -2,6 +2,7 @@ export declare const DATABASE_PATHS: {
     route_rooms: string;
     room: (roomId: string) => string;
     players: (roomId: string) => string;
+    ready: (roomId: string, playerId: string) => string;
     status: (roomId: string) => string;
     battleLog: (roomId: string) => string;
     messages: (roomId: string) => string;
