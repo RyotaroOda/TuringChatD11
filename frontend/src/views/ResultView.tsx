@@ -1,7 +1,6 @@
 // frontend/src/views/ResultView.tsx
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { auth } from "../services/firebase_f.ts";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ResultData } from "shared/dist/types";
 
 export interface ResultViewProps {
@@ -9,18 +8,19 @@ export interface ResultViewProps {
 }
 
 const ResultView: React.FC = () => {
-  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
-
-  const user = auth.currentUser;
-  const myId = user?.uid || "error";
-
-  // Location and Params
   const location = useLocation();
-  const result: ResultData = location.state.resultData;
-  console.log("ResultView result:", result);
-  const handleGoHome = () => {
-    console.log("Navigating to HomeView...");
-    // Implement navigation logic here
+  const { resultData } = location.state as {
+    resultData: ResultData;
+  };
+  console.log("ResultView result:", resultData);
+  const navigate = useNavigate();
+
+  const toHomeSegue = () => {
+    navigate("/");
+  };
+
+  const toBattleViewSegue = () => {
+    //TODO 戻る
   };
 
   return (
@@ -29,51 +29,54 @@ const ResultView: React.FC = () => {
 
       <p>
         <strong>勝敗:</strong>{" "}
-        {result.win === "win"
+        {resultData.win === "win"
           ? "勝ち！"
-          : result.win === "lose"
+          : resultData.win === "lose"
             ? "負け..."
             : "引き分け"}
       </p>
       <p>
-        <strong>バトルスコア:</strong> {result.score}
+        <strong>バトルスコア:</strong> {resultData.score}
       </p>
       <p>
-        <strong>バトル時間:</strong> {result.time} ms
+        <strong>バトル時間:</strong> {resultData.time} ms
       </p>
 
       <h3>判定</h3>
       <ul>
-        <li>自分: {result.corrects[0] ? "正解" : "不正解"}</li>
-        <li>相手: {result.corrects[1] ? "正解" : "不正解"}</li>
+        <li>自分: {resultData.corrects[0] ? "正解" : "不正解"}</li>
+        <li>相手: {resultData.corrects[1] ? "正解" : "不正解"}</li>
       </ul>
 
       <h3>自分の回答</h3>
       <p>
-        <strong>Identity:</strong> {result.myAnswer.identity ? "人間" : "AI"}
+        <strong>Identity:</strong>{" "}
+        {resultData.myAnswer.identity ? "人間" : "AI"}
       </p>
       <p>
-        <strong>Selection:</strong> {result.myAnswer.select ? "人間" : "AI"}
+        <strong>Selection:</strong> {resultData.myAnswer.select ? "人間" : "AI"}
       </p>
       <p>
-        <strong>理由:</strong> {result.myAnswer.message || "No message"}
+        <strong>理由:</strong> {resultData.myAnswer.message || "No message"}
       </p>
 
       <h3>相手の回答</h3>
       <p>
         <strong>Identity:</strong>{" "}
-        {result.opponentAnswer.identity ? "人間" : "AI"}
+        {resultData.opponentAnswer.identity ? "人間" : "AI"}
       </p>
       <p>
         <strong>Selection:</strong>{" "}
-        {result.opponentAnswer.select ? "人間" : "AI"}
+        {resultData.opponentAnswer.select ? "人間" : "AI"}
       </p>
       <p>
-        <strong>理由:</strong> {result.opponentAnswer.message || "No message"}
+        <strong>理由:</strong>{" "}
+        {resultData.opponentAnswer.message || "No message"}
       </p>
       <Link to="/">
         <button>バトル終了</button>
       </Link>
+      {/* TODO ルームへ */}
     </div>
   );
 };

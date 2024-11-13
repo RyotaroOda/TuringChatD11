@@ -1,6 +1,6 @@
 // frontend/src/views/BattleView.tsx
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   sendMessage,
   onMessageAdded,
@@ -168,7 +168,8 @@ const BattleView: React.FC = () => {
     const props: ResultViewProps = {
       resultData: result,
     };
-    navigate("`/${roomId}`/battle/result", { state: { resultData: result } });
+    console.log("ResultView props:", props);
+    navigate(`/${roomId}/battle/result`, { state: props });
   };
 
   const handleFinishMatching = () => {
@@ -253,9 +254,9 @@ const BattleView: React.FC = () => {
           </button>
         </div>
       )}
-      <Link to="/result">
+      {/* <Link to="/result">
         <button onClick={handleFinishMatching}>バトル終了</button>
-      </Link>
+      </Link> */}
     </div>
   );
 

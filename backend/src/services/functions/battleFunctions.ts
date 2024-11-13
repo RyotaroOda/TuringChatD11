@@ -59,7 +59,7 @@ export const calculateBattleResultFunction = functions.https.onCall(
     await db.ref(DATABASE_PATHS.status(roomId)).set("finished");
 
     await saveRoomDataToStore(roomId);
-    await removeRoomData(roomId);
+    // await removeRoomData(roomId); //TODO
   }
 );
 
