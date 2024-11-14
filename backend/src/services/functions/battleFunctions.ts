@@ -31,8 +31,8 @@ export const calculateBattleResultFunction = functions.https.onCall(
       ? [firstAnswer, secondAnswer]
       : [secondAnswer, firstAnswer];
     const corrects = {
-      player1Correct: answers[0].select === answers[1].identity,
-      player2Correct: answers[1].select === answers[0].identity,
+      player1Correct: answers[0].select === answers[1].isHuman,
+      player2Correct: answers[1].select === answers[0].isHuman,
     };
     //スコア計算
     //自分が正解したら1点、＋相手が不正解だったら1点

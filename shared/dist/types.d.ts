@@ -1,6 +1,6 @@
 export type RoomData = {
     roomId: string;
-    status: "waiting" | "playing" | "finished";
+    status: "waiting" | "matched" | "playing" | "finished";
     hostId: string;
     players: PlayerData[];
     battleConfig: BattleConfig;
@@ -37,7 +37,7 @@ export type BattleLog = {
 };
 export type SubmitAnswer = {
     playerId: string;
-    identity: Boolean;
+    isHuman: Boolean;
     select: Boolean | null;
     message: string;
 };

@@ -142,9 +142,10 @@ const joinRoom = async (
   const playerCount = snapshot ? snapshot.length : 0; // メッセージの数を取得
   console.log("playerCount", playerCount);
   try {
-    await db.ref(DATABASE_PATHS.status(roomId)).set("playing");
     await db.ref(DATABASE_PATHS.phase(roomId)).set("chat");
-    await db.ref(DATABASE_PATHS.players(roomId)).push(player); //最後に追加
+    await db.ref(DATABASE_PATHS.players(roomId)).push(player);
+    await db.ref(DATABASE_PATHS.status(roomId)).set("matched");
+    //最後に追加
     return true;
     //TODO: トランザクションを使って安全にデータを更新する
   } catch (error) {

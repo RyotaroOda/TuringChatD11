@@ -3,7 +3,7 @@
 //#region RoomData
 export type RoomData = {
   roomId: string;
-  status: "waiting" | "playing" | "finished";
+  status: "waiting" | "matched" | "playing" | "finished";
   hostId: string;
   players: PlayerData[];
   battleConfig: BattleConfig;
@@ -46,7 +46,7 @@ export type BattleLog = {
 //プレイヤーの回答
 export type SubmitAnswer = {
   playerId: string;
-  identity: Boolean; //isHuman?
+  isHuman: Boolean; //isHuman?
   select: Boolean | null;
   message: string;
 };

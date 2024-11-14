@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getRoomData,
-  onRoomPlayersUpdated,
+  onMatched,
 } from "../services/firebase-realtime-database.ts";
 import {
   requestMatch,
@@ -35,8 +35,6 @@ const HomeView: React.FC = () => {
   const user = auth.currentUser; // ログインユーザー情報
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [bots, setBots] = useState<BotData | null>(null);
-
-  const [room, setRoom] = useState<RoomData | null>(null); // ルームデータ
 
   //#region ログイン状態
   useEffect(() => {
@@ -110,15 +108,6 @@ const HomeView: React.FC = () => {
   //#region プレイヤーネーム
   const [isEditingName, setIsEditingName] = useState<boolean>(false); // 名前編集モード
   const [newName, setNewName] = useState<string>(""); // 新しい名前
-  // // ユーザー情報が変わるたびにプレイヤーネームを更新
-  // useEffect(() => {
-  //   if (user) {
-  //     const displayName =
-  //       user.displayName || (user.isAnonymous ? "ゲスト" : user.email || "");
-  //     setPlayerName(displayName); // 既存のプレイヤーネームを設定
-  //     setNewName(displayName); // 名前編集用のテキストフィールドにも設定
-  //   }
-  // }, [user]);
 
   // 名前変更ボタンを押した時の処理
   const handleNameChangeClick = () => {
@@ -141,8 +130,8 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region マッチング
-  const [isMatching, setIsMatching] = useState<boolean>(false);
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
+  const [roomListened, setRoomListened] = useState<boolean>(false);
 
   const startMatch = async () => {
     setIsPushedMatching(true); // マッチングボタンを押した状態にする
@@ -156,7 +145,7 @@ const HomeView: React.FC = () => {
       const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
       if (result.roomId !== "") {
         setRoomId(result.roomId); // ルームIDを設定
-        setIsMatching(true); // マッチング状態にする
+        setRoomListened(true);
       } else {
         console.error("マッチングエラーー", result.message);
         cancelMatching();
@@ -167,30 +156,10 @@ const HomeView: React.FC = () => {
     }
   };
 
-  //ルーム監視 (ホスト)
-  useEffect(() => {
-    if (isMatching && roomId) {
-      // ルームIDが設定されている場合、ルームのデータを監視
-      const unsubscribe = onRoomPlayersUpdated(
-        roomId,
-        (players) => {
-          // player2が設定されたらマッチング成立とみなす
-          if (players && Object.keys(players).length === 2) {
-            toRoomViewSegue(roomId); // バトル画面に遷移
-          }
-        },
-        { current: !isMatching }
-      );
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [roomId, isMatching]);
-
   // マッチングキャンセル処理
   const cancelMatching = async () => {
     setIsPushedMatching(false); // マッチングボタンを押した状態を解除
-    setIsMatching(false); // マッチング状態を解除
+    setRoomListened(false); // マッチング状態を解除
     setRoomId(null); // ルームIDをクリア
     try {
       await cancelRequest(); // サーバーレス関数でキャンセル
@@ -199,10 +168,30 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
+  //ルーム監視 (ホスト)
   useEffect(() => {
+    if (roomListened && roomId) {
+      // ルームIDが設定されている場合、ルームのデータを監視
+      const unsubscribe = onMatched(roomId, (isMatched) => {
+        // player2が設定されたらマッチング成立とみなす
+        if (isMatched) {
+          console.log("マッチング成立");
+          toRoomViewSegue(roomId); // バトル画面に遷移
+        }
+      });
+      return () => {
+        unsubscribe();
+        setRoomListened(false);
+      };
+    }
+    if (!roomListened && roomId) {
+      // onRoomPlayersUpdated(roomId, (players) => {}, { current: true });
+    }
+
+    // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
+
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
-      if (isMatching) {
+      if (roomListened) {
         cancelMatching();
         event.preventDefault();
         event.returnValue = ""; // ブラウザに確認メッセージを表示（ユーザーが手動で中止できる）
@@ -214,7 +203,7 @@ const HomeView: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload); // クリーンアップ
     };
-  }, [isMatching]);
+  }, [roomListened]);
 
   //#endregion
 
@@ -232,26 +221,13 @@ const HomeView: React.FC = () => {
     }); // プロンプト編集画面に遷移
   };
 
-  // const toBattleViewSegue = (roomId: string, roomData: RoomData) => {
-  //   setIsMatching(false); // マッチング状態を解除
-  //   getRoomData(roomId).then((roomData) => {
-  //     if (roomData.status === "playing") {
-  //       console.log("バトル画面に遷移します");
-  //       navigate(`/battle/${roomId}`, {
-  //         state: { roomData: roomData },
-  //       });
-  //     } else {
-  //       console.error("ルームがプレイ中ではありません");
-  //       cancelMatching();
-  //     }
-  //   });
-  // };
-
   const toRoomViewSegue = (roomId: string) => {
-    setIsMatching(false); // マッチング状態を解除
+    setRoomListened(false);
+    console.log("???");
+
     getRoomData(roomId).then((roomData) => {
-      if (roomData.status === "playing" && bots) {
-        console.log("バトル画面に遷移します");
+      if (roomData.status === "matched" && bots) {
+        console.log("ルーム画面に遷移します");
         const props: OnlineRoomViewProps = {
           roomData: roomData,
           botData: bots,
@@ -320,7 +296,7 @@ const HomeView: React.FC = () => {
           ) : (
             <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
           )}
-          {isMatching ? <p>"Matching ..."</p> : <p></p>}
+          {roomListened ? <p>"Matching ..."</p> : <p></p>}
         </div>
       ) : (
         <div>

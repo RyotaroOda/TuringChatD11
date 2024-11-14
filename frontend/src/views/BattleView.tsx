@@ -1,6 +1,6 @@
 // frontend/src/views/BattleView.tsx
 import React, { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   sendMessage,
   onMessageAdded,
@@ -16,8 +16,9 @@ import {
   ResultData,
 } from "shared/dist/types";
 import { auth } from "../services/firebase_f.ts";
-import { BotSetting } from "shared/src/types.ts";
+import { BotSetting, GPTMessage } from "shared/src/types.ts";
 import { ResultViewProps } from "./ResultView.tsx";
+import { generateBattleMessage } from "../services/chatGPT_f.ts";
 
 export interface BattleViewProps {
   roomId: string;
@@ -36,7 +37,6 @@ const BattleView: React.FC = () => {
     isHuman: boolean;
     bot: BotSetting | null;
   };
-
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
@@ -80,7 +80,7 @@ const BattleView: React.FC = () => {
 
   const [answer, setAnswer] = useState<SubmitAnswer>({
     playerId: myId,
-    identity: true,
+    isHuman: isHuman,
     select: null,
     message: "",
   });
@@ -91,6 +91,26 @@ const BattleView: React.FC = () => {
   useEffect(() => {
     setIsLoaded(true);
   }, [battleConfig]);
+
+  //#region メッセージ
+  //メッセージ送信
+  const handleSendMessage = async () => {
+    if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
+      setMessage("送信中...");
+      await sendMessage(roomId, message);
+      setMessage("");
+    }
+  };
+
+  const generateMessage = async () => {
+    const prompt: GPTMessage[] = [
+      {
+        role: "system",
+        content: "メッセージを生成してください",
+      },
+    ];
+    setMessage(await generateBattleMessage(prompt));
+  };
 
   //メッセージ更新
   useEffect(() => {
@@ -112,26 +132,18 @@ const BattleView: React.FC = () => {
       setRemainTurn((prevCount) => prevCount - 1);
     }
   }, [chatLog]);
+  //#endregion
 
-  // バトル終了時
+  //#region バトル終了時
   useEffect(() => {
     if (remainTurn === 0) {
       // alert("Battle Ended!");
     }
   }, [remainTurn]);
 
-  //#region ui
-  const handleSendMessage = async () => {
-    if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
-      setMessage("送信中...");
-      await sendMessage(roomId, message);
-      setMessage("");
-    }
-  };
-
   // 回答を送信
   const handleSubmit = async () => {
-    if (answer.select === null || !answer.identity || !roomId || !myId) {
+    if (answer.select === null || !answer.isHuman || !roomId || !myId) {
       console.error("Invalid answer data");
       return;
     }
@@ -172,12 +184,8 @@ const BattleView: React.FC = () => {
     navigate(`/${roomId}/battle/result`, { state: props });
   };
 
-  const handleFinishMatching = () => {
-    console.log("Finishing battle...");
-    // バトル終了のロジック
-  };
+  //#endregion
 
-  //html
   return (
     <div>
       <h1>対戦画面</h1>
@@ -199,15 +207,20 @@ const BattleView: React.FC = () => {
       <p>ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}</p>
       <p>相手: {opponentData.name}</p>
       <div>
-        <label>
-          メッセージ:
+        <label>メッセージ:</label>
+        {isHuman ? (
           <input
             type="text"
             placeholder="Enter message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-        </label>
+        ) : (
+          <p>
+            {message}
+            <button onClick={generateMessage}>メッセージ生成</button>
+          </p>
+        )}
         <button
           onClick={handleSendMessage}
           disabled={remainTurn <= 0 || !isMyTurn}

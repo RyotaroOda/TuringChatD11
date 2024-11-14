@@ -73,6 +73,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   throw new Error("No content found in ChatGPT response.");
 };
 
+//test chat
 export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
   // Implement the function logic here
   const prompt: ChatGPTRequest = {
@@ -86,5 +87,24 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
   };
   const answer = await generate(prompt);
   console.log("Generated answer:", answer);
+  return answer;
+};
+
+//battle message
+export const generateBattleMessage = async (
+  messages: GPTMessage[]
+): Promise<string> => {
+  // Implement the function logic here
+  const prompt: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: messages,
+    max_tokens: 100,
+    temperature: 0.5, // 低めのランダム性を設定
+    top_p: 0.9, // サンプリング時に多様なトークンを選ぶようにする
+    n: 1,
+    stop: null,
+  };
+  const answer = await generate(prompt);
+  console.log("Generated battle message:", answer);
   return answer;
 };

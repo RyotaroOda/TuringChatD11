@@ -29,7 +29,7 @@ const RoomView: React.FC = () => {
 
   const [players, setPlayers] = useState(Object.values(roomData.players));
   const navigate = useNavigate();
-  const [selectedMode, setSelectedMode] = useState<"human" | "ai">("human");
+  const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(true);
   const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // Example: 2 minutes for preparation
@@ -49,7 +49,7 @@ const RoomView: React.FC = () => {
 
   // Handle player readiness
   const handleReadyClick = () => {
-    if (selectedMode === "ai" && selectedBotId === null) {
+    if (selectedIsHuman === false && selectedBotId === null) {
       alert("Please select an AI bot.");
       return;
     }
@@ -62,7 +62,7 @@ const RoomView: React.FC = () => {
     if (!isReady) {
       // Auto-select default settings if not selected
       if (
-        selectedMode === "ai" &&
+        selectedIsHuman === false &&
         selectedBotId === null &&
         botData.data.length > 0
       ) {
@@ -79,37 +79,39 @@ const RoomView: React.FC = () => {
         if (result) {
           console.log("preparations updated:", result);
           setPlayers(Object.values(result));
-          // if (
-          //   Array.isArray(result) &&
-          //   result.every((player) => player.isReady)
-          // ) {
-          //   toBattleViewSegue();
-          // }
         }
       });
+
+      return () => {
+        unsubscribe();
+      };
     }
   }, [isReady]);
 
   // Navigate to BattleView when all players are ready
   useEffect(() => {
-    console.log("Players updated:", players);
     if (players.every((player) => player.isReady)) {
       toBattleViewSegue();
     }
   }, [players]);
 
   const toBattleViewSegue = () => {
+    console.log(selectedIsHuman);
     const props: BattleViewProps = {
       roomId: roomData.roomId,
       roomData: roomData,
-      isHuman: selectedMode === "human",
+      isHuman: selectedIsHuman,
       bot:
-        selectedMode === "ai" && selectedBotId
+        selectedIsHuman === false && selectedBotId
           ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)
           : null,
     };
     navigate(`/${roomData.roomId}/battle`, { state: props });
   };
+
+  useEffect(() => {
+    console.log(selectedIsHuman);
+  }, [selectedIsHuman]);
 
   return (
     <div className="online-room-view">
@@ -123,8 +125,8 @@ const RoomView: React.FC = () => {
             <input
               type="radio"
               value="human"
-              checked={selectedMode === "human"}
-              onChange={() => setSelectedMode("human")}
+              checked={selectedIsHuman}
+              onChange={() => setSelectedIsHuman(true)}
             />
             自分でプレイする
           </label>
@@ -133,13 +135,13 @@ const RoomView: React.FC = () => {
             <input
               type="radio"
               value="ai"
-              checked={selectedMode === "ai"}
-              onChange={() => setSelectedMode("ai")}
+              checked={selectedIsHuman === false}
+              onChange={() => setSelectedIsHuman(false)}
             />
             AIがプレイする
           </label>
         </div>
-        {selectedMode === "ai" && (
+        {selectedIsHuman === false && (
           <div className="bot-selection">
             <label>使用するAI:</label>
             <select

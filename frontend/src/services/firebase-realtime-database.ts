@@ -1,3 +1,4 @@
+//frontend/src/services/firebase-realtime-database.ts
 import {
   ref,
   push,
@@ -6,6 +7,7 @@ import {
   onChildAdded,
   off,
   update,
+  set,
 } from "firebase/database";
 import { db, auth } from "./firebase_f.ts"; // Firebaseの認証インスタンスをインポート
 import {
@@ -21,40 +23,62 @@ import { DATABASE_PATHS } from "shared/dist/database-paths";
 import { calculateBattleResult } from "./firebase-functions-client.ts";
 
 //#region HomeView
-// プレイヤーデータを監視
-export const onRoomPlayersUpdated = (
-  roomId: string,
-  callback: (players: PlayerData[] | null) => void,
-  stop: { current: boolean }
-) => {
-  const playersRef = ref(db, DATABASE_PATHS.players(roomId));
-  const listener = onValue(
-    playersRef,
-    (snapshot) => {
-      if (stop.current) {
-        // `stop` が `true` の場合、リスナーを解除して終了
-        off(playersRef, "value", listener);
-        console.log("リスナーが解除されました");
-        return;
-      }
-      const PlayerData = snapshot.val() as PlayerData[] | null; // RoomData型にキャスト
-      if (PlayerData) {
-        console.log("プレイヤーデータが更新されました。", PlayerData);
-        callback(PlayerData); // データがある場合はコールバックを呼び出す
-      } else {
-        console.error("ルームが存在しません。");
-        callback(null);
-      }
-    },
-    (error) => {
-      console.error("ルームデータの監視中にエラーが発生しました:", error);
-      callback(null);
-    }
-  );
+// // プレイヤーデータを監視
+// export const onRoomPlayersUpdated = (
+//   roomId: string,
+//   callback: (players: PlayerData[]) => void,
+//   stop: { current: boolean }
+// ) => {
+//   const playersRef = ref(db, DATABASE_PATHS.players(roomId));
+//   console.log("リスナーを設定します: ルームID", roomId);
+//   const listener = onValue(
+//     playersRef,
+//     (snapshot) => {
+//       if (stop.current) {
+//         // `stop` が `true` の場合、リスナーを解除して終了
+//         off(playersRef, "value", listener);
+//         console.log("リスナーが解除されました");
+//         return;
+//       }
+//       const PlayerData = snapshot.val() as PlayerData[]; // RoomData型にキャスト
+//       if (PlayerData) {
+//         console.log("プレイヤーデータが更新されました。", PlayerData);
+//         callback(PlayerData); // データがある場合はコールバックを呼び出す
+//       } else {
+//         console.error("ルームが存在しません。");
+//       }
+//     },
+//     (error) => {
+//       console.error("ルームデータの監視中にエラーが発生しました:", error);
+//     }
+//   );
 
+//   return () => {
+//     console.log("off onRoomPlayersUpdated");
+//     off(playersRef, "value", listener);
+//   };
+// };
+
+export const onMatched = (
+  roomId: string,
+  callback: (isMatched: boolean) => void
+) => {
+  const statusRef = ref(db, DATABASE_PATHS.status(roomId));
+  const listener = onValue(statusRef, async (snapshot) => {
+    const status = snapshot.val();
+    console.log("status", status);
+    if (status === "matched") {
+      console.log("off onMatched Listener");
+      off(statusRef, "value", listener);
+      // await set(statusRef, "playing");
+      callback(true);
+    } else {
+      callback(false);
+    }
+  });
   return () => {
-    console.log("off onRoomPlayersUpdated");
-    off(playersRef, "value", listener);
+    console.log("off onMatched Listener");
+    off(statusRef, "value", listener);
   };
 };
 
@@ -64,40 +88,41 @@ export const onRoomPlayersUpdated = (
 //   console.log("addPlayerの監視を停止しました。");
 // };
 
-// ルームのデータを監視
-export const onRoomUpdate = (
-  roomId: string,
-  callback: (roomData: RoomData | null) => void,
-  stop: { current: boolean }
-) => {
-  const roomRef = ref(db, DATABASE_PATHS.room(roomId));
-  const listener = onValue(
-    roomRef,
-    (snapshot) => {
-      if (stop.current) {
-        off(roomRef, "value", listener);
-        console.log("リスナーが解除されました111");
-        return;
-      }
-      const roomData = snapshot.val() as RoomData | null; // RoomData型にキャスト
-      if (roomData) {
-        console.log("ルームデータが更新されました。", roomData);
-        callback(roomData); // データがある場合はコールバックを呼び出す
-      } else {
-        console.error("ルームが存在しません。");
-        callback(null);
-      }
-    },
-    (error) => {
-      console.error("ルームデータの監視中にエラーが発生しました:", error);
-      callback(null);
-    }
-  );
-  return () => {
-    console.log("リスナーが解除されました222");
-    off(roomRef, "value", listener);
-  };
-};
+// // ルームのデータを監視
+// const onRoomUpdate = (
+//   roomId: string,
+//   callback: (roomData: RoomData) => void,
+//   stop: { current: boolean }
+// ) => {
+//   const roomRef = ref(db, DATABASE_PATHS.room(roomId));
+
+//   console.log("リスナーを設定します: ルームID", roomId);
+
+//   const listener = onValue(
+//     roomRef,
+//     (snapshot) => {
+//       if (stop.current) {
+//         off(roomRef, "value", listener);
+//         console.log("リスナーが解除されました111");
+//         return;
+//       }
+//       const roomData = snapshot.val() as RoomData | null; // RoomData型にキャスト
+//       if (roomData) {
+//         console.log("ルームデータが更新されました。", roomData);
+//         callback(roomData); // データがある場合はコールバックを呼び出す
+//       } else {
+//         console.error("ルームが存在しません。");
+//       }
+//     },
+//     (error) => {
+//       console.error("ルームデータの監視中にエラーが発生しました:", error);
+//     }
+//   );
+//   return () => {
+//     console.log("リスナーが解除されました222");
+//     off(roomRef, "value", listener);
+//   };
+// };
 
 // ルームデータを取得する関数
 export const getRoomData = async (roomId: string): Promise<RoomData> => {
@@ -126,7 +151,7 @@ export const preparationComplete = async (roomId: string, playerId: string) => {
     isReady: true,
   };
   await update(readyRef, playerData);
-  console.log("プレイヤーデータを更新しました。", playerData);
+  console.log("準備完了！", playerData);
 };
 
 export const onPlayerPrepared = (
@@ -137,11 +162,15 @@ export const onPlayerPrepared = (
   const playersRef = ref(db, DATABASE_PATHS.players(roomId));
 
   // プレイヤーが追加されたときの監視
-  onValue(playersRef, (snapshot) => {
+  const listener = onValue(playersRef, (snapshot) => {
     const newPlayer = snapshot.val();
-    console.log("プレイヤーが追加されました。", newPlayer);
+    console.log("プレイヤーデータが更新されました。", newPlayer);
     callback(newPlayer); // 新しいプレイヤーをコールバックで返す
   });
+  return () => {
+    console.log("off onRoomPlayersUpdated");
+    off(playersRef, "value", listener);
+  };
 };
 
 //#endregion

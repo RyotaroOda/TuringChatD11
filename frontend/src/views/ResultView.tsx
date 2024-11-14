@@ -50,8 +50,7 @@ const ResultView: React.FC = () => {
 
       <h3>自分の回答</h3>
       <p>
-        <strong>Identity:</strong>{" "}
-        {resultData.myAnswer.identity ? "人間" : "AI"}
+        <strong>Identity:</strong> {resultData.myAnswer.isHuman ? "人間" : "AI"}
       </p>
       <p>
         <strong>Selection:</strong> {resultData.myAnswer.select ? "人間" : "AI"}
@@ -63,7 +62,7 @@ const ResultView: React.FC = () => {
       <h3>相手の回答</h3>
       <p>
         <strong>Identity:</strong>{" "}
-        {resultData.opponentAnswer.identity ? "人間" : "AI"}
+        {resultData.opponentAnswer.isHuman ? "人間" : "AI"}
       </p>
       <p>
         <strong>Selection:</strong>{" "}
