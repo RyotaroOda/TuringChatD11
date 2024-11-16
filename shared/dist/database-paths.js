@@ -21,4 +21,6 @@ exports.DATABASE_PATHS = {
     route_profiles: "profiles",
     profiles: (userId) => `profiles/${userId}`,
     bots: (userId) => `profiles/${userId}/bots`,
+    questionnaires: (userId) => `profiles/${userId}/questionnaire`,
+    impression: (userId) => `profiles/${userId}/impressions`,
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { AIModel, BotSetting, BotData, GPTMessage } from "shared/dist/types";
 import { useLocation } from "react-router-dom";
-import { updateUserProfile } from "../services/profileAPI.ts";
+import { updateUserProfile } from "../services/firestore-database_f.ts";
 import { generateChat } from "../services/chatGPT_f.ts";
 
 const EditPromptView: React.FC = () => {
@@ -196,9 +196,11 @@ const EditPromptView: React.FC = () => {
           <label>モデル: </label>
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value as unknown as AIModel)}
+            onChange={(e) => setModel(e.target.value as AIModel)}
             style={{ width: "200px", padding: "8px" }}
           >
+            <option value={AIModel["gpt-4o"]}>GPT-4o</option>
+            <option value={AIModel["gpt-4o-mini"]}>GPT-o mini</option>
             <option value={AIModel["gpt-4"]}>GPT-4</option>
             <option value={AIModel["gpt-4-turbo"]}>GPT-4 Turbo</option>
             <option value={AIModel["gpt-3.5-turbo"]}>GPT-3.5 Turbo</option>

@@ -19,9 +19,8 @@ import {
   MatchResult,
   PlayerData,
   ProfileData,
-  RoomData,
 } from "shared/dist/types";
-import { getUserProfile } from "../services/profileAPI.ts";
+import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./RoomView.tsx";
 
 const HomeView: React.FC = () => {

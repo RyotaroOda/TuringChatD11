@@ -23,4 +23,6 @@ export const DATABASE_PATHS = {
   route_profiles: "profiles",
   profiles: (userId: string) => `profiles/${userId}`,
   bots: (userId: string) => `profiles/${userId}/bots`,
+  questionnaires: (userId: string) => `profiles/${userId}/questionnaire`,
+  impression: (userId: string) => `profiles/${userId}/impressions`,
 };

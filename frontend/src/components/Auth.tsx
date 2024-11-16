@@ -8,7 +8,7 @@ import {
 } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
 import { useNavigate } from "react-router-dom";
-import { createUserProfile } from "../services/profileAPI.ts";
+import { createUserProfile } from "../services/firestore-database_f.ts";
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState("");

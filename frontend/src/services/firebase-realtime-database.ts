@@ -64,9 +64,14 @@ export const onMatched = (
   callback: (isMatched: boolean) => void
 ) => {
   const statusRef = ref(db, DATABASE_PATHS.status(roomId));
-  const listener = onValue(statusRef, async (snapshot) => {
+
+  // Declare listener first
+  let listener: any;
+
+  listener = onValue(statusRef, async (snapshot) => {
     const status = snapshot.val();
     console.log("status", status);
+
     if (status === "matched") {
       console.log("off onMatched Listener");
       off(statusRef, "value", listener);
@@ -76,6 +81,7 @@ export const onMatched = (
       callback(false);
     }
   });
+
   return () => {
     console.log("off onMatched Listener");
     off(statusRef, "value", listener);
@@ -161,12 +167,23 @@ export const onPlayerPrepared = (
   // プレイヤーリストの参照
   const playersRef = ref(db, DATABASE_PATHS.players(roomId));
 
+  // リスナーを宣言（未初期化状態で宣言する）
+  let listener: any;
+
   // プレイヤーが追加されたときの監視
-  const listener = onValue(playersRef, (snapshot) => {
-    const newPlayer = snapshot.val();
-    console.log("プレイヤーデータが更新されました。", newPlayer);
-    callback(newPlayer); // 新しいプレイヤーをコールバックで返す
+  listener = onValue(playersRef, (snapshot) => {
+    const newPlayers = snapshot.val();
+    console.log("プレイヤーデータが更新されました。", newPlayers);
+    callback(newPlayers); // 新しいプレイヤーをコールバックで返す
+    if (
+      Object.values(newPlayers).every(
+        (player) => (player as PlayerData).isReady
+      )
+    ) {
+      off(playersRef, "value", listener);
+    }
   });
+
   return () => {
     console.log("off onRoomPlayersUpdated");
     off(playersRef, "value", listener);

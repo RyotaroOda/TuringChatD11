@@ -94,6 +94,7 @@ export type ProfileData = {
   bots: BotData;
 
   questionnaire: QuestionnaireData | null;
+  impressions: Impression[];
 
   age: number | null; // 年齢（オプション）
   gender: "male" | "female" | "other" | "no_answer"; // 性別（選択式）
@@ -123,6 +124,8 @@ export type BotSetting = {
 };
 
 export enum AIModel {
+  "gpt-4o" = "gpt-4o",
+  "gpt-4o-mini" = "gpt-4o-mini",
   "gpt-4" = "gpt-4",
   "gpt-4-turbo" = "gpt-4-turbo",
   "gpt-3.5-turbo" = "gpt-3.5-turbo",
@@ -131,6 +134,11 @@ export enum AIModel {
 export type QuestionnaireData = {
   questions: string[];
   answers: string[];
+};
+
+export type Impression = {
+  impression: string;
+  date: Date;
 };
 
 //#endregion

@@ -16,6 +16,8 @@ import ProtectedRoute from "./components/ProtectedRoute.tsx"; // 認証保護さ
 import { AuthProvider } from "./components/AuthProvider.tsx"; // 認証状態のコンテキスト
 import ProfileEdit from "./components/ProfileEdit.tsx";
 import PromptEdit from "./components/PromptEdit.tsx";
+import QuestionnaireEdit from "./components/QuestionnaireEdit.tsx";
+import ImpressionEdit from "./components/ImpressionEdit.tsx";
 
 function App() {
   return (
@@ -61,8 +63,9 @@ function App() {
             }
           />
           <Route path="/profile_edit" element={<ProfileEdit />} />{" "}
+          <Route path="/questionnaire_edit" element={<QuestionnaireEdit />} />{" "}
+          <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
           <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
-          {/* <Route path="/questionnaire_edit" element={< />} />{" "} */}
           {/* 認証済みでない場合のリダイレクト */}
           <Route path="*" element={<Navigate to="/" />} />{" "}
           {/* その他のパスはホームにリダイレクト */}

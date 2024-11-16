@@ -1,7 +1,7 @@
 // frontend/src/views/RoomView.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { RoomData, BotData, PlayerData } from "shared/dist/types";
+import { RoomData, BotData, PlayerData } from "shared/src/types";
 import { BattleViewProps } from "./BattleView.tsx";
 import {
   onPlayerPrepared,
@@ -74,19 +74,17 @@ const RoomView: React.FC = () => {
   };
 
   useEffect(() => {
-    if (isReady) {
-      const unsubscribe = onPlayerPrepared(roomId, (result) => {
-        if (result) {
-          console.log("preparations updated:", result);
-          setPlayers(Object.values(result));
-        }
-      });
+    const unsubscribe = onPlayerPrepared(roomId, (result) => {
+      if (result) {
+        console.log("preparations updated:", result);
+        setPlayers(Object.values(result));
+      }
+    });
 
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [isReady]);
+    return () => {
+      unsubscribe();
+    };
+  }, [roomId]);
 
   // Navigate to BattleView when all players are ready
   useEffect(() => {
@@ -96,7 +94,6 @@ const RoomView: React.FC = () => {
   }, [players]);
 
   const toBattleViewSegue = () => {
-    console.log(selectedIsHuman);
     const props: BattleViewProps = {
       roomId: roomData.roomId,
       roomData: roomData,
@@ -108,10 +105,6 @@ const RoomView: React.FC = () => {
     };
     navigate(`/${roomData.roomId}/battle`, { state: props });
   };
-
-  useEffect(() => {
-    console.log(selectedIsHuman);
-  }, [selectedIsHuman]);
 
   return (
     <div className="online-room-view">

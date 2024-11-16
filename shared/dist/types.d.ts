@@ -71,6 +71,7 @@ export type ProfileData = {
     lose: number;
     bots: BotData;
     questionnaire: QuestionnaireData | null;
+    impressions: Impression[];
     age: number | null;
     gender: "male" | "female" | "other" | "no_answer";
     language: string;
@@ -93,6 +94,8 @@ export type BotSetting = {
     top_p: number;
 };
 export declare enum AIModel {
+    "gpt-4o" = "gpt-4o",
+    "gpt-4o-mini" = "gpt-4o-mini",
     "gpt-4" = "gpt-4",
     "gpt-4-turbo" = "gpt-4-turbo",
     "gpt-3.5-turbo" = "gpt-3.5-turbo"
@@ -100,6 +103,10 @@ export declare enum AIModel {
 export type QuestionnaireData = {
     questions: string[];
     answers: string[];
+};
+export type Impression = {
+    impression: string;
+    date: Date;
 };
 export type GPTMessage = {
     role: "system" | "user" | "assistant";

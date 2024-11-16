@@ -15,4 +15,6 @@ export declare const DATABASE_PATHS: {
     route_profiles: string;
     profiles: (userId: string) => string;
     bots: (userId: string) => string;
+    questionnaires: (userId: string) => string;
+    impression: (userId: string) => string;
 };

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
-import { updateUserProfile } from "../services/profileAPI.ts";
+import { updateUserProfile } from "../services/firestore-database_f.ts";
 import { ProfileData, QuestionnaireData } from "shared/dist/types";
 import { updateProfile } from "firebase/auth";
 
@@ -61,6 +61,11 @@ const ProfileEdit: React.FC = () => {
   // アンケートボタンのハンドラ
   const handleQuestionnaireEdit = () => {
     navigate("/questionnaire_edit");
+  };
+
+  // アンケートボタンのハンドラ
+  const handleImpressionEdit = () => {
+    navigate("/impression_edit");
   };
 
   if (!profile) return <p>読み込み中...</p>;
@@ -186,9 +191,7 @@ const ProfileEdit: React.FC = () => {
           ) : (
             <p>アンケートはまだ回答されていません</p>
           )}
-          <button onClick={handleQuestionnaireEdit}>
-            アンケートの回答/編集
-          </button>
+          <button onClick={handleImpressionEdit}>アンケートの回答/編集</button>
         </div>
         <button type="submit">更新</button>
       </form>

@@ -74,9 +74,7 @@ const BattleView: React.FC = () => {
   const [remainTurn, setRemainTurn] = useState<number>(
     roomData.battleConfig.maxTurn
   );
-  const [remainingTime, setRemainingTime] = useState<number>(
-    battleConfig.oneTurnTime
-  );
+  const [timeLeft, setTimeLeft] = useState<number>(battleConfig.oneTurnTime);
 
   const [answer, setAnswer] = useState<SubmitAnswer>({
     playerId: myId,
@@ -102,6 +100,8 @@ const BattleView: React.FC = () => {
     }
   };
 
+  const [isWaitResponse, setIsWaitResponse] = useState<boolean>(false);
+
   const generateMessage = async () => {
     const prompt: GPTMessage[] = [
       {
@@ -109,7 +109,9 @@ const BattleView: React.FC = () => {
         content: "メッセージを生成してください",
       },
     ];
+    setIsWaitResponse(true);
     setMessage(await generateBattleMessage(prompt));
+    setIsWaitResponse(false);
   };
 
   //メッセージ更新
@@ -159,6 +161,26 @@ const BattleView: React.FC = () => {
     }
   };
 
+  // Timer effect
+  useEffect(() => {
+    if (!isMyTurn && remainTurn > 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
+    if (timeLeft === 0) {
+      handleSendMessage();
+    }
+
+    return () => clearInterval(timer);
+  }, [timeLeft]);
+
+  useEffect(() => {
+    if (isMyTurn) {
+      setTimeLeft(battleConfig.oneTurnTime);
+    }
+  }, [isMyTurn]);
+
   //リザルトを監視
   useEffect(() => {
     if (isSubmitted && roomId) {
@@ -202,9 +224,15 @@ const BattleView: React.FC = () => {
           ))}
         </ul>
       </div>
-      <p>残りメッセージ数: {remainTurn}</p>
-      <p>このターンの残り時間: {remainingTime}秒</p>
-      <p>ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}</p>
+      {remainTurn > 0 ? (
+        <div>
+          <p>ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}</p>
+          <p>このターンの残り時間: {timeLeft}秒</p>
+          <p>残りメッセージ数: {remainTurn}</p>
+        </div>
+      ) : (
+        "バトル終了"
+      )}
       <p>相手: {opponentData.name}</p>
       <div>
         <label>メッセージ:</label>
@@ -218,7 +246,9 @@ const BattleView: React.FC = () => {
         ) : (
           <p>
             {message}
-            <button onClick={generateMessage}>メッセージ生成</button>
+            <button onClick={generateMessage} disabled={isWaitResponse}>
+              {isWaitResponse ? "生成中" : "メッセージ生成"}
+            </button>
           </p>
         )}
         <button
