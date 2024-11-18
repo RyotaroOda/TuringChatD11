@@ -30,12 +30,12 @@
     "build:front": "npm --prefix ./frontend run build",
     "build:shared": "npm --prefix ./shared run build",
     "test": "react-scripts test",
-    "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install && npm --prefix ./shared install",
+    "install:all": "npm install && npm --prefix ./shared install && npm run build:shared && npm --prefix ./frontend install && npm --prefix ./backend install",
     "link:shared": "npm --prefix ./shared link && npm --prefix ./frontend link shared && npm --prefix ./backend link shared",
     "unlink:shared": "npm --prefix ./shared unlink",
     "clean": "rm -rf node_modules package-lock.json && npm cache verify",
     "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean && npm --prefix ./shared run clean",
-    "deploy": "firebase deploy --only functions,hosting"
+    "deploy": "npm run build:back && firebase deploy --only functions,hosting"
   },
   "browserslist": {
     "production": [

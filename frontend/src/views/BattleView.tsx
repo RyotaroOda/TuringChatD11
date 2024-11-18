@@ -70,6 +70,8 @@ const BattleView: React.FC = () => {
     { senderId: string; message: string }[]
   >([]);
   const [message, setMessage] = useState<string>("");
+  const [promptMessages, setPromptMessages] = useState<GPTMessage[]>([]);
+  const [promptInstruction, setPromptInstruction] = useState<string>("");
   const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost); // Initial turn state (placeholder)
   const [remainTurn, setRemainTurn] = useState<number>(
     roomData.battleConfig.maxTurn
@@ -103,14 +105,19 @@ const BattleView: React.FC = () => {
   const [isWaitResponse, setIsWaitResponse] = useState<boolean>(false);
 
   const generateMessage = async () => {
-    const prompt: GPTMessage[] = [
-      {
-        role: "system",
-        content: "メッセージを生成してください",
-      },
-    ];
     setIsWaitResponse(true);
-    setMessage(await generateBattleMessage(prompt));
+    if (bot) {
+      setMessage(
+        await generateBattleMessage(
+          promptMessages,
+          "メッセージ生成",
+          bot,
+          battleConfig
+        )
+      );
+    } else {
+      console.error("Bot setting is null");
+    }
     setIsWaitResponse(false);
   };
 
@@ -123,6 +130,14 @@ const BattleView: React.FC = () => {
           ...prevChatLog,
           { senderId: newMessage.senderId, message: newMessage.message },
         ]);
+        if (!isHuman) {
+          const id =
+            newMessage.senderId === myId ? "[opponent]" : "[proponent]";
+          setPromptMessages((prevMessages) => [
+            ...prevMessages,
+            { role: "user", content: id + newMessage.message },
+          ]);
+        }
       });
     }
   }, [roomId, isViewLoaded]);
@@ -246,6 +261,14 @@ const BattleView: React.FC = () => {
         ) : (
           <p>
             {message}
+            <br />
+            <label>命令</label>
+            <input
+              type="text"
+              placeholder="命令なし"
+              value={promptInstruction}
+              onChange={(e) => setMessage(e.target.value)}
+            />
             <button onClick={generateMessage} disabled={isWaitResponse}>
               {isWaitResponse ? "生成中" : "メッセージ生成"}
             </button>

@@ -19,10 +19,6 @@ const ResultView: React.FC = () => {
     navigate("/");
   };
 
-  const toBattleViewSegue = () => {
-    //TODO 戻る
-  };
-
   return (
     <div>
       <h2>ゲーム結果</h2>
