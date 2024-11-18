@@ -37,6 +37,7 @@ const BattleView: React.FC = () => {
     isHuman: boolean;
     bot: BotSetting | null;
   };
+  console.log("Bot:", bot);
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
@@ -160,7 +161,7 @@ const BattleView: React.FC = () => {
 
   // 回答を送信
   const handleSubmit = async () => {
-    if (answer.select === null || !answer.isHuman || !roomId || !myId) {
+    if (answer.select === null || !roomId || !myId) {
       console.error("Invalid answer data");
       return;
     }
@@ -267,7 +268,7 @@ const BattleView: React.FC = () => {
               type="text"
               placeholder="命令なし"
               value={promptInstruction}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) => setPromptInstruction(e.target.value)}
             />
             <button onClick={generateMessage} disabled={isWaitResponse}>
               {isWaitResponse ? "生成中" : "メッセージ生成"}

@@ -64,6 +64,10 @@ const EditPromptView: React.FC = () => {
     setIsSaveEnabled(true);
   };
 
+  useEffect(() => {
+    setIsSaveEnabled(true);
+  }, [model]);
+
   // ボット設定を保存する処理
   const handleSave = () => {
     if (selectedBotId !== null) {
@@ -200,7 +204,7 @@ const EditPromptView: React.FC = () => {
             style={{ width: "200px", padding: "8px" }}
           >
             <option value={AIModel["gpt-4o"]}>GPT-4o</option>
-            <option value={AIModel["gpt-4o-mini"]}>GPT-o mini</option>
+            <option value={AIModel["gpt-4o-mini"]}>GPT-4o mini</option>
             <option value={AIModel["gpt-4"]}>GPT-4</option>
             <option value={AIModel["gpt-4-turbo"]}>GPT-4 Turbo</option>
             <option value={AIModel["gpt-3.5-turbo"]}>GPT-3.5 Turbo</option>
