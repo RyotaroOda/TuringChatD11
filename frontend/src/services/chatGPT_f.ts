@@ -4,7 +4,7 @@ import {
   BattleConfig,
   BotSetting,
   GPTMessage,
-} from "shared/dist/types";
+} from "../shared/types.ts";
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -22,9 +22,9 @@ interface ChatGPTRequest {
   temperature: number; // 応答の創造性の度合い
   top_p: number; // サンプリング時の確率マスのカットオフ
   n: number; // 返答の数
-  frequency_penalty: number; // モデルが同じ語彙を繰り返すのを防ぐ
+  // frequency_penalty: number; // モデルが同じ語彙を繰り返すのを防ぐ
 
-  presence_penalty: number; // モデルが同じトピックを繰り返すのを防ぐ
+  // presence_penalty: number; // モデルが同じトピックを繰り返すのを防ぐ
   stop: null; // 応答の終了条件を指定するストップトークン
 }
 
@@ -91,8 +91,8 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
     temperature: 1.0, // 高めのランダム性を設定
     top_p: 0.9, // サンプリング時に多様なトークンを選ぶようにする
     n: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
+    // frequency_penalty: 0,
+    // presence_penalty: 0,
     stop: null,
   };
   const answer = await generate(prompt);
@@ -122,7 +122,7 @@ export const generateBattleMessage = async (
         "トークテーマ" +
         config.topic +
         "\n" +
-        "#出力形式\n返信メッセージのみを出力して下さい。出力がそのまま相手プレイヤーに送信されます。\n" +
+        "#出力形式\n返信メッセージのみ(Messageのcontent内容のみ)を出力して下さい。出力がそのまま相手プレイヤーに送信されます。\n" +
         "#カスタムプロンプト\n以下のプレイヤーが事前に設定したにカスタムプロンプト従って生成して下さい。\n" +
         bot.prompt +
         "#プレイヤー指示\n以下のプレイヤー指示はあなたへのリアルタイムの指示です。\n" +
@@ -139,8 +139,8 @@ export const generateBattleMessage = async (
     temperature: bot.temperature,
     top_p: bot.top_p,
     n: 1,
-    frequency_penalty: 0,
-    presence_penalty: 0,
+    // frequency_penalty: 0,
+    // presence_penalty: 0,
     stop: null,
   };
   const answer = await generate(prompt);

@@ -25,17 +25,17 @@
     "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
     "start:front": "npm --prefix ./frontend run start",
     "start:back": "npm --prefix ./backend run start",
-    "build": "npm run build:shared && npm run build:back && npm run build:front",
+    "build": "npm run share && npm run build:back && npm run build:front",
     "build:back": "npm --prefix ./backend run build",
     "build:front": "npm --prefix ./frontend run build",
-    "build:shared": "npm --prefix ./shared run build",
     "test": "react-scripts test",
-    "install:all": "npm install && npm --prefix ./shared install && npm run build:shared && npm --prefix ./frontend install && npm --prefix ./backend install",
-    "link:shared": "npm --prefix ./shared link && npm --prefix ./frontend link shared && npm --prefix ./backend link shared",
-    "unlink:shared": "npm --prefix ./shared unlink",
+    "install:all": "npm install && npm --prefix && npm --prefix ./frontend install && npm --prefix ./backend install",
     "clean": "rm -rf node_modules package-lock.json && npm cache verify",
-    "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean && npm --prefix ./shared run clean",
-    "deploy": "npm run build:back && firebase deploy --only functions,hosting"
+    "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean",
+    "deploy": "npm run build:back && firebase deploy --only functions,hosting",
+    "share": "npm run copy-to-frontend && npm run copy-to-backend",
+    "copy-to-frontend": "cpy 'share/**/*' frontend/src/shared --parents",
+    "copy-to-backend": "cpy 'share/**/*' backend/src/shared --parents"
   },
   "browserslist": {
     "production": [
@@ -50,6 +50,7 @@
     ]
   },
   "devDependencies": {
+    "cpy-cli": "^5.0.0",
     "prettier": "^3.3.3"
   }
 }

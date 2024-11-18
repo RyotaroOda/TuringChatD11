@@ -14,8 +14,8 @@ import {
   Impression,
   ProfileData,
   QuestionnaireData,
-} from "shared/dist/types";
-import { DATABASE_PATHS } from "shared/dist/database-paths";
+} from "../shared/types.ts";
+import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { auth, firestore } from "./firebase_f.ts";
 
 //region Authプロフィール

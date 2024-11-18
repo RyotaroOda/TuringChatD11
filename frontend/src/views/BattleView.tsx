@@ -14,9 +14,9 @@ import {
   RoomData,
   SubmitAnswer,
   ResultData,
-} from "shared/dist/types";
+} from "../shared/types";
 import { auth } from "../services/firebase_f.ts";
-import { BotSetting, GPTMessage } from "shared/src/types.ts";
+import { BotSetting, GPTMessage } from "../shared/types.ts";
 import { ResultViewProps } from "./ResultView.tsx";
 import { generateBattleMessage } from "../services/chatGPT_f.ts";
 

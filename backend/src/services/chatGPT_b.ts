@@ -1,6 +1,6 @@
 //backend/src/services/chatGPT_b.ts
 import * as dotenv from "dotenv";
-import { AIModel, GPTMessage } from "shared/dist/types";
+import { AIModel, GPTMessage } from "../shared/types";
 
 dotenv.config(); // 環境変数のロード
 

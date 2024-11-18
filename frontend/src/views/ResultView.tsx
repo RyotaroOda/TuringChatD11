@@ -1,7 +1,7 @@
 // frontend/src/views/ResultView.tsx
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ResultData } from "shared/dist/types";
+import { ResultData } from "../shared/types";
 
 export interface ResultViewProps {
   resultData: ResultData;

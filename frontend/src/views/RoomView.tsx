@@ -1,7 +1,7 @@
 // frontend/src/views/RoomView.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { RoomData, BotData, PlayerData } from "shared/src/types";
+import { RoomData, BotData, PlayerData } from "../shared/types.ts";
 import { BattleViewProps } from "./BattleView.tsx";
 import {
   onPlayerPrepared,

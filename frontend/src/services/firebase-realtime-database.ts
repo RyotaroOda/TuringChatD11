@@ -18,8 +18,8 @@ import {
   ResultData,
   RoomData,
   SubmitAnswer,
-} from "shared/dist/types";
-import { DATABASE_PATHS } from "shared/dist/database-paths";
+} from "../shared/types.ts";
+import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateBattleResult } from "./firebase-functions-client.ts";
 
 //#region HomeView

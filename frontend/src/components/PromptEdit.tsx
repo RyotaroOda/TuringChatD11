@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AIModel, BotSetting, BotData, GPTMessage } from "shared/dist/types";
+import { AIModel, BotSetting, BotData, GPTMessage } from "../shared/types.ts";
 import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/firestore-database_f.ts";
 import { generateChat } from "../services/chatGPT_f.ts";

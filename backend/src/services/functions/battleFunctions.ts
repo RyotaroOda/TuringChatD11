@@ -1,8 +1,8 @@
 // backend/src/services/functions/battleFunctions.ts
 import * as functions from "firebase-functions";
 import { db, storage, firestore } from "../firebase_b"; // Firebase 初期化ファイル
-import { BattleResult, SubmitAnswer } from "shared/dist/types";
-import { DATABASE_PATHS } from "shared/dist/database-paths";
+import { BattleResult, SubmitAnswer } from "../../shared/types";
+import { DATABASE_PATHS } from "../../shared/database-paths";
 
 export const calculateBattleResultFunction = functions.https.onCall(
   async (request) => {

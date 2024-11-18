@@ -19,7 +19,7 @@ import {
   MatchResult,
   PlayerData,
   ProfileData,
-} from "shared/dist/types";
+} from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./RoomView.tsx";
 

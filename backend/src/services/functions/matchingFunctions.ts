@@ -5,8 +5,8 @@ import {
   RoomData,
   MatchResult,
   BattleLog,
-} from "shared/dist/types";
-import { DATABASE_PATHS } from "shared/dist/database-paths";
+} from "../../shared/types";
+import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { generateTopic } from "../chatGPT_b";
