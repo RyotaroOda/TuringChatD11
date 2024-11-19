@@ -141,7 +141,7 @@ export const generateBattleMessage = async (
 
   const prompt: ChatGPTRequest = {
     model: AIModel[bot.model],
-    messages: temp,
+    messages: messages,
     max_tokens: 100,
     temperature: bot.temperature,
     top_p: bot.top_p,

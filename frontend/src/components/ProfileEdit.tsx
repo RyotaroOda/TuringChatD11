@@ -2,8 +2,8 @@ import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { updateUserProfile } from "../services/firestore-database_f.ts";
-import { ProfileData, QuestionnaireData } from "shared/dist/types";
-import { updateProfile } from "firebase/auth";
+import { ProfileData, QuestionnaireData } from "../shared/types.ts";
+import { deleteUser, updateProfile } from "firebase/auth";
 
 const languages = [
   "English",
@@ -54,6 +54,22 @@ const ProfileEdit: React.FC = () => {
       } catch (error) {
         console.error("プロフィールの更新エラー:", error);
         setErrorMessage("プロフィールの更新中にエラーが発生しました");
+      }
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("本当に削除しますか？")) {
+      if (user) {
+        try {
+          await updateUserProfile(null);
+          await deleteUser(user);
+          alert("プロフィールが削除されました");
+          navigate("/"); // 削除後のリダイレクト先
+        } catch (error) {
+          console.error("プロフィールの削除エラー:", error);
+          setErrorMessage("プロフィールの削除中にエラーが発生しました");
+        }
       }
     }
   };
@@ -194,6 +210,11 @@ const ProfileEdit: React.FC = () => {
           <button onClick={handleImpressionEdit}>アンケートの回答/編集</button>
         </div>
         <button type="submit">更新</button>
+        <br />
+        <br />
+        <button type="button" onClick={handleDelete}>
+          アカウントを削除
+        </button>
       </form>
     </div>
   );

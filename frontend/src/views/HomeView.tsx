@@ -42,20 +42,6 @@ const HomeView: React.FC = () => {
       // ログイン済みユーザーならFirebaseからプレイヤー名を取得
       if (user.isAnonymous) {
         setPlayerName("ゲスト"); // 匿名ユーザーの場合はゲスト表示
-        const newBot: BotData = {
-          defaultId: 0,
-          data: [
-            {
-              id: 0,
-              name: "default",
-              prompt: aiPrompt,
-              model: AIModel["gpt-4"],
-              temperature: 0,
-              top_p: 0,
-            },
-          ],
-        };
-        setBots(newBot);
       } else {
         setPlayerName(user.displayName || ""); // 名前が登録されている場合は表示
         const fetchProfile = async () => {
@@ -225,6 +211,21 @@ const HomeView: React.FC = () => {
     console.log("???");
 
     getRoomData(roomId).then((roomData) => {
+      if (user && user.isAnonymous) {
+        setBots({
+          defaultId: 0,
+          data: [
+            {
+              id: 0,
+              name: "default",
+              prompt: aiPrompt,
+              model: AIModel["gpt-4"],
+              temperature: 0,
+              top_p: 0,
+            },
+          ],
+        });
+      }
       if (roomData.status === "matched" && bots) {
         console.log("ルーム画面に遷移します");
         const props: OnlineRoomViewProps = {

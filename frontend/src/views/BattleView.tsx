@@ -37,7 +37,6 @@ const BattleView: React.FC = () => {
     isHuman: boolean;
     bot: BotSetting | null;
   };
-  console.log("Bot:", bot);
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
@@ -179,12 +178,12 @@ const BattleView: React.FC = () => {
 
   // Timer effect
   useEffect(() => {
-    if (!isMyTurn && remainTurn > 0) return;
+    if (remainTurn > 0) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(prev - 1, 0));
     }, 1000);
 
-    if (timeLeft === 0) {
+    if (timeLeft === 0 && isMyTurn) {
       handleSendMessage();
     }
 

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { QuestionnaireData } from "shared/dist/types";
+import { QuestionnaireData } from "../shared/types.ts";
 
 const QuestionnaireEdit: React.FC = () => {
   const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>(
