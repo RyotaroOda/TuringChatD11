@@ -1,4 +1,4 @@
-//frontend/src/components/Auth.tsx
+// frontend/src/components/Auth.tsx
 import React, { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -12,16 +12,20 @@ import { useNavigate } from "react-router-dom";
 import { createUserProfile } from "../services/firestore-database_f.ts";
 
 const Auth: React.FC = () => {
+  //# region init
+  // フォームの状態管理
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isRegister, setIsRegister] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isEmailValid, setIsEmailValid] = useState(false);
-  const navigate = useNavigate();
   const [isPushSignup, setIsPushSignup] = useState(false);
   const [isPushLogin, setIsPushLogin] = useState(false);
+  const navigate = useNavigate();
+  //#endregion
 
+  //#region メールアドレスの有効性確認
   const checkEmailValidity = async (email: string) => {
     if (!email) {
       setIsEmailValid(false);
@@ -48,7 +52,10 @@ const Auth: React.FC = () => {
       checkEmailValidity(email);
     }
   }, [email, isRegister]);
+  //#endregion
 
+  //#region 認証処理
+  //サインアップまたはログインを処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -63,7 +70,8 @@ const Auth: React.FC = () => {
     }
 
     try {
-      if (isRegister && username.trim() !== "") {
+      if (isRegister) {
+        // サインアップ処理
         setIsPushSignup(true);
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -72,10 +80,11 @@ const Auth: React.FC = () => {
         );
         const user = userCredential.user;
         await updateProfile(user, { displayName: username });
-        await createUserProfile();
+        await createUserProfile(); // Firestoreでユーザープロファイル作成
         alert("ユーザーが登録され、プロフィールが作成されました");
         navigate("/");
       } else {
+        // ログイン処理
         setIsPushLogin(true);
         await signInWithEmailAndPassword(auth, email, password);
         alert("ログインに成功しました");
@@ -84,7 +93,7 @@ const Auth: React.FC = () => {
     } catch (error: any) {
       console.error("認証エラー:", error);
 
-      // Firebase Authenticationのエラーコードに基づいたエラーメッセージを設定
+      // Firebaseのエラーメッセージに基づいてエラーを設定
       switch (error.code) {
         case "auth/invalid-email":
           setErrorMessage("無効なメールアドレスです。");
@@ -114,7 +123,9 @@ const Auth: React.FC = () => {
       setIsPushLogin(false);
     }
   };
+  //#endregion
 
+  //#region ゲストログイン
   const handleAnonymousLogin = async () => {
     try {
       await signInAnonymously(auth);
@@ -127,7 +138,9 @@ const Auth: React.FC = () => {
       );
     }
   };
+  //#endregion
 
+  // ローディング画面の表示
   if (isPushLogin) {
     return <p>ログイン中...</p>;
   }

@@ -1,5 +1,5 @@
 // frontend/src/views/ResultView.tsx
-import React, { useState } from "react";
+import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ResultData } from "../shared/types";
 
@@ -8,12 +8,11 @@ export interface ResultViewProps {
 }
 
 const ResultView: React.FC = () => {
+  //#region init
   const location = useLocation();
-  const { resultData } = location.state as {
-    resultData: ResultData;
-  };
-  console.log("ResultView result:", resultData);
+  const { resultData } = location.state as ResultViewProps;
   const navigate = useNavigate();
+  //#endregion
 
   const toHomeSegue = () => {
     navigate("/");

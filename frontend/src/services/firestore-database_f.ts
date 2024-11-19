@@ -18,18 +18,29 @@ import {
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { auth, firestore } from "./firebase_f.ts";
 
-//region Authプロフィール
-// Authプロフィールの更新
+//#region Authプロフィール
+
+/**
+ * Firebase Auth プロフィールを更新
+ * @param displayName 表示名
+ * @param photoURL プロフィール画像URL
+ */
 const updateAuthProfile = async (displayName: string, photoURL: string) => {
-  if (auth.currentUser) {
-    await updateProfile(auth.currentUser, { displayName, photoURL });
-    console.log("Authプロファイルが更新されました:", displayName, photoURL);
+  const user = auth.currentUser;
+  if (user) {
+    await updateProfile(user, { displayName, photoURL });
+    console.log("Authプロフィールが更新されました:", displayName, photoURL);
   }
 };
 
 //#endregion
 
 //#region ProfileEdit
+
+/**
+ * 使用しているプラットフォームを判定
+ * @returns プラットフォーム名 (mobile, desktop, web)
+ */
 const detectPlatform = () => {
   const userAgent = navigator.userAgent.toLowerCase();
   if (/mobile|android|iphone|ipad/.test(userAgent)) return "mobile";
@@ -41,62 +52,24 @@ const detectPlatform = () => {
   return "web";
 };
 
+/**
+ * 新しいユーザープロフィールを作成
+ */
 export const createUserProfile = async () => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ユーザーが認証されていません");
   }
-  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, user.uid); // Firestoreのプロファイルドキュメント参照
-  const botData: BotSetting[] = [
-    {
-      id: 0,
-      prompt: "設定1",
-      model: AIModel["gpt-4"],
-      name: "1",
-      temperature: 1,
-      top_p: 1,
-    },
-    {
-      id: 1,
-      prompt: "設定2",
-      model: AIModel["gpt-4"],
-      name: "2",
-      temperature: 1,
-      top_p: 1,
-    },
-    {
-      id: 2,
-      prompt: "設定3",
-      model: AIModel["gpt-4"],
-      name: "3",
-      temperature: 1,
-      top_p: 1,
-    },
-    {
-      id: 3,
-      prompt: "設定4",
-      model: AIModel["gpt-4"],
-      name: "4",
-      temperature: 1,
-      top_p: 0,
-    },
-    {
-      id: 4,
-      prompt: "設定5",
-      model: AIModel["gpt-4"],
-      name: "5",
-      temperature: 1,
-      top_p: 0,
-    },
-    {
-      id: 5,
-      prompt: "設定6",
-      model: AIModel["gpt-4"],
-      name: "6",
-      temperature: 1,
-      top_p: 1,
-    },
-  ];
+
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, user.uid);
+  const botData: BotSetting[] = Array.from({ length: 6 }, (_, index) => ({
+    id: index,
+    prompt: `設定${index + 1}`,
+    model: AIModel["gpt-4"],
+    name: `${index + 1}`,
+    temperature: 1,
+    top_p: index < 3 ? 1 : 0,
+  }));
 
   const initialProfileData: ProfileData = {
     userId: user.uid,
@@ -121,84 +94,116 @@ export const createUserProfile = async () => {
     win: 0,
     lose: 0,
   };
+
   await setDoc(profileRef, initialProfileData);
   console.log("新規プロフィールが作成されました:", user.uid);
 };
 
-// プロフィールの更新
-export const updateUserProfile = async (data: any) => {
+/**
+ * ユーザープロフィールを更新
+ * @param data 更新データ
+ */
+export const updateUserProfile = async (data: Partial<ProfileData>) => {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
+
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
     ...data,
-    lastLogin: new Date().toISOString(),
+    lastLoginDate: Date.now(),
   });
+
   console.log("プロフィールが更新されました:", userId);
 };
 
+/**
+ * 最終ログイン日時を更新
+ */
 export const updateLastLogin = async () => {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
+
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
-    lastLogin: new Date().toISOString(),
+    lastLoginDate: Date.now(),
   });
+
   console.log("最終ログインが更新されました:", userId);
 };
 
-// プロフィールの取得
+/**
+ * ユーザープロフィールを取得
+ * @returns プロフィールデータ
+ */
 export const getUserProfile = async (): Promise<ProfileData> => {
   const userId = auth.currentUser?.uid;
 
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
+
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   const snapshot = await getDoc(profileRef);
+
   if (snapshot.exists()) {
-    console.log("プロフィールが見つかりました:", snapshot.data());
-    updateLastLogin();
-    return snapshot.data() as ProfileData;
+    const profileData = snapshot.data() as ProfileData;
+    console.log("プロフィールを取得しました:", profileData);
+    await updateLastLogin();
+    return profileData;
   } else {
     throw new Error(`ユーザープロフィールが見つかりません: ${userId}`);
   }
 };
+
 //#endregion
 
-// アンケートの更新
+//#region Questionnaire
+
+/**
+ * アンケートを更新
+ * @param data アンケートデータ
+ */
 export const updateUserQuestionnaire = async (data: QuestionnaireData) => {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
-  const profileRef = doc(
+
+  const questionnaireRef = doc(
     firestore,
     DATABASE_PATHS.questionnaires(userId),
     userId
   );
-  await updateDoc(profileRef, {
-    ...data,
-  });
-  console.log("プロフィールが更新されました:", userId);
+  await updateDoc(questionnaireRef, data);
+
+  console.log("アンケートが更新されました:", userId);
 };
 
-//感想の更新
+/**
+ * 感想を追加
+ * @param data 感想の内容
+ */
 export const addUserImpression = async (data: string) => {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
-  const Ref = collection(firestore, DATABASE_PATHS.impression(userId));
+
+  const impressionRef = collection(
+    firestore,
+    DATABASE_PATHS.impression(userId)
+  );
   const impressionData: Impression = {
     impression: data,
     date: new Date(),
   };
-  console.log("Ref", Ref);
-  await addDoc(Ref, impressionData);
-  console.log("プロフィールが更新されました:", userId);
+
+  await addDoc(impressionRef, impressionData);
+  console.log("感想が追加されました:", impressionData);
 };
+
+//#endregion

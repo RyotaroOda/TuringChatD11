@@ -33,6 +33,7 @@ const countries = [
 ];
 
 const ProfileEdit: React.FC = () => {
+  //#region init
   const [profile, setProfile] = useState<ProfileData>(useLocation().state);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -44,7 +45,9 @@ const ProfileEdit: React.FC = () => {
     const { name, value } = e.target;
     setProfile((prev) => (prev ? { ...prev, [name]: value } : prev));
   };
+  //#endregion
 
+  //#region プロフィール更新処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (profile && user) {
@@ -62,6 +65,7 @@ const ProfileEdit: React.FC = () => {
     }
   };
 
+  // アカウント削除処理
   const handleDelete = async () => {
     if (!user) {
       alert("現在ログインしているユーザーが見つかりません。");
@@ -113,13 +117,16 @@ const ProfileEdit: React.FC = () => {
     }
   };
 
+  //#region 画面遷移
   const handleQuestionnaireEdit = () => {
     navigate("/questionnaire_edit");
   };
 
+  //感想編集画面へ遷移
   const handleImpressionEdit = () => {
     navigate("/impression_edit");
   };
+  //#endregion
 
   if (!profile) return <p>読み込み中...</p>;
   if (errorMessage) return <p style={{ color: "red" }}>{errorMessage}</p>;

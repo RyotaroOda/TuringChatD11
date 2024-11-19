@@ -8,56 +8,60 @@ import {
 import {
   requestMatch,
   cancelRequest,
-} from "../services/firebase-functions-client.ts"; // Firebase Functionsの呼び出しをインポート
-
+} from "../services/firebase-functions-client.ts";
 import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
-
-import {
-  AIModel,
-  BotData,
-  MatchResult,
-  PlayerData,
-  ProfileData,
-} from "../shared/types.ts";
+import { AIModel, BotData, PlayerData, ProfileData } from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./RoomView.tsx";
 
 const HomeView: React.FC = () => {
-  const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
-  const [roomId, setRoomId] = useState<string | null>(null); // ルームID
-  const [playerName, setPlayerName] = useState<string>(""); // プレイヤーネームを保持
-  const [playerId, setPlayerId] = useState<string>(""); // プレイヤーID
-  const [score, setScore] = useState<number>(0);
-
+  //#region init
   const navigate = useNavigate();
   const user = auth.currentUser; // ログインユーザー情報
+
+  // State variables
+  const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [playerName, setPlayerName] = useState<string>("");
+  const [playerId, setPlayerId] = useState<string>("");
+  const [score, setScore] = useState<number>(0);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [bots, setBots] = useState<BotData | null>(null);
+  const [newName, setNewName] = useState<string>("");
+  const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
+  const [roomListened, setRoomListened] = useState<boolean>(false);
 
-  //#region ログイン状態
+  //#endregion
+
+  //#region ログイン状態の確認とプロフィール取得
   useEffect(() => {
     if (user) {
-      setPlayerId(user.uid); // プレイヤーIDを設定
-      // ログイン済みユーザーならFirebaseからプレイヤー名を取得
+      setPlayerId(user.uid);
       if (user.isAnonymous) {
-        setPlayerName("ゲスト"); // 匿名ユーザーの場合はゲスト表示
+        setPlayerName("ゲスト");
       } else {
-        setPlayerName(user.displayName || ""); // 名前が登録されている場合は表示
-        const fetchProfile = async () => {
-          if (user) {
-            const data = await getUserProfile();
-            if (data) {
-              setProfile(data);
-            } else {
-              console.error("プロフィール情報の取得に失敗しました。", data);
-            }
-          }
-        };
-        fetchProfile();
+        setPlayerName(user.displayName || "");
+        fetchUserProfile();
       }
     }
   }, [user]);
+
+  // Firebaseからユーザープロフィールを取得
+  const fetchUserProfile = async () => {
+    try {
+      if (user) {
+        const data = await getUserProfile();
+        if (data) {
+          setProfile(data);
+        } else {
+          console.error("プロフィール情報の取得に失敗しました。");
+        }
+      }
+    } catch (error) {
+      console.error("プロフィール取得エラー: ", error);
+    }
+  };
 
   useEffect(() => {
     if (profile) {
@@ -66,15 +70,17 @@ const HomeView: React.FC = () => {
       setScore(profile.rating);
     }
   }, [profile]);
+  //#endregion
 
-  // ログアウト処理
+  //#region ログイン・ログアウト処理
+  // ユーザーをログアウトする
   const handleLogout = async () => {
     try {
       await signOut(auth);
       alert("ログアウトしました");
-      navigate("/login"); // ログアウト後にログイン画面にリダイレクト
+      navigate("/login");
     } catch (error) {
-      console.error("ログアウトエラー:", error);
+      console.error("ログアウトエラー: ", error);
     }
   };
 
@@ -83,43 +89,36 @@ const HomeView: React.FC = () => {
     try {
       await signInAnonymously(auth);
       alert("ゲストでログインしました");
-      // navigate("/"); // ログイン後にホーム画面にリダイレクト
+      navigate("/");
     } catch (error) {
-      console.error("ゲストログインエラー:", error);
+      console.error("ゲストログインエラー: ", error);
     }
   };
   //#endregion
 
-  //#region プレイヤーネーム
-  const [isEditingName, setIsEditingName] = useState<boolean>(false); // 名前編集モード
-  const [newName, setNewName] = useState<string>(""); // 新しい名前
-
-  // 名前変更ボタンを押した時の処理
+  //#region プレイヤーネームの変更(ゲストユーザー用)
+  // プレイヤーネーム変更ボタンをクリックしたときの処理
   const handleNameChangeClick = () => {
-    setIsEditingName(!isEditingName); // 編集モードのオン/オフを切り替え
+    handleNameSubmit();
   };
 
-  // 名前を更新する処理
+  // プレイヤーネームを更新する処理
   const handleNameSubmit = async () => {
     if (user && newName) {
       try {
-        await updateProfile(user, { displayName: newName }); // FirebaseAuthで名前を更新
-        setPlayerName(newName); // 画面上の名前を更新
-        setIsEditingName(false); // 編集モードを終了
+        await updateProfile(user, { displayName: newName });
+        setPlayerName(newName);
       } catch (error) {
-        console.error("名前の更新に失敗しました:", error);
+        console.error("名前の更新に失敗しました: ", error);
       }
     }
   };
-
   //#endregion
 
-  //#region マッチング
-  const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
-  const [roomListened, setRoomListened] = useState<boolean>(false);
-
+  //#region マッチング処理
+  // マッチングを開始する
   const startMatch = async () => {
-    setIsPushedMatching(true); // マッチングボタンを押した状態にする
+    setIsPushedMatching(true);
     try {
       const player: PlayerData = {
         id: playerId,
@@ -127,41 +126,39 @@ const HomeView: React.FC = () => {
         isReady: false,
         rating: score,
       };
-      const result = await requestMatch(player); // サーバーレス関数でマッチングリクエスト
+      const result = await requestMatch(player);
       if (result.roomId !== "") {
-        setRoomId(result.roomId); // ルームIDを設定
+        setRoomId(result.roomId);
         setRoomListened(true);
       } else {
-        console.error("マッチングエラーー", result.message);
+        console.error("マッチングエラー: ", result.message);
         cancelMatching();
       }
     } catch (error) {
-      console.error("マッチングエラー:", error);
-      cancelMatching(); // エラー発生時にマッチング状態を解除
+      console.error("マッチングエラー: ", error);
+      cancelMatching();
     }
   };
 
-  // マッチングキャンセル処理
+  // マッチングをキャンセルする
   const cancelMatching = async () => {
-    setIsPushedMatching(false); // マッチングボタンを押した状態を解除
-    setRoomListened(false); // マッチング状態を解除
-    setRoomId(null); // ルームIDをクリア
+    setIsPushedMatching(false);
+    setRoomListened(false);
+    setRoomId(null);
     try {
-      await cancelRequest(); // サーバーレス関数でキャンセル
+      await cancelRequest();
     } catch (error) {
-      console.error("キャンセルエラー:", error);
+      console.error("キャンセルエラー: ", error);
     }
   };
 
-  //ルーム監視 (ホスト)
+  // マッチング成立時の処理
   useEffect(() => {
     if (roomListened && roomId) {
-      // ルームIDが設定されている場合、ルームのデータを監視
       const unsubscribe = onMatched(roomId, (isMatched) => {
-        // player2が設定されたらマッチング成立とみなす
         if (isMatched) {
           console.log("マッチング成立");
-          toRoomViewSegue(roomId); // バトル画面に遷移
+          toRoomViewSegue(roomId);
         }
       });
       return () => {
@@ -169,47 +166,36 @@ const HomeView: React.FC = () => {
         setRoomListened(false);
       };
     }
-    if (!roomListened && roomId) {
-      // onRoomPlayersUpdated(roomId, (players) => {}, { current: true });
-    }
-
-    // 画面が閉じられるかリロードされた場合にマッチングをキャンセル
 
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
       if (roomListened) {
-        cancelMatching();
+        await cancelMatching();
         event.preventDefault();
-        event.returnValue = ""; // ブラウザに確認メッセージを表示（ユーザーが手動で中止できる）
+        event.returnValue = "";
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
-
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload); // クリーンアップ
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [roomListened]);
-
+  }, [roomListened, roomId]);
   //#endregion
 
-  //#region 画面遷移
-  // プロフィール編集ボタンのクリック処理
+  //#region 画面遷移処理
+  // プロフィール編集画面に遷移する
   const handleProfileEditClick = () => {
-    navigate("/profile_edit", {
-      state: profile,
-    }); // プロフィール編集画面に遷移
+    navigate("/profile_edit", { state: profile });
   };
 
+  // プロンプト編集画面に遷移する
   const handlePromptEdit = () => {
-    navigate("/prompt_edit", {
-      state: bots,
-    }); // プロンプト編集画面に遷移
+    navigate("/prompt_edit", { state: bots });
   };
 
+  // ルームビューに遷移する処理
   const toRoomViewSegue = (roomId: string) => {
     setRoomListened(false);
-    console.log("???");
-
     getRoomData(roomId).then((roomData) => {
       if (user && user.isAnonymous) {
         setBots({
@@ -227,14 +213,11 @@ const HomeView: React.FC = () => {
         });
       }
       if (roomData.status === "matched" && bots) {
-        console.log("ルーム画面に遷移します");
         const props: OnlineRoomViewProps = {
           roomData: roomData,
           botData: bots,
         };
-        navigate(`/${roomId}`, {
-          state: props,
-        });
+        navigate(`/${roomId}`, { state: props });
       } else {
         console.error("ルームがプレイ中ではありません");
         cancelMatching();
@@ -248,14 +231,12 @@ const HomeView: React.FC = () => {
       <h1>ホーム</h1>
       {user ? (
         <div>
-          {/* ゲストユーザー（匿名）ではない場合に名前を表示 */}
           {!user.isAnonymous ? (
             <div>
               <p>こんにちは、{playerName}さん</p>
               <button onClick={handleLogout}>ログアウト</button>
               <button onClick={handleProfileEditClick}>プロフィール編集</button>
               <p>Score: {score}</p>
-
               <div>
                 <label>
                   AIプロンプト:
@@ -268,9 +249,9 @@ const HomeView: React.FC = () => {
           ) : (
             <div>
               <p>匿名でプレイ中</p>
-              <button onClick={() => navigate("/login")}>ログイン</button>{" "}
+              <button onClick={() => navigate("/login")}>ログイン</button>
               <div>
-                PlayerName:{" "}
+                PlayerName:
                 <input
                   type="text"
                   value={newName}
@@ -290,17 +271,16 @@ const HomeView: React.FC = () => {
             </div>
           )}
 
-          {/* マッチング中にキャンセルボタンを表示 */}
           {isPushedMatching ? (
-            <button onClick={cancelMatching}>キャンセル</button> // マッチングキャンセルボタン
+            <button onClick={cancelMatching}>キャンセル</button>
           ) : (
-            <button onClick={startMatch}>Start Matching</button> // マッチング開始ボタン
+            <button onClick={startMatch}>Start Matching</button>
           )}
-          {roomListened ? <p>"Matching ..."</p> : <p></p>}
+          {roomListened && <p>"Matching ..."</p>}
         </div>
       ) : (
         <div>
-          <button onClick={() => navigate("/login")}>ログイン</button>{" "}
+          <button onClick={() => navigate("/login")}>ログイン</button>
           <button onClick={handleAnonymousLogin}>
             ゲストアカウントでプレイ
           </button>

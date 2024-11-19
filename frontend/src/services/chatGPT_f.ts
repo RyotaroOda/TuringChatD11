@@ -1,4 +1,4 @@
-//frontend/src/services/chatGPT_f.ts
+// frontend/src/services/chatGPT_f.ts
 import {
   AIModel,
   BattleConfig,
@@ -16,40 +16,42 @@ interface ChatGPTResponse {
 }
 
 interface ChatGPTRequest {
-  model: AIModel; // 使用するAIモデル
+  model: AIModel;
   messages: GPTMessage[];
-  max_tokens: number; // レスポンスの最大トークン数
-  temperature: number; // 応答の創造性の度合い
-  top_p: number; // サンプリング時の確率マスのカットオフ
-  n: number; // 返答の数
-  frequency_penalty: number; // モデルが同じ語彙を繰り返すのを防ぐ
-
-  presence_penalty: number; // モデルが同じトピックを繰り返すのを防ぐ
-  stop: null; // 応答の終了条件を指定するストップトークン
+  max_tokens: number;
+  temperature: number;
+  top_p: number;
+  n: number;
+  frequency_penalty: number;
+  presence_penalty: number;
+  stop: null | string[];
 }
 
-// ChatGPTにリクエストを送信する関数
+/**
+ * ChatGPT APIにリクエストを送信し、応答を取得
+ * @param prompt ChatGPTへのリクエスト内容
+ * @returns 応答のテキスト
+ * @throws APIのエラーやレスポンスの欠落
+ */
 const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
-  // 環境変数のチェック
+  // 環境変数の検証
   if (!apiUrl) {
     throw new Error(
       "CHATGPT_API_URL is not defined in the environment variables."
     );
   }
-
   if (!apiKey) {
     throw new Error(
       "OPENAI_API_KEY is not defined in the environment variables."
     );
   }
 
-  // リクエスト内容をログに出力して確認
-  console.log("Prompt being sent:", JSON.stringify(prompt, null, 2));
+  console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
 
-  // ChatGPT APIにリクエストを送信
+  // ChatGPT APIリクエストの送信
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
@@ -61,87 +63,102 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
 
   if (!response.ok) {
     const errorDetails = await response.text();
-    console.error("Error details:", errorDetails);
+    console.error("ChatGPT API Error Details:", errorDetails);
     throw new Error(
       `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
     );
   }
 
-  // レスポンスからデータを取得
+  // レスポンスの解析
   const dataResponse = (await response.json()) as ChatGPTResponse;
-
-  // トピックを取り出す
   if (dataResponse.choices && dataResponse.choices.length > 0) {
     const message = dataResponse.choices[0].message;
-    if (message && message.content) {
-      const topic = message.content.trim();
-      return topic;
+    if (message?.content) {
+      return message.content.trim();
     }
   }
+
   throw new Error("No content found in ChatGPT response.");
 };
 
-//test chat
+/**
+ * メッセージ生成用関数
+ * @param messages 会話履歴
+ * @returns ChatGPTの応答
+ */
 export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
-  // Implement the function logic here
   const prompt: ChatGPTRequest = {
     model: AIModel["gpt-4"],
-    messages: messages,
+    messages,
     max_tokens: 100,
-    temperature: 1.0, // 高めのランダム性を設定
-    top_p: 0.9, // サンプリング時に多様なトークンを選ぶようにする
+    temperature: 1.0, // 高ランダム性
+    top_p: 0.9,
     n: 1,
     frequency_penalty: 0,
     presence_penalty: 0,
     stop: null,
   };
+
   const answer = await generate(prompt);
-  console.log("Generated answer:", answer);
+  console.log("Generated Chat Response:", answer);
   return answer;
 };
 
-//battle message
+/**
+ * バトル用メッセージ生成関数
+ * @param log チャットの履歴ログ
+ * @param instruction リアルタイム指示
+ * @param bot Botの設定
+ * @param config バトル設定
+ * @returns ChatGPTの応答メッセージ
+ */
 export const generateBattleMessage = async (
   log: GPTMessage[],
   instruction: string,
   bot: BotSetting,
   config: BattleConfig
 ): Promise<string> => {
-  const messages: GPTMessage[] = [
-    {
-      role: "system",
-      content:
-        "あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。あなたはプレイヤーになりきって、新たに相手に送信するメッセージを生成して下さい。\n" +
-        "#ゲームルール\nゲームの参加者はプレイヤー(自分)と相手プレイヤーの2人です。\nメッセージの入力時間:" +
-        config.oneTurnTime +
-        "秒\n" +
-        "メッセージ終了ターン:" +
-        config.maxTurn +
-        "ターン" +
-        "\n" +
-        "トークテーマ" +
-        config.topic +
-        "\n" +
-        "#出力形式\n返信メッセージのみ(Messageのcontent内容のみ)を出力して下さい。出力がそのまま相手プレイヤーに送信されます。\n" +
-        "#カスタムプロンプト\n以下のプレイヤーが事前に設定したにカスタムプロンプト従って生成して下さい。\n" +
-        bot.prompt +
-        "#プレイヤー指示\n以下のプレイヤー指示はあなたへのリアルタイムの指示です。\n" +
-        instruction +
-        "#メッセージログ\n以下に今までのゲームのチャットログを送信します。\nゲーム開始時のトークテーマはAIで自動生成されメッセージの先頭に[AI]と表示されます\nプレイヤー(自分)は[proponent], 相手プレイヤー[opponent]とメッセージの先頭に表示されます。",
-    },
-    ...log,
-  ];
+  // システムメッセージの作成
+  const systemMessage: GPTMessage = {
+    role: "system",
+    content: `
+      あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
+      あなたはプレイヤーになりきって、新たに相手に送信するメッセージを生成してください。
+      
+      # ゲームルール
+      - ゲームの参加者はプレイヤー(自分)と相手プレイヤーの2人です。
+      - メッセージの入力時間: ${config.oneTurnTime}秒
+      - メッセージ終了ターン: ${config.maxTurn}ターン
+      - トークテーマ: ${config.topic}
 
-  const temp: GPTMessage[] = [
-    {
-      role: "user",
-      content: "メッセージを生成して",
-    },
+      # 出力形式
+      - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。出力がそのまま相手プレイヤーに送信されます。
+
+      # カスタムプロンプト
+      - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
+        ${bot.prompt}
+
+      # プレイヤー指示
+      - 以下のプレイヤー指示はあなたへのリアルタイムの指示です:
+        ${instruction}
+
+      # メッセージログ
+      - 以下に今までのゲームのチャットログを送信します。
+      - ゲーム開始時のトークテーマはAIで自動生成され、メッセージの先頭に[AI]と表示されます。
+      - プレイヤー(自分)は[proponent], 相手プレイヤーは[opponent]とメッセージの先頭に表示されます。
+    `,
+  };
+
+  // プロンプトの構築
+  const messages: GPTMessage[] = [
+    systemMessage,
+    ...log,
+    { role: "user", content: "メッセージを生成して" },
   ];
 
   const prompt: ChatGPTRequest = {
     model: AIModel[bot.model],
-    messages: messages,
+    messages,
     max_tokens: 100,
     temperature: bot.temperature,
     top_p: bot.top_p,
@@ -150,7 +167,8 @@ export const generateBattleMessage = async (
     presence_penalty: 0,
     stop: null,
   };
+
   const answer = await generate(prompt);
-  console.log("Generated battle message:", answer);
+  console.log("Generated Battle Message:", answer);
   return answer;
 };

@@ -1,4 +1,4 @@
-// frontend/src/views/RoomView.tsx
+//frontend/src/views/RoomView.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { RoomData, BotData, PlayerData } from "../shared/types.ts";
@@ -8,17 +8,16 @@ import {
   preparationComplete,
 } from "../services/firebase-realtime-database.ts";
 import { auth } from "../services/firebase_f.ts";
+
 export interface OnlineRoomViewProps {
   roomData: RoomData;
   botData: BotData;
 }
 
 const RoomView: React.FC = () => {
+  //#region init
   const location = useLocation();
-  const { roomData, botData } = location.state as {
-    roomData: RoomData;
-    botData: BotData;
-  };
+  const { roomData, botData } = location.state as OnlineRoomViewProps;
   const roomId = roomData.roomId;
   const myId = auth.currentUser?.uid;
 
@@ -27,14 +26,17 @@ const RoomView: React.FC = () => {
       (key) => roomData.players[key].id === myId
     ) ?? "";
 
-  const [players, setPlayers] = useState(Object.values(roomData.players));
+  const [players, setPlayers] = useState<PlayerData[]>(
+    Object.values(roomData.players)
+  );
   const navigate = useNavigate();
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(true);
   const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // Example: 2 minutes for preparation
+  //#endregion
 
-  // Timer effect
+  // タイマー処理
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(prev - 1, 0));
@@ -47,7 +49,8 @@ const RoomView: React.FC = () => {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // Handle player readiness
+  //#region プレイヤー準備
+  // プレイヤーの準備をクリック
   const handleReadyClick = () => {
     if (selectedIsHuman === false && selectedBotId === null) {
       alert("Please select an AI bot.");
@@ -57,10 +60,9 @@ const RoomView: React.FC = () => {
     preparationComplete(roomId, myKey);
   };
 
-  // Handle force ready when time is up
+  // 準備時間が切れた際に自動的に準備完了にする
   const handleForceReady = () => {
     if (!isReady) {
-      // Auto-select default settings if not selected
       if (
         selectedIsHuman === false &&
         selectedBotId === null &&
@@ -73,6 +75,7 @@ const RoomView: React.FC = () => {
     }
   };
 
+  // 他プレイヤーの準備完了を監視
   useEffect(() => {
     const unsubscribe = onPlayerPrepared(roomId, (result) => {
       if (result) {
@@ -86,13 +89,16 @@ const RoomView: React.FC = () => {
     };
   }, [roomId]);
 
-  // Navigate to BattleView when all players are ready
+  // すべてのプレイヤーが準備完了になったらバトルビューに遷移
   useEffect(() => {
     if (players.every((player) => player.isReady)) {
       toBattleViewSegue();
     }
   }, [players]);
+  //#endregion
 
+  //#region バトル画面遷移
+  // バトル画面に遷移する関数
   const toBattleViewSegue = () => {
     const props: BattleViewProps = {
       roomId: roomData.roomId,
@@ -105,6 +111,7 @@ const RoomView: React.FC = () => {
     };
     navigate(`/${roomData.roomId}/battle`, { state: props });
   };
+  //#endregion
 
   return (
     <div className="online-room-view">
@@ -159,13 +166,10 @@ const RoomView: React.FC = () => {
 
       <div className="battle-config">
         <h3>バトル設定</h3>
-        {/* <p>Battle Type: {roomData.battleConfig.battleType}</p> */}
-        {/* <p>Topic: {roomData.battleConfig.topic}</p> */}
         <p>
           ターン数: {roomData.battleConfig.maxTurn}ターン ×{" "}
           {roomData.battleConfig.oneTurnTime} 秒
         </p>
-        {/* <p>ターン時間: {roomData.battleConfig.oneTurnTime} 秒</p> */}
       </div>
 
       <div className="players-status">

@@ -1,4 +1,4 @@
-// frontend/src/views/BattleView.tsx
+//frontend/src/views/BattleView.tsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -31,21 +31,12 @@ const BattleView: React.FC = () => {
   //#region init
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
   const location = useLocation();
-  const { roomId, roomData, isHuman, bot } = location.state as {
-    roomId: string;
-    roomData: RoomData;
-    isHuman: boolean;
-    bot: BotSetting | null;
-  };
+  const { roomId, roomData, isHuman, bot } = location.state as BattleViewProps;
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
-  // Location and Params
   const playersKey = Object.keys(roomData.players);
   const isHost = myId === roomData.hostId;
-  // const myNumber = isHost ? 0 : 1;
-  // const isHost = myId === state.players[playersKey[0]].id;
-
   const myData: PlayerData = isHost
     ? roomData.players[playersKey[0]]
     : roomData.players[playersKey[1]];
@@ -53,13 +44,8 @@ const BattleView: React.FC = () => {
     ? roomData.players[playersKey[1]]
     : roomData.players[playersKey[0]];
 
-  // Player Information
   const myName = `${myData.name} (あなた)` || "error";
-
-  // Battle Configuration
   const battleConfig = roomData.battleConfig;
-
-  // Player names mapping
   const playerNames: Record<string, string> = {
     [myId]: myName,
     [opponentData.id]: opponentData.name,
@@ -72,12 +58,12 @@ const BattleView: React.FC = () => {
   const [message, setMessage] = useState<string>("");
   const [promptMessages, setPromptMessages] = useState<GPTMessage[]>([]);
   const [promptInstruction, setPromptInstruction] = useState<string>("");
-  const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost); // Initial turn state (placeholder)
+  const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost);
   const [remainTurn, setRemainTurn] = useState<number>(
     roomData.battleConfig.maxTurn
   );
   const [timeLeft, setTimeLeft] = useState<number>(battleConfig.oneTurnTime);
-
+  const [isWaitResponse, setIsWaitResponse] = useState<boolean>(false);
   const [answer, setAnswer] = useState<SubmitAnswer>({
     playerId: myId,
     isHuman: isHuman,
@@ -85,15 +71,14 @@ const BattleView: React.FC = () => {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  //#endregion
 
-  // ViewDidLoad
   useEffect(() => {
     setIsLoaded(true);
   }, [battleConfig]);
+  //#endregion
 
   //#region メッセージ
-  //メッセージ送信
+  // メッセージを送信する
   const handleSendMessage = async () => {
     if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
       setMessage("送信中...");
@@ -102,26 +87,24 @@ const BattleView: React.FC = () => {
     }
   };
 
-  const [isWaitResponse, setIsWaitResponse] = useState<boolean>(false);
-
+  // ボットによるメッセージ生成
   const generateMessage = async () => {
     setIsWaitResponse(true);
     if (bot) {
-      setMessage(
-        await generateBattleMessage(
-          promptMessages,
-          "メッセージ生成",
-          bot,
-          battleConfig
-        )
+      const generatedMessage = await generateBattleMessage(
+        promptMessages,
+        "メッセージ生成",
+        bot,
+        battleConfig
       );
+      setMessage(generatedMessage);
     } else {
       console.error("Bot setting is null");
     }
     setIsWaitResponse(false);
   };
 
-  //メッセージ更新
+  // メッセージ更新リスナー
   useEffect(() => {
     if (roomId && isViewLoaded) {
       onMessageAdded(roomId, (newMessage) => {
@@ -142,7 +125,7 @@ const BattleView: React.FC = () => {
     }
   }, [roomId, isViewLoaded]);
 
-  //メッセージ受信時
+  // ターンの切り替え
   useEffect(() => {
     if (isViewLoaded) {
       setIsMyTurn((prevTurn) => !prevTurn);
@@ -151,34 +134,35 @@ const BattleView: React.FC = () => {
   }, [chatLog]);
   //#endregion
 
-  //#region バトル終了時
+  //#region バトル終了時の処理
+  // 残りターンが0の場合
   useEffect(() => {
     if (remainTurn === 0) {
-      // alert("Battle Ended!");
+      console.log("Battle Ended");
     }
   }, [remainTurn]);
 
-  // 回答を送信
+  // 回答を送信する
   const handleSubmit = async () => {
     if (answer.select === null || !roomId || !myId) {
       console.error("Invalid answer data");
       return;
     }
     if (answer.message.trim() === "") {
-      //TODO: メッセージが空の場合の処理
+      console.warn("メッセージが空です");
+      return;
     }
     sendAnswer(roomId, answer);
     setIsSubmitted(true);
 
-    //両回答が揃ったら結果を確認
     if (isHost) {
       checkAnswers(roomId);
     }
   };
 
-  // Timer effect
+  // タイマーの処理
   useEffect(() => {
-    if (remainTurn > 0) return;
+    if (remainTurn <= 0) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(prev - 1, 0));
     }, 1000);
@@ -188,21 +172,21 @@ const BattleView: React.FC = () => {
     }
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, isMyTurn]);
 
+  // ターンが切り替わる際にタイマーをリセット
   useEffect(() => {
     if (isMyTurn) {
       setTimeLeft(battleConfig.oneTurnTime);
     }
   }, [isMyTurn]);
 
-  //リザルトを監視
+  // リザルトを監視する
   useEffect(() => {
     if (isSubmitted && roomId) {
       const unsubscribe = onResultUpdated(roomId, isHost, (result) => {
         if (result) {
           console.log("Result updated:", result);
-          // バトル終了時の処理
           toResultSegue(result);
         }
       });
@@ -212,7 +196,7 @@ const BattleView: React.FC = () => {
     }
   }, [isSubmitted]);
 
-  //resultに遷移
+  // 結果画面への遷移
   const toResultSegue = (result: ResultData) => {
     const props: ResultViewProps = {
       resultData: result,
@@ -220,7 +204,6 @@ const BattleView: React.FC = () => {
     console.log("ResultView props:", props);
     navigate(`/${roomId}/battle/result`, { state: props });
   };
-
   //#endregion
 
   return (
@@ -276,9 +259,9 @@ const BattleView: React.FC = () => {
         )}
         <button
           onClick={handleSendMessage}
-          disabled={remainTurn <= 0 || !isMyTurn}
+          disabled={remainTurn <= 0 || !isMyTurn || message === "送信中..."}
         >
-          {isMyTurn || message === "送信中..." ? "送信" : "Wait for your turn"}
+          {isMyTurn ? "送信" : "Wait for your turn"}
         </button>
       </div>
       {remainTurn === 0 && (
@@ -320,13 +303,8 @@ const BattleView: React.FC = () => {
           </button>
         </div>
       )}
-      {/* <Link to="/result">
-        <button onClick={handleFinishMatching}>バトル終了</button>
-      </Link> */}
     </div>
   );
-
-  //#endregion
 };
 
 export default BattleView;
