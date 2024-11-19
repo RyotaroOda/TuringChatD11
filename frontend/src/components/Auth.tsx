@@ -1,3 +1,4 @@
+//frontend/src/components/Auth.tsx
 import React, { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -14,14 +15,13 @@ const Auth: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [isRegister, setIsRegister] = useState(false); // サインアップかログインかの状態
-  const [errorMessage, setErrorMessage] = useState<string | null>(null); // エラーメッセージ
-  const [isEmailValid, setIsEmailValid] = useState(false); // メールアドレスの有効性
-  const navigate = useNavigate(); // navigateフックの使用
+  const [isRegister, setIsRegister] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isEmailValid, setIsEmailValid] = useState(false);
+  const navigate = useNavigate();
   const [isPushSignup, setIsPushSignup] = useState(false);
   const [isPushLogin, setIsPushLogin] = useState(false);
 
-  // メールアドレスの有効性を確認する関数
   const checkEmailValidity = async (email: string) => {
     if (!email) {
       setIsEmailValid(false);
@@ -49,11 +49,9 @@ const Auth: React.FC = () => {
     }
   }, [email, isRegister]);
 
-  // メールアドレスとパスワードでのログイン・サインアップ処理
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // パスワードが6文字以上であることを確認する
     if (password.length < 6) {
       setErrorMessage("パスワードは6文字以上である必要があります");
       return;
@@ -66,7 +64,6 @@ const Auth: React.FC = () => {
 
     try {
       if (isRegister && username.trim() !== "") {
-        // サインアップ
         setIsPushSignup(true);
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -74,35 +71,60 @@ const Auth: React.FC = () => {
           password
         );
         const user = userCredential.user;
-        await updateProfile(user, { displayName: username }); // FirebaseAuthで名前を更新
-        // プロフィール作成
+        await updateProfile(user, { displayName: username });
         await createUserProfile();
         alert("ユーザーが登録され、プロフィールが作成されました");
-
-        // ? to profile edit page
         navigate("/");
       } else {
-        // ログイン
         setIsPushLogin(true);
         await signInWithEmailAndPassword(auth, email, password);
         alert("ログインに成功しました");
         navigate("/");
       }
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("エラーが発生しました: " + error.message);
+    } catch (error: any) {
+      console.error("認証エラー:", error);
+
+      // Firebase Authenticationのエラーコードに基づいたエラーメッセージを設定
+      switch (error.code) {
+        case "auth/invalid-email":
+          setErrorMessage("無効なメールアドレスです。");
+          break;
+        case "auth/user-disabled":
+          setErrorMessage("このユーザーアカウントは無効化されています。");
+          break;
+        case "auth/user-not-found":
+          setErrorMessage(
+            "ユーザーが見つかりません。アカウントを作成してください。"
+          );
+          break;
+        case "auth/wrong-password":
+          setErrorMessage("パスワードが正しくありません。");
+          break;
+        case "auth/email-already-in-use":
+          setErrorMessage("このメールアドレスは既に使用されています。");
+          break;
+        case "auth/weak-password":
+          setErrorMessage("パスワードは6文字以上である必要があります。");
+          break;
+        default:
+          setErrorMessage("エラーが発生しました。もう一度お試しください。");
+      }
+    } finally {
+      setIsPushSignup(false);
+      setIsPushLogin(false);
     }
   };
 
-  // 匿名ログイン処理
   const handleAnonymousLogin = async () => {
     try {
       await signInAnonymously(auth);
       alert("ゲストでログインしました");
-      navigate("/"); // ログイン後にホーム画面にリダイレクト
-    } catch (error) {
+      navigate("/");
+    } catch (error: any) {
       console.error("ゲストログインエラー:", error);
-      setErrorMessage("ゲストログイン中にエラーが発生しました");
+      setErrorMessage(
+        "ゲストログイン中にエラーが発生しました。もう一度お試しください。"
+      );
     }
   };
 
@@ -116,8 +138,7 @@ const Auth: React.FC = () => {
   return (
     <div>
       <h1>{isRegister ? "サインアップ" : "ログイン"}</h1>
-      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}{" "}
-      {/* エラーメッセージの表示 */}
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
       <form onSubmit={handleSubmit}>
         {isRegister && (
           <input

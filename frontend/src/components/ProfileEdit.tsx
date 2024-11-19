@@ -1,9 +1,17 @@
+// frontend/src/components/ProfileEdit.tsx
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { updateUserProfile } from "../services/firestore-database_f.ts";
-import { ProfileData, QuestionnaireData } from "../shared/types.ts";
-import { deleteUser, updateProfile } from "firebase/auth";
+import { ProfileData } from "../shared/types.ts";
+import {
+  deleteUser,
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  reauthenticateWithCredential,
+  signInWithPopup,
+  updateProfile,
+} from "firebase/auth";
 
 const languages = [
   "English",
@@ -13,7 +21,7 @@ const languages = [
   "German",
   "Chinese",
   "Russian",
-]; // 言語リスト
+];
 const countries = [
   "Japan",
   "United States",
@@ -22,16 +30,14 @@ const countries = [
   "China",
   "Russia",
   "Brazil",
-]; // 国のリスト
+];
 
 const ProfileEdit: React.FC = () => {
-  //HomeViewからProfileDataを取得
   const [profile, setProfile] = useState<ProfileData>(useLocation().state);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const user = auth.currentUser;
 
-  // フォーム変更時のハンドラ
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -39,18 +45,16 @@ const ProfileEdit: React.FC = () => {
     setProfile((prev) => (prev ? { ...prev, [name]: value } : prev));
   };
 
-  // フォーム送信時のハンドラ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (profile && user) {
       try {
         await updateUserProfile(profile);
-        // Firebase AuthのdisplayNameも更新
         if (profile.name !== user.displayName) {
           await updateProfile(user, { displayName: profile.name });
         }
         alert("プロフィールが更新されました");
-        navigate("/"); // 更新後のリダイレクト先
+        navigate("/");
       } catch (error) {
         console.error("プロフィールの更新エラー:", error);
         setErrorMessage("プロフィールの更新中にエラーが発生しました");
@@ -59,27 +63,60 @@ const ProfileEdit: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (window.confirm("本当に削除しますか？")) {
-      if (user) {
-        try {
-          await updateUserProfile(null);
-          await deleteUser(user);
-          alert("プロフィールが削除されました");
-          navigate("/"); // 削除後のリダイレクト先
-        } catch (error) {
-          console.error("プロフィールの削除エラー:", error);
-          setErrorMessage("プロフィールの削除中にエラーが発生しました");
+    if (!user) {
+      alert("現在ログインしているユーザーが見つかりません。");
+      return;
+    }
+
+    if (
+      window.confirm(
+        "本当にアカウントを削除しますか？この操作は取り消せません。"
+      )
+    ) {
+      try {
+        // 再認証を試みる
+        const providerId = user.providerData[0]?.providerId;
+
+        if (providerId === "password") {
+          // メールとパスワードでログインしている場合
+          const email = user.email;
+          const password = prompt("再認証のためパスワードを入力してください:");
+
+          if (email && password) {
+            const credential = EmailAuthProvider.credential(email, password);
+            await reauthenticateWithCredential(user, credential);
+          } else {
+            alert("パスワードが入力されていません。");
+            return;
+          }
+        } else if (providerId === "google.com") {
+          // Googleログインの場合
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+        } else {
+          alert("再認証がサポートされていない認証方法です。");
+          return;
+        }
+
+        // 再認証後にアカウント削除
+        await deleteUser(user);
+        alert("アカウントが削除されました。");
+        navigate("/"); // ホーム画面にリダイレクト
+      } catch (error: any) {
+        console.error("アカウント削除エラー:", error);
+        if (error.code === "auth/requires-recent-login") {
+          alert("再認証が必要です。再度ログインしてください。");
+        } else {
+          alert("アカウント削除中にエラーが発生しました。");
         }
       }
     }
   };
 
-  // アンケートボタンのハンドラ
   const handleQuestionnaireEdit = () => {
     navigate("/questionnaire_edit");
   };
 
-  // アンケートボタンのハンドラ
   const handleImpressionEdit = () => {
     navigate("/impression_edit");
   };
@@ -90,7 +127,6 @@ const ProfileEdit: React.FC = () => {
   return (
     <div>
       <h1>プロフィール編集</h1>
-      {/* ユーザーの認証情報の表示 */}
       <div>
         <h3>認証情報</h3>
         <p>ユーザーID: {user?.uid}</p>
@@ -196,7 +232,6 @@ const ProfileEdit: React.FC = () => {
           </p>
         </div>
 
-        {/* アンケート情報の表示 */}
         <div>
           <h3>実験アンケート</h3>
           {profile?.questionnaire ? (
