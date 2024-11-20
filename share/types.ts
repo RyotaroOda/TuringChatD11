@@ -1,4 +1,4 @@
-//types.ts
+//share/types.ts
 
 //#region RoomData
 export type RoomData = {
@@ -18,6 +18,15 @@ export type PlayerData = {
 };
 
 //バトル設定
+export type BattleData = {
+  phase: "waiting" | "chat" | "answer" | "result" | "finished";
+  players: PlayerData[];
+  battleConfig: BattleConfig;
+  battleLog: BattleLog;
+  winnerId: string | null;
+};
+
+//バトルルール
 export type BattleConfig = {
   maxTurn: number;
   battleType: "Single" | "Double" | "Short" | "Werewolf";
@@ -32,7 +41,7 @@ export type Message = {
   timestamp: number;
 };
 
-//バトルログ
+//バトルログ バトル中に参照する用
 export type BattleLog = {
   phase: "waiting" | "chat" | "answer" | "finished";
   currentTurn: number; //未使用
@@ -61,14 +70,15 @@ export type BattleResult = {
 
 //#endregion
 
-//firebase functions
+//#region firebase functions
+//マッチンング後クライアントに返すデータ
 export type MatchResult = {
   roomId: string;
   startBattle: Boolean;
   message?: string;
 };
 
-//各クライアント用
+//リザルト計算後クライアントに返すデータ
 export type ResultData = {
   playerId: string;
   myAnswer: SubmitAnswer;
@@ -78,6 +88,7 @@ export type ResultData = {
   score: number;
   time: number;
 };
+//#endregion
 
 //#region ProfileData
 export type ProfileData = {
@@ -131,11 +142,13 @@ export enum AIModel {
   "gpt-3.5-turbo" = "gpt-3.5-turbo",
 }
 
+//実験アンケート
 export type QuestionnaireData = {
   questions: string[];
   answers: string[];
 };
 
+//感想
 export type Impression = {
   impression: string;
   date: Date;
