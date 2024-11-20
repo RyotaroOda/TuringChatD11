@@ -1,46 +1,71 @@
-//frontend/src/components/PromptEdit.tsx
 import React, { useEffect, useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  TextField,
+  Box,
+  Card,
+  CardContent,
+  CardActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Slider,
+  Container,
+  CssBaseline,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  CircularProgress,
+  SelectChangeEvent,
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AIModel, BotSetting, BotData, GPTMessage } from "../shared/types.ts";
-import { useLocation } from "react-router-dom";
 import { updateUserProfile } from "../services/firestore-database_f.ts";
 import { generateChat } from "../services/chatGPT_f.ts";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
+const theme = createTheme({
+  typography: {
+    fontFamily: "'Noto Sans JP', sans-serif",
+  },
+});
 
 const EditPromptView: React.FC = () => {
-  //#region init
   const bots: BotData = useLocation().state;
+  const navigate = useNavigate();
+
+  // 初期選択ボットの設定
+  const initialBot =
+    bots.data.find((bot) => bot.id === bots.defaultId) || bots.data[0];
+
+  // 状態変数の定義
   const [botSettings, setBotSettings] = useState<BotSetting[]>(bots.data);
   const [defaultBotId, setDefaultBotId] = useState<number>(bots.defaultId);
+  const [selectedBotId, setSelectedBotId] = useState<number>(initialBot.id);
+  const [prompt, setPrompt] = useState<string>(initialBot.prompt);
+  const [botName, setBotName] = useState<string>(initialBot.name);
+  const [model, setModel] = useState<AIModel>(initialBot.model);
+  const [creativity, setCreativity] = useState<number>(initialBot.temperature);
+  const [certainty, setCertainty] = useState<number>(initialBot.top_p);
+  const [isPromptSaveEnabled, setIsPromptSaveEnabled] =
+    useState<boolean>(false);
+  const [isSettingsSaveEnabled, setIsSettingsSaveEnabled] =
+    useState<boolean>(false);
 
-  // 編集中のデータ
-  const [selectedBotId, setSelectedBotId] = useState<number>(defaultBotId);
-  const [prompt, setPrompt] = useState<string>(
-    botSettings[selectedBotId].prompt
-  );
-  const [botName, setBotName] = useState<string>(
-    botSettings[selectedBotId].name
-  );
-  const [model, setModel] = useState<AIModel>(botSettings[selectedBotId].model);
-  const [creativity, setCreativity] = useState<number>(
-    botSettings[selectedBotId].temperature
-  );
-  const [certainty, setCertainty] = useState<number>(
-    botSettings[selectedBotId].top_p
-  );
-  const [isSaveEnabled, setIsSaveEnabled] = useState<boolean>(false);
-
-  // テストチャット
-  const [chatMessage, setChatMessage] = useState<GPTMessage>({
-    role: "user",
-    content: "",
-  });
+  // テストチャット用の状態変数
+  const [chatMessage, setChatMessage] = useState<string>("");
   const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
   const [isSending, setIsSending] = useState<boolean>(false);
-  //#endregion
 
-  // #region ボット設定の選択処理
-  // ボット設定の選択が変更されたときの処理
-  const handleBotSelection = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = parseInt(event.target.value, 10);
+  // ボット選択変更時の処理
+  const handleBotSelection = (event: SelectChangeEvent<number>) => {
+    const value = parseInt(event.target.value as string, 10);
     const selectedBot = botSettings.find((bot) => bot.id === value);
     if (selectedBot) {
       setSelectedBotId(selectedBot.id);
@@ -49,300 +74,334 @@ const EditPromptView: React.FC = () => {
       setModel(selectedBot.model);
       setCreativity(selectedBot.temperature);
       setCertainty(selectedBot.top_p);
-      setIsSaveEnabled(false);
-    }
-  };
-  // #endregion
-
-  // プロンプトの内容が変更されたときの処理
-  const handlePromptChange = (
-    event: React.ChangeEvent<HTMLTextAreaElement>
-  ) => {
-    setPrompt(event.target.value);
-    setIsSaveEnabled(true);
-  };
-
-  // ボット名が変更されたときの処理
-  const handleBotNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setBotName(event.target.value);
-    setIsSaveEnabled(true);
-  };
-
-  // モデル選択変更時の処理
-  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setModel(event.target.value as AIModel);
-    setIsSaveEnabled(true);
-  };
-
-  // 創造性のスライダー変更時の処理
-  const handleCreativityChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setCreativity(parseFloat(event.target.value));
-    setIsSaveEnabled(true);
-  };
-
-  // 確実性のスライダー変更時の処理
-  const handleCertaintyChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setCertainty(parseFloat(event.target.value));
-    setIsSaveEnabled(true);
-  };
-
-  // #region ボット設定の保存処理
-  // ボット設定を保存する処理
-  const handleSave = () => {
-    if (selectedBotId !== null) {
-      setBotSettings(
-        botSettings.map((bot) =>
-          bot.id === selectedBotId
-            ? {
-                ...bot,
-                name: botName,
-                prompt: prompt,
-                model: model,
-                temperature: creativity,
-                top_p: certainty,
-              }
-            : bot
-        )
-      );
+      setIsPromptSaveEnabled(false);
+      setIsSettingsSaveEnabled(false);
+      setChatHistory([]); // チャット履歴をリセット
     }
   };
 
-  // ボット設定が変更されたときの処理
-  useEffect(() => {
-    if (isSaveEnabled) {
-      updateUserProfile({
-        bots: {
-          defaultId: defaultBotId,
-          data: botSettings,
-        },
-      });
-      setChatHistory((prevHistory) => [
-        ...prevHistory,
-        { role: "system", content: "新しいプロンプトが設定されました" },
-      ]);
-      setIsSaveEnabled(false);
-    }
-  }, [botSettings]);
-  // #endregion
+  // プロンプト保存処理
+  const handlePromptSave = () => {
+    const updatedBotSettings = botSettings.map((bot) =>
+      bot.id === selectedBotId ? { ...bot, name: botName, prompt: prompt } : bot
+    );
+    setBotSettings(updatedBotSettings);
+    updateUserProfile({
+      bots: {
+        defaultId: defaultBotId,
+        data: updatedBotSettings,
+      },
+    });
+    setIsPromptSaveEnabled(false);
+  };
 
-  // #region デフォルト設定
-  // デフォルトに設定する処理
+  // 設定保存処理
+  const handleSettingsSave = () => {
+    const updatedBotSettings = botSettings.map((bot) =>
+      bot.id === selectedBotId
+        ? { ...bot, model: model, temperature: creativity, top_p: certainty }
+        : bot
+    );
+    setBotSettings(updatedBotSettings);
+    updateUserProfile({
+      bots: {
+        defaultId: defaultBotId,
+        data: updatedBotSettings,
+      },
+    });
+    setIsSettingsSaveEnabled(false);
+  };
+
+  // デフォルトに設定処理
   const handleSetDefault = () => {
-    if (selectedBotId !== null) {
-      setDefaultBotId(selectedBotId);
-    }
+    setDefaultBotId(selectedBotId);
+    updateUserProfile({
+      bots: {
+        defaultId: selectedBotId,
+        data: botSettings,
+      },
+    });
   };
 
-  // デフォルト設定が変更されたときの処理
-  useEffect(() => {
-    if (defaultBotId !== null) {
-      updateUserProfile({
-        bots: {
-          defaultId: defaultBotId,
-          data: botSettings,
-        },
-      });
-      setChatHistory((prevHistory) => [
-        ...prevHistory,
-        { role: "system", content: `${botName}がデフォルトに設定されました` },
-      ]);
-    }
-  }, [defaultBotId]);
-  // #endregion
-
-  // #region チャットメッセージ送信処理
-  // チャットメッセージを送信する処理
+  // チャットメッセージ送信処理
   const handleSendMessage = async () => {
-    if (chatMessage.content.trim() !== "") {
-      setChatHistory((prevHistory) => [
-        ...prevHistory,
-        { role: "user", content: chatMessage.content },
-      ]);
-      setChatMessage({ role: "user", content: "" });
+    if (chatMessage.trim() !== "") {
+      const userMessage: GPTMessage = {
+        role: "user",
+        content: chatMessage,
+      };
+      setChatHistory((prev) => [...prev, userMessage]);
+      setChatMessage("");
       setIsSending(true);
     }
   };
 
-  // チャットメッセージ送信処理
+  // AIからの応答処理
   useEffect(() => {
     const sendChatMessage = async () => {
       const filteredMessages = chatHistory.filter(
         (message) => message.role !== "system"
       );
-      const response = await generateChat(filteredMessages);
-      setChatHistory((prevHistory) => [
-        ...prevHistory,
-        { role: "assistant", content: response },
-      ]);
+      const responseContent = await generateChat(filteredMessages);
+      const aiMessage: GPTMessage = {
+        role: "assistant",
+        content: responseContent,
+      };
+      setChatHistory((prev) => [...prev, aiMessage]);
       setIsSending(false);
     };
 
     if (isSending) {
       sendChatMessage();
     }
-  }, [isSending, chatHistory]);
-  // #endregion
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSending]);
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>プロンプト編集画面</h1>
-      {/* ボット設定の選択エリア */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3>保存されているプロンプト</h3>
-        <select
-          value={selectedBotId}
-          style={{ width: "100%", padding: "8px" }}
-          onChange={handleBotSelection}
-        >
-          {botSettings.map((bot) => (
-            <option key={bot.id} value={bot.id}>
-              {bot.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* ボット名の編集エリア */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3>名前編集</h3>
-        <input
-          type="text"
-          value={botName}
-          onChange={handleBotNameChange}
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
-
-      {/* プロンプトの編集エリア */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3>プロンプト編集</h3>
-        <textarea
-          rows={4}
-          value={prompt}
-          onChange={handlePromptChange}
-          style={{ width: "100%", padding: "8px" }}
-        />
-      </div>
-
-      {/* ボット設定の編集エリア */}
-      <div style={{ marginBottom: "20px" }}>
-        <h3>設定</h3>
-        <div style={{ marginBottom: "10px" }}>
-          <label>モデル: </label>
-          <select
-            value={model}
-            onChange={handleModelChange}
-            style={{ width: "200px", padding: "8px" }}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppBar position="static">
+        <Toolbar>
+          <Button
+            variant="outlined" // ボタンのスタイルをテキストベースに
+            color="inherit"
+            startIcon={<ArrowBackIcon />} // 矢印アイコンを追加
+            sx={{
+              textTransform: "none", // テキストをそのままの形で表示（全大文字を防ぐ）
+              borderColor: "#ffffff", // ボーダーカラーを白に設定
+              color: "#ffffff", // テキストカラーを白
+              ":hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.1)", // ホバー時の背景色
+              },
+            }}
+            onClick={() => navigate("/")}
           >
-            <option value={AIModel["gpt-4o"]}>GPT-4o</option>
-            <option value={AIModel["gpt-4o-mini"]}>GPT-4o mini</option>
-            <option value={AIModel["gpt-4"]}>GPT-4</option>
-            <option value={AIModel["gpt-4-turbo"]}>GPT-4 Turbo</option>
-            <option value={AIModel["gpt-3.5-turbo"]}>GPT-3.5 Turbo</option>
-          </select>
-        </div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>創造性: </label>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.1}
-            value={creativity}
-            onChange={handleCreativityChange}
-            style={{ width: "300px" }}
-          />
-          <span>{creativity}</span>
-        </div>
-        <div style={{ marginBottom: "10px" }}>
-          <label>確実性: </label>
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.1}
-            value={certainty}
-            onChange={handleCertaintyChange}
-            style={{ width: "300px" }}
-          />
-          <span>{certainty}</span>
-        </div>
-      </div>
+            戻る
+          </Button>
+          <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "center" }}>
+            プロンプト編集
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="md">
+        <Box mt={4}>
+          {/* 保存されているプロンプト */}
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                保存されているプロンプト
+              </Typography>
+              <FormControl fullWidth>
+                <InputLabel>プロンプト選択</InputLabel>
+                <Select
+                  value={selectedBotId}
+                  onChange={handleBotSelection}
+                  fullWidth
+                >
+                  {botSettings.map((bot) => (
+                    <MenuItem key={bot.id} value={bot.id}>
+                      {bot.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleSetDefault}
+                disabled={defaultBotId === selectedBotId}
+              >
+                {defaultBotId === selectedBotId
+                  ? "デフォルトに設定中"
+                  : "デフォルトに設定"}
+              </Button>
+            </CardActions>
+          </Card>
 
-      {/* ボタンエリア */}
-      <div>
-        <button
-          onClick={handleSave}
-          disabled={!isSaveEnabled}
-          style={{
-            marginRight: "10px",
-            padding: "10px 20px",
-            cursor: isSaveEnabled ? "pointer" : "not-allowed",
-          }}
-        >
-          保存
-        </button>
-        <button
-          onClick={handleSetDefault}
-          disabled={defaultBotId === selectedBotId}
-          style={{
-            padding: "10px 20px",
-            cursor: defaultBotId === selectedBotId ? "not-allowed" : "pointer",
-          }}
-        >
-          {defaultBotId === selectedBotId
-            ? "デフォルトに設定中"
-            : "デフォルトに設定"}
-        </button>
-      </div>
+          {/* プロンプト編集 */}
+          <Box mt={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  プロンプト編集
+                </Typography>
+                <TextField
+                  label="ボット名"
+                  value={botName}
+                  onChange={(e) => {
+                    setBotName(e.target.value);
+                    setIsPromptSaveEnabled(true);
+                  }}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                />
+                <TextField
+                  label="プロンプト"
+                  multiline
+                  rows={4}
+                  value={prompt}
+                  onChange={(e) => {
+                    setPrompt(e.target.value);
+                    setIsPromptSaveEnabled(true);
+                  }}
+                  fullWidth
+                  sx={{ mt: 2 }}
+                />
+              </CardContent>
+              <CardActions>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={!isPromptSaveEnabled}
+                  onClick={handlePromptSave}
+                >
+                  保存
+                </Button>
+              </CardActions>
+            </Card>
+          </Box>
 
-      {/* テストチャットエリア */}
-      <div style={{ marginTop: "20px" }}>
-        <h3>テストチャット</h3>
-        <div
-          style={{
-            marginBottom: "10px",
-            border: "1px solid #ccc",
-            padding: "10px",
-            height: "200px",
-            overflowY: "scroll",
-          }}
-        >
-          {chatHistory.map((message, index) => (
-            <div key={index}>
-              <strong>
-                {message.role === "user"
-                  ? "User"
-                  : message.role === "assistant"
-                    ? `${botName}`
-                    : "System"}
-                :
-              </strong>{" "}
-              {message.content}
-            </div>
-          ))}
-        </div>
-        <input
-          type="text"
-          value={chatMessage.content}
-          onChange={(e) =>
-            setChatMessage({ role: "user", content: e.target.value })
-          }
-          style={{ width: "80%", padding: "8px", marginRight: "10px" }}
-        />
-        <button
-          onClick={handleSendMessage}
-          disabled={isSending}
-          style={{ padding: "10px 20px" }}
-        >
-          {isSending ? "送信中" : "送信"}
-        </button>
-      </div>
-    </div>
+          {/* 設定 */}
+          <Box mt={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  設定
+                </Typography>
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel>モデル</InputLabel>
+                  <Select
+                    value={model}
+                    onChange={(e) => {
+                      setModel(e.target.value as AIModel);
+                      setIsSettingsSaveEnabled(true);
+                    }}
+                  >
+                    <MenuItem value={AIModel["gpt-4o"]}>GPT-4o</MenuItem>
+                    <MenuItem value={AIModel["gpt-4o-mini"]}>
+                      GPT-4o mini
+                    </MenuItem>
+                    <MenuItem value={AIModel["gpt-4"]}>GPT-4</MenuItem>
+                  </Select>
+                </FormControl>
+                <Box mt={2}>
+                  <Typography gutterBottom>創造性</Typography>
+                  <Slider
+                    value={creativity}
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    onChange={(e, value) => {
+                      setCreativity(value as number);
+                      setIsSettingsSaveEnabled(true);
+                    }}
+                    valueLabelDisplay="auto"
+                  />
+                </Box>
+                <Box mt={2}>
+                  <Typography gutterBottom>確実性</Typography>
+                  <Slider
+                    value={certainty}
+                    min={0}
+                    max={1}
+                    step={0.1}
+                    onChange={(e, value) => {
+                      setCertainty(value as number);
+                      setIsSettingsSaveEnabled(true);
+                    }}
+                    valueLabelDisplay="auto"
+                  />
+                </Box>
+              </CardContent>
+              <CardActions>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={!isSettingsSaveEnabled}
+                  onClick={handleSettingsSave}
+                >
+                  保存
+                </Button>
+              </CardActions>
+            </Card>
+          </Box>
+
+          {/* テストチャット */}
+          <Box mt={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  テストチャット
+                </Typography>
+                <Box
+                  sx={{
+                    maxHeight: 300,
+                    overflowY: "auto",
+                    border: "1px solid #ccc",
+                    padding: 2,
+                  }}
+                >
+                  <List>
+                    {chatHistory.map((message, index) => (
+                      <React.Fragment key={index}>
+                        <ListItem>
+                          <ListItemText
+                            primary={
+                              <Typography
+                                variant="subtitle1"
+                                color={
+                                  message.role === "user"
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                              >
+                                {message.role === "user" ? "あなた" : botName}
+                              </Typography>
+                            }
+                            secondary={message.content}
+                          />
+                        </ListItem>
+                        <Divider />
+                      </React.Fragment>
+                    ))}
+                    {isSending && (
+                      <ListItem>
+                        <CircularProgress size={24} />
+                        <ListItemText
+                          primary="応答を生成中..."
+                          sx={{ ml: 2 }}
+                        />
+                      </ListItem>
+                    )}
+                  </List>
+                </Box>
+                <Box mt={2} display="flex">
+                  <TextField
+                    label="メッセージを入力"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    fullWidth
+                    multiline
+                    rows={2}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSendMessage}
+                    disabled={isSending || !chatMessage.trim()}
+                    sx={{ ml: 2 }}
+                  >
+                    送信
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        </Box>
+      </Container>
+    </ThemeProvider>
   );
 };
 

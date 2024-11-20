@@ -12,6 +12,32 @@ import {
   signInWithPopup,
   updateProfile,
 } from "firebase/auth";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  TextField,
+  Container,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Card,
+  CardContent,
+  Grid,
+  CssBaseline,
+  SelectChangeEvent,
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+
+const theme = createTheme({
+  typography: {
+    fontFamily: "'Noto Sans JP', sans-serif",
+  },
+});
 
 const languages = [
   "English",
@@ -40,10 +66,12 @@ const ProfileEdit: React.FC = () => {
   const user = auth.currentUser;
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    event:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | SelectChangeEvent
   ) => {
-    const { name, value } = e.target;
-    setProfile((prev) => (prev ? { ...prev, [name]: value } : prev));
+    const { name, value } = event.target;
+    setProfile((prev) => (prev ? { ...prev, [name as string]: value } : prev));
   };
   //#endregion
 
@@ -122,7 +150,7 @@ const ProfileEdit: React.FC = () => {
     navigate("/questionnaire_edit");
   };
 
-  //感想編集画面へ遷移
+  // 感想編集画面へ遷移
   const handleImpressionEdit = () => {
     navigate("/impression_edit");
   };
@@ -132,133 +160,237 @@ const ProfileEdit: React.FC = () => {
   if (errorMessage) return <p style={{ color: "red" }}>{errorMessage}</p>;
 
   return (
-    <div>
-      <h1>プロフィール編集</h1>
-      <div>
-        <h3>認証情報</h3>
-        <p>ユーザーID: {user?.uid}</p>
-        <p>メールアドレス: {user?.email || "登録されていません"}</p>
-      </div>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>名前:</label>
-          <input
-            type="text"
-            name="name"
-            value={profile?.name || ""}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div>
-          <label>年齢:</label>
-          <input
-            type="number"
-            name="age"
-            value={profile?.age || ""}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div>
-          <label>性別:</label>
-          <select
-            name="gender"
-            value={profile?.gender || ""}
-            onChange={handleChange}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppBar position="static">
+        <Toolbar>
+          <Button
+            variant="outlined" // ボタンのスタイルをテキストベースに
+            color="inherit"
+            startIcon={<ArrowBackIcon />} // 矢印アイコンを追加
+            sx={{
+              textTransform: "none", // テキストをそのままの形で表示（全大文字を防ぐ）
+              borderColor: "#ffffff", // ボーダーカラーを白に設定
+              color: "#ffffff", // テキストカラーを白
+              ":hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.1)", // ホバー時の背景色
+              },
+            }}
+            onClick={() => navigate("/")}
           >
-            <option value="no_answer">回答しない</option>
-            <option value="male">男性</option>
-            <option value="female">女性</option>
-            <option value="other">その他</option>
-          </select>
-        </div>
+            戻る
+          </Button>
+          <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "center" }}>
+            プロフィール編集
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="sm">
+        <Box mt={4}>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="h5">基本情報</Typography>
+              </Grid>
 
-        <div>
-          <label>言語:</label>
-          <select
-            name="preferredLanguage"
-            value={profile?.language || ""}
-            onChange={handleChange}
-          >
-            {languages.map((lang) => (
-              <option key={lang} value={lang}>
-                {lang}
-              </option>
-            ))}
-          </select>
-        </div>
+              <Grid item xs={12}>
+                <TextField
+                  label="名前"
+                  name="name"
+                  value={profile?.name || ""}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
 
-        <div>
-          <label>国:</label>
-          <select
-            name="location.country"
-            value={profile?.location.country || ""}
-            onChange={handleChange}
-          >
-            {countries.map((country) => (
-              <option key={country} value={country}>
-                {country}
-              </option>
-            ))}
-          </select>
-        </div>
+              <Grid item xs={12}>
+                <TextField
+                  label="年齢"
+                  type="number"
+                  name="age"
+                  value={profile?.age || ""}
+                  onChange={handleChange}
+                  fullWidth
+                />
+              </Grid>
 
-        <div>
-          <label>都市:</label>
-          <input
-            type="text"
-            name="location.city"
-            value={profile?.location.city || ""}
-            onChange={handleChange}
-          />
-        </div>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>性別</InputLabel>
+                  <Select
+                    name="gender"
+                    value={profile?.gender || ""}
+                    onChange={handleChange}
+                  >
+                    <MenuItem value="no_answer">回答しない</MenuItem>
+                    <MenuItem value="male">男性</MenuItem>
+                    <MenuItem value="female">女性</MenuItem>
+                    <MenuItem value="other">その他</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
 
-        <div>
-          <label>プラットフォーム:</label>
-          <input
-            type="text"
-            name="platform"
-            value={profile?.platform || ""}
-            readOnly
-          />
-        </div>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>言語</InputLabel>
+                  <Select
+                    name="language"
+                    value={profile?.language || ""}
+                    onChange={handleChange}
+                  >
+                    {languages.map((lang) => (
+                      <MenuItem key={lang} value={lang}>
+                        {lang}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-        <div>
-          <h3>バトル情報</h3>
-          <p>レーティング: {profile?.rating || 0}</p>
-          <p>勝利数: {profile?.win || 0}</p>
-          <p>敗北数: {profile?.lose || 0}</p>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>国</InputLabel>
+                  <Select
+                    name="location.country"
+                    value={profile?.location.country || ""}
+                    onChange={(e) =>
+                      setProfile((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              location: {
+                                ...prev.location,
+                                country: e.target.value as string,
+                              },
+                            }
+                          : prev
+                      )
+                    }
+                  >
+                    {countries.map((country) => (
+                      <MenuItem key={country} value={country}>
+                        {country}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-          <p>
-            登録日: {new Date(profile?.signUpDate || 0).toLocaleDateString()}
-          </p>
-          <p>
-            最終ログイン:{" "}
-            {new Date(profile?.lastLoginDate || 0).toLocaleDateString()}
-          </p>
-        </div>
+              <Grid item xs={12}>
+                <TextField
+                  label="都市"
+                  name="location.city"
+                  value={profile?.location.city || ""}
+                  onChange={(e) =>
+                    setProfile((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            location: {
+                              ...prev.location,
+                              city: e.target.value,
+                            },
+                          }
+                        : prev
+                    )
+                  }
+                  fullWidth
+                />
+              </Grid>
 
-        <div>
-          <h3>実験アンケート</h3>
-          {profile?.questionnaire ? (
-            <div>
-              <p>質問内容: {profile.questionnaire.questions.join(", ")}</p>
-              <p>回答: {profile.questionnaire.answers.join(", ")}</p>
-            </div>
-          ) : (
-            <p>アンケートはまだ回答されていません</p>
-          )}
-          <button onClick={handleImpressionEdit}>アンケートの回答/編集</button>
-        </div>
-        <button type="submit">更新</button>
-        <br />
-        <br />
-        <button type="button" onClick={handleDelete}>
-          アカウントを削除
-        </button>
-      </form>
-    </div>
+              <Grid item xs={12}>
+                <TextField
+                  label="プラットフォーム"
+                  name="platform"
+                  value={profile?.platform || ""}
+                  InputProps={{
+                    readOnly: true,
+                  }}
+                  fullWidth
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="h5">その他情報</Typography>
+                <Card sx={{ mt: 2 }}>
+                  <CardContent>
+                    <Typography variant="body1">
+                      レーティング: {profile?.rating || 0}
+                    </Typography>
+                    <Typography variant="body1">
+                      勝利数: {profile?.win || 0}
+                    </Typography>
+                    <Typography variant="body1">
+                      敗北数: {profile?.lose || 0}
+                    </Typography>
+                    <Typography variant="body1">
+                      登録日:{" "}
+                      {new Date(profile?.signUpDate || 0).toLocaleDateString()}
+                    </Typography>
+                    <Typography variant="body1">
+                      最終ログイン:{" "}
+                      {new Date(
+                        profile?.lastLoginDate || 0
+                      ).toLocaleDateString()}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="h5">実験アンケート</Typography>
+                {profile?.questionnaire ? (
+                  <Card sx={{ mt: 2 }}>
+                    <CardContent>
+                      <Typography variant="body1">
+                        質問内容: {profile.questionnaire.questions.join(", ")}
+                      </Typography>
+                      <Typography variant="body1">
+                        回答: {profile.questionnaire.answers.join(", ")}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Typography variant="body1">
+                    アンケートはまだ回答されていません
+                  </Typography>
+                )}
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleImpressionEdit}
+                  sx={{ mt: 2 }}
+                >
+                  アンケートの回答/編集
+                </Button>
+              </Grid>
+
+              <Grid item xs={12} sx={{ mt: 4 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  type="submit"
+                  fullWidth
+                >
+                  更新
+                </Button>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Button
+                  variant="outlined"
+                  color="secondary"
+                  onClick={handleDelete}
+                  fullWidth
+                >
+                  アカウントを削除
+                </Button>
+              </Grid>
+            </Grid>
+          </form>
+        </Box>
+      </Container>
+    </ThemeProvider>
   );
 };
 

@@ -14,14 +14,37 @@ import { auth } from "../services/firebase_f.ts";
 import { AIModel, BotData, PlayerData, ProfileData } from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./RoomView.tsx";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  TextField,
+  Container,
+  Box,
+  CircularProgress,
+  CssBaseline,
+  Card,
+  CardActions,
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import EmojiEvents from "@mui/icons-material/EmojiEvents";
+
+// カスタムフォントの適用
+const theme = createTheme({
+  typography: {
+    fontFamily: "'Noto Sans JP', sans-serif",
+  },
+});
 
 const HomeView: React.FC = () => {
   //#region init
   const navigate = useNavigate();
-  const user = auth.currentUser; // ログインユーザー情報
+  const user = auth.currentUser;
 
   // State variables
-  const [aiPrompt, setAiPrompt] = useState<string>("Input AI prompt here");
+  const [aiPrompt, setAiPrompt] =
+    useState<string>("AIへの命令を入力して下さい。");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -47,7 +70,6 @@ const HomeView: React.FC = () => {
     }
   }, [user]);
 
-  // Firebaseからユーザープロフィールを取得
   const fetchUserProfile = async () => {
     try {
       if (user) {
@@ -73,7 +95,6 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region ログイン・ログアウト処理
-  // ユーザーをログアウトする
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -84,7 +105,6 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // 匿名ログイン処理
   const handleAnonymousLogin = async () => {
     try {
       await signInAnonymously(auth);
@@ -97,12 +117,10 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region プレイヤーネームの変更(ゲストユーザー用)
-  // プレイヤーネーム変更ボタンをクリックしたときの処理
   const handleNameChangeClick = () => {
     handleNameSubmit();
   };
 
-  // プレイヤーネームを更新する処理
   const handleNameSubmit = async () => {
     if (user && newName) {
       try {
@@ -115,8 +133,22 @@ const HomeView: React.FC = () => {
   };
   //#endregion
 
+  //スコア表示
+  const getCommentByScore = (score: number): string => {
+    if (score >= 1500) {
+      return "素晴らしい！あなたはトッププレイヤーです！";
+    } else if (score >= 1200) {
+      return "好調ですね！さらなる挑戦を！";
+    } else if (score >= 900) {
+      return "良い調子です！次のステージを目指しましょう！";
+    } else if (score >= 600) {
+      return "まだまだこれから！頑張りましょう！";
+    } else {
+      return "スタート地点です！チャレンジを続けて成長しましょう！";
+    }
+  };
+
   //#region マッチング処理
-  // マッチングを開始する
   const startMatch = async () => {
     setIsPushedMatching(true);
     try {
@@ -140,7 +172,6 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // マッチングをキャンセルする
   const cancelMatching = async () => {
     setIsPushedMatching(false);
     setRoomListened(false);
@@ -152,7 +183,6 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // マッチング成立時の処理
   useEffect(() => {
     if (roomListened && roomId) {
       const unsubscribe = onMatched(roomId, (isMatched) => {
@@ -183,17 +213,14 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region 画面遷移処理
-  // プロフィール編集画面に遷移する
   const handleProfileEditClick = () => {
     navigate("/profile_edit", { state: profile });
   };
 
-  // プロンプト編集画面に遷移する
   const handlePromptEdit = () => {
     navigate("/prompt_edit", { state: bots });
   };
 
-  // ルームビューに遷移する処理
   const toRoomViewSegue = (roomId: string) => {
     setRoomListened(false);
     getRoomData(roomId).then((roomData) => {
@@ -227,67 +254,152 @@ const HomeView: React.FC = () => {
   //#endregion
 
   return (
-    <div>
-      <h1>ホーム</h1>
-      {user ? (
-        <div>
-          {!user.isAnonymous ? (
-            <div>
-              <p>こんにちは、{playerName}さん</p>
-              <button onClick={handleLogout}>ログアウト</button>
-              <button onClick={handleProfileEditClick}>プロフィール編集</button>
-              <p>Score: {score}</p>
-              <div>
-                <label>
-                  AIプロンプト:
-                  {aiPrompt}
-                  <br />
-                  <button onClick={handlePromptEdit}>プロンプト編集</button>
-                </label>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <p>匿名でプレイ中</p>
-              <button onClick={() => navigate("/login")}>ログイン</button>
-              <div>
-                PlayerName:
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-                <button onClick={handleNameChangeClick}>名前変更</button>
-              </div>
-              <div style={{ marginBottom: "20px" }}>
-                <h3>プロンプト編集</h3>
-                <textarea
-                  rows={4}
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  style={{ width: "100%", padding: "8px" }}
-                />
-              </div>
-            </div>
-          )}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AppBar position="static">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            チャットゲームアプリ
+          </Typography>
 
+          <Button variant="outlined" color="inherit" onClick={handleLogout}>
+            ログアウト
+          </Button>
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="sm" sx={{ mt: 4 }}>
+        <Box textAlign="center" mb={4}>
+          <Typography variant="h4" color="text.primary" gutterBottom>
+            こんにちは、{playerName}さん
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleProfileEditClick}
+        >
+          プロフィール編集
+        </Button>
+
+        <Box mb={4}>
+          <Typography variant="h5" color="text.primary" gutterBottom>
+            スコア
+          </Typography>
+          <Card
+            sx={{
+              padding: 3,
+              borderRadius: 2,
+              textAlign: "center",
+              background: theme.palette.primary.main,
+              color: "#fff",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+            }}
+          >
+            <Box display="flex" alignItems="center" justifyContent="center">
+              <Typography variant="h4" sx={{ fontWeight: "bold", mr: 1 }}>
+                {score}
+              </Typography>
+              <EmojiEvents fontSize="large" />
+            </Box>
+            <Typography variant="body1" sx={{ mt: 1, fontStyle: "italic" }}>
+              {getCommentByScore(score)}
+            </Typography>
+          </Card>
+        </Box>
+
+        <Box mb={4}>
+          <Typography variant="h5" color="text.primary" gutterBottom>
+            AIプロンプト
+          </Typography>
+          <Card
+            sx={{
+              padding: 2,
+              borderRadius: 2,
+              background: theme.palette.background.paper,
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            }}
+          >
+            <Typography
+              variant="body1"
+              color="text.primary"
+              sx={{ whiteSpace: "pre-wrap" }}
+            >
+              {aiPrompt}
+            </Typography>
+            <CardActions>
+              <Button
+                variant="contained"
+                color="primary"
+                fullWidth
+                sx={{ mt: 2 }}
+                onClick={handlePromptEdit}
+              >
+                プロンプト編集
+              </Button>
+            </CardActions>
+          </Card>
+        </Box>
+
+        {user && user.isAnonymous ? (
+          <Box mb={4}>
+            <Typography variant="h5" color="text.primary" gutterBottom>
+              プレイヤー名の変更
+            </Typography>
+            <TextField
+              label="新しいプレイヤー名"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              variant="outlined"
+              fullWidth
+            />
+            <Button
+              variant="contained"
+              color="secondary"
+              fullWidth
+              sx={{ mt: 2 }}
+              onClick={handleNameChangeClick}
+            >
+              名前変更
+            </Button>
+          </Box>
+        ) : null}
+        <Box textAlign="center">
           {isPushedMatching ? (
-            <button onClick={cancelMatching}>キャンセル</button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={cancelMatching}
+              fullWidth
+            >
+              キャンセル
+            </Button>
           ) : (
-            <button onClick={startMatch}>Start Matching</button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={startMatch}
+              fullWidth
+            >
+              マッチング開始
+            </Button>
           )}
-          {roomListened && <p>"Matching ..."</p>}
-        </div>
-      ) : (
-        <div>
-          <button onClick={() => navigate("/login")}>ログイン</button>
-          <button onClick={handleAnonymousLogin}>
-            ゲストアカウントでプレイ
-          </button>
-        </div>
-      )}
-    </div>
+          {roomListened && (
+            <Box
+              mt={2}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <CircularProgress size={24} />
+              <Typography variant="body1" style={{ marginLeft: 8 }}>
+                マッチング中...
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      </Container>
+    </ThemeProvider>
   );
 };
-
 export default HomeView;

@@ -22,7 +22,6 @@ import ImpressionEdit from "./components/ImpressionEdit.tsx";
 function App() {
   return (
     <AuthProvider>
-      {" "}
       {/* 認証状態をアプリ全体に提供 */}
       <Router>
         <Routes>
