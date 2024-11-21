@@ -79,7 +79,8 @@ const RoomView: React.FC = () => {
     }, 1000);
 
     if (timeLeft === 0) {
-      handleForceReady();
+      // handleForceReady();
+      toHomeViewSegue();
     }
 
     return () => clearInterval(timer);
@@ -97,20 +98,20 @@ const RoomView: React.FC = () => {
     preparationComplete(roomId, myKey);
   };
 
-  // 準備時間が切れた際に自動的に準備完了にする
-  const handleForceReady = () => {
-    if (!isReady) {
-      if (
-        selectedIsHuman === false &&
-        selectedBotId === null &&
-        botData.data.length > 0
-      ) {
-        setSelectedBotId(botData.defaultId);
-      }
-      setIsReady(true);
-      preparationComplete(roomId, myKey);
-    }
-  };
+  // // 準備時間が切れた際に自動的に準備完了にする
+  // const handleForceReady = () => {
+  //   if (!isReady) {
+  //     if (
+  //       selectedIsHuman === false &&
+  //       selectedBotId === null &&
+  //       botData.data.length > 0
+  //     ) {
+  //       setSelectedBotId(botData.defaultId);
+  //     }
+  //     setIsReady(true);
+  //     preparationComplete(roomId, myKey);
+  //   }
+  // };
 
   // 他プレイヤーの準備完了を監視
   useEffect(() => {
@@ -153,7 +154,7 @@ const RoomView: React.FC = () => {
 
       return () => clearInterval(countdownTimer);
     } else if (countdown === 0) {
-      toBattleViewSegue(); // カウントダウン終了後にバトル画面に遷移
+      toBattleViewSegue();
     }
   }, [countdown]);
 
@@ -172,6 +173,10 @@ const RoomView: React.FC = () => {
           : null,
     };
     navigate(`/${roomData.roomId}/battle`, { state: props });
+  };
+
+  const toHomeViewSegue = () => {
+    navigate("/");
   };
   //#endregion
 
@@ -286,7 +291,7 @@ const RoomView: React.FC = () => {
                       ターン数: {roomData.battleConfig.maxTurn} ターン
                     </Typography>
                     <Typography variant="body1">
-                      一ターンの時間: {roomData.battleConfig.oneTurnTime} 秒
+                      1ターンの時間: {roomData.battleConfig.oneTurnTime} 秒
                     </Typography>
                   </CardContent>
                 </Card>

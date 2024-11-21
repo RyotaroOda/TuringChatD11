@@ -83,7 +83,8 @@ export type ResultData = {
   playerId: string;
   myAnswer: SubmitAnswer;
   opponentAnswer: SubmitAnswer;
-  corrects: Boolean[];
+  myCorrects: Boolean;
+  opponentCorrects: Boolean;
   win: "win" | "lose" | "draw";
   score: number;
   time: number;

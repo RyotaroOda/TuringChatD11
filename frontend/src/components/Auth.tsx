@@ -143,7 +143,7 @@ const Auth: React.FC = () => {
     try {
       setIsLoading(true);
       await signInAnonymously(auth);
-      alert("ゲストでログインしました。");
+      alert("ゲストで続行します。");
       navigate("/");
     } catch (error: any) {
       console.error("ゲストログインエラー:", error);

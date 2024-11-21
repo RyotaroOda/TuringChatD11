@@ -33,7 +33,7 @@
     "install:all": "npm install && npm --prefix && npm --prefix ./frontend install && npm --prefix ./backend install",
     "clean": "rm -rf node_modules package-lock.json && npm cache verify",
     "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean",
-    "deploy": "npm run build:back && firebase deploy --only functions,hosting",
+    "deploy": "npm run build && firebase deploy --only functions,hosting",
     "share": "npm run copy-to-frontend && npm run copy-to-backend",
     "copy-to-frontend": "cpy 'share/**/*' frontend/src/shared --parents",
     "copy-to-backend": "cpy 'share/**/*' backend/src/shared --parents"

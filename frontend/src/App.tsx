@@ -18,59 +18,101 @@ import ProfileEdit from "./components/ProfileEdit.tsx";
 import PromptEdit from "./components/PromptEdit.tsx";
 import QuestionnaireEdit from "./components/QuestionnaireEdit.tsx";
 import ImpressionEdit from "./components/ImpressionEdit.tsx";
+import { ThemeProvider } from "@emotion/react";
+import { createTheme } from "@mui/material/styles";
+
+// カスタムテーマの作成
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#1976d2", // 深いブルー
+    },
+    secondary: {
+      main: "#ff4081", // 明るいピンク
+    },
+    background: {
+      default: "#f5f5f5", // 優しいグレー
+      paper: "#ffffff", // カードやモーダルの背景
+    },
+    text: {
+      primary: "#333333", // 主要なテキスト
+      secondary: "#757575", // 補足的なテキスト
+    },
+  },
+  typography: {
+    fontFamily: "'Noto Sans JP', sans-serif",
+    h4: {
+      fontWeight: 700, // 見出しを太字に
+    },
+    body1: {
+      lineHeight: 1.6, // 読みやすさのための行間
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8, // ボタンの角を少し丸める
+        },
+      },
+    },
+  },
+});
 
 function App() {
   return (
-    <AuthProvider>
-      {/* 認証状態をアプリ全体に提供 */}
-      <Router>
-        <Routes>
-          <Route path="/" element={<HomeView />} />
-          {/* 認証が必要なルート */}
-          <Route
-            path="/:roomId"
-            element={
-              <ProtectedRoute>
-                <RoomView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/:roomId/battle"
-            element={
-              <ProtectedRoute>
-                <BattleView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/:roomId/battle/result"
-            element={
-              <ProtectedRoute>
-                <ResultView />
-              </ProtectedRoute>
-            }
-          />
-          {/* 認証ページ */}
-          <Route path="/login" element={<Auth />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/profile_edit" element={<ProfileEdit />} />{" "}
-          <Route path="/questionnaire_edit" element={<QuestionnaireEdit />} />{" "}
-          <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
-          <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
-          {/* 認証済みでない場合のリダイレクト */}
-          <Route path="*" element={<Navigate to="/" />} />{" "}
-          {/* その他のパスはホームにリダイレクト */}
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <AuthProvider>
+        {/* 認証状態をアプリ全体に提供 */}
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomeView />} />
+            {/* 認証が必要なルート */}
+            <Route
+              path="/:roomId"
+              element={
+                <ProtectedRoute>
+                  <RoomView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/:roomId/battle"
+              element={
+                <ProtectedRoute>
+                  <BattleView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/:roomId/battle/result"
+              element={
+                <ProtectedRoute>
+                  <ResultView />
+                </ProtectedRoute>
+              }
+            />
+            {/* 認証ページ */}
+            <Route path="/login" element={<Auth />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/profile_edit" element={<ProfileEdit />} />{" "}
+            <Route path="/questionnaire_edit" element={<QuestionnaireEdit />} />{" "}
+            <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
+            <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
+            {/* 認証済みでない場合のリダイレクト */}
+            <Route path="*" element={<Navigate to="/" />} />{" "}
+            {/* その他のパスはホームにリダイレクト */}
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -13,26 +13,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 認証状態の監視
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user); // ログインしているユーザー情報をセット
+      setUser(user);
       setLoading(false);
     });
 
-    // クリーンアップ
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
   return (
-    <AuthContext.Provider value={{ user }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user }}>
+      {loading ? <div>Loading...</div> : children}
+    </AuthContext.Provider>
   );
 };
 
 // カスタムフック AuthProvider の実装
 export const useAuth = () => {
-  return useContext(AuthContext); // コンテキストから認証情報を取得
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
 };

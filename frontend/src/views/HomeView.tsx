@@ -43,8 +43,7 @@ const HomeView: React.FC = () => {
   const user = auth.currentUser;
 
   // State variables
-  const [aiPrompt, setAiPrompt] =
-    useState<string>("AIへの命令を入力して下さい。");
+  const [aiPrompt, setAiPrompt] = useState<string>("default prompt");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -62,6 +61,7 @@ const HomeView: React.FC = () => {
     if (user) {
       setPlayerId(user.uid);
       if (user.isAnonymous) {
+        setNewName("ゲスト");
         setPlayerName("ゲスト");
       } else {
         setPlayerName(user.displayName || "");
@@ -92,28 +92,6 @@ const HomeView: React.FC = () => {
       setScore(profile.rating);
     }
   }, [profile]);
-  //#endregion
-
-  //#region ログイン・ログアウト処理
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      alert("ログアウトしました");
-      navigate("/login");
-    } catch (error) {
-      console.error("ログアウトエラー: ", error);
-    }
-  };
-
-  const handleAnonymousLogin = async () => {
-    try {
-      await signInAnonymously(auth);
-      alert("ゲストでログインしました");
-      navigate("/");
-    } catch (error) {
-      console.error("ゲストログインエラー: ", error);
-    }
-  };
   //#endregion
 
   //#region プレイヤーネームの変更(ゲストユーザー用)
@@ -213,6 +191,34 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region 画面遷移処理
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      alert("ログアウトしました");
+      navigate("/login");
+    } catch (error) {
+      console.error("ログアウトエラー: ", error);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate("/login");
+  };
+
+  const handleFeedback = () => {
+    navigate("/impression_edit");
+  };
+
+  const handleAnonymousLogin = async () => {
+    try {
+      await signInAnonymously(auth);
+      alert("ゲストでログインしました");
+      navigate("/");
+    } catch (error) {
+      console.error("ゲストログインエラー: ", error);
+    }
+  };
+
   const handleProfileEditClick = () => {
     navigate("/profile_edit", { state: profile });
   };
@@ -224,30 +230,37 @@ const HomeView: React.FC = () => {
   const toRoomViewSegue = (roomId: string) => {
     setRoomListened(false);
     getRoomData(roomId).then((roomData) => {
-      if (user && user.isAnonymous) {
-        setBots({
-          defaultId: 0,
-          data: [
-            {
-              id: 0,
-              name: "default",
-              prompt: aiPrompt,
-              model: AIModel["gpt-4"],
-              temperature: 0,
-              top_p: 0,
+      if (roomData.status === "matched") {
+        if (user && user.isAnonymous) {
+          // ゲストユーザーの場合はデフォルトのAIを使用
+          const props: OnlineRoomViewProps = {
+            roomData: roomData,
+            botData: {
+              defaultId: 0,
+              data: [
+                {
+                  id: 0,
+                  name: "default",
+                  prompt: aiPrompt,
+                  model: AIModel["gpt-4"],
+                  temperature: 0,
+                  top_p: 0,
+                },
+              ],
             },
-          ],
-        });
-      }
-      if (roomData.status === "matched" && bots) {
-        const props: OnlineRoomViewProps = {
-          roomData: roomData,
-          botData: bots,
-        };
-        navigate(`/${roomId}`, { state: props });
-      } else {
-        console.error("ルームがプレイ中ではありません");
-        cancelMatching();
+          };
+          navigate(`/${roomId}`, { state: props });
+        } else if (bots) {
+          // プレイヤーの場合はプロフィールのAIを使用
+          const props: OnlineRoomViewProps = {
+            roomData: roomData,
+            botData: bots,
+          };
+          navigate(`/${roomId}`, { state: props });
+        } else {
+          console.error("ルームに入室できませんでした。");
+          cancelMatching();
+        }
       }
     });
   };
@@ -256,149 +269,253 @@ const HomeView: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            チャットゲームアプリ
-          </Typography>
-
-          <Button variant="outlined" color="inherit" onClick={handleLogout}>
-            ログアウト
-          </Button>
-        </Toolbar>
-      </AppBar>
-
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        <Box textAlign="center" mb={4}>
-          <Typography variant="h4" color="text.primary" gutterBottom>
-            こんにちは、{playerName}さん
-          </Typography>
-        </Box>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={handleProfileEditClick}
-        >
-          プロフィール編集
-        </Button>
-
-        <Box mb={4}>
-          <Typography variant="h5" color="text.primary" gutterBottom>
-            スコア
-          </Typography>
-          <Card
-            sx={{
-              padding: 3,
-              borderRadius: 2,
-              textAlign: "center",
-              background: theme.palette.primary.main,
-              color: "#fff",
-              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
-            }}
-          >
-            <Box display="flex" alignItems="center" justifyContent="center">
-              <Typography variant="h4" sx={{ fontWeight: "bold", mr: 1 }}>
-                {score}
+      {user ? (
+        <>
+          <AppBar position="static">
+            <Toolbar>
+              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                チューリングゲーム
               </Typography>
-              <EmojiEvents fontSize="large" />
-            </Box>
-            <Typography variant="body1" sx={{ mt: 1, fontStyle: "italic" }}>
-              {getCommentByScore(score)}
-            </Typography>
-          </Card>
-        </Box>
-
-        <Box mb={4}>
-          <Typography variant="h5" color="text.primary" gutterBottom>
-            AIプロンプト
-          </Typography>
-          <Card
-            sx={{
-              padding: 2,
-              borderRadius: 2,
-              background: theme.palette.background.paper,
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-            }}
-          >
-            <Typography
-              variant="body1"
-              color="text.primary"
-              sx={{ whiteSpace: "pre-wrap" }}
-            >
-              {aiPrompt}
-            </Typography>
-            <CardActions>
               <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                sx={{ mt: 2 }}
-                onClick={handlePromptEdit}
+                variant="outlined"
+                color="inherit"
+                onClick={handleFeedback}
+                sx={{ mr: 2 }} // 右側に余白を追加
               >
-                プロンプト編集
+                フィードバック
               </Button>
-            </CardActions>
-          </Card>
-        </Box>
+              {user.isAnonymous ? (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={handleLogin}
+                >
+                  ログイン
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  color="inherit"
+                  onClick={handleLogout}
+                >
+                  ログアウト
+                </Button>
+              )}
+            </Toolbar>
+          </AppBar>
 
-        {user && user.isAnonymous ? (
-          <Box mb={4}>
-            <Typography variant="h5" color="text.primary" gutterBottom>
-              プレイヤー名の変更
-            </Typography>
-            <TextField
-              label="新しいプレイヤー名"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              variant="outlined"
-              fullWidth
-            />
-            <Button
-              variant="contained"
-              color="secondary"
-              fullWidth
-              sx={{ mt: 2 }}
-              onClick={handleNameChangeClick}
-            >
-              名前変更
-            </Button>
-          </Box>
-        ) : null}
-        <Box textAlign="center">
-          {isPushedMatching ? (
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={cancelMatching}
-              fullWidth
-            >
-              キャンセル
-            </Button>
-          ) : (
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={startMatch}
-              fullWidth
-            >
-              マッチング開始
-            </Button>
-          )}
-          {roomListened && (
-            <Box
-              mt={2}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <CircularProgress size={24} />
-              <Typography variant="body1" style={{ marginLeft: 8 }}>
-                マッチング中...
+          <Container maxWidth="sm" sx={{ mt: 4 }}>
+            <Box textAlign="center" mb={4}>
+              <Typography variant="h4" color="text.primary" gutterBottom>
+                こんにちは、{playerName}さん
               </Typography>
             </Box>
-          )}
+
+            {user && user.isAnonymous ? (
+              <div>
+                <Box mb={4}>
+                  <Typography variant="h5" color="text.primary" gutterBottom>
+                    プレイヤー名の変更
+                  </Typography>
+                  <TextField
+                    label="新しいプレイヤー名"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    variant="outlined"
+                    fullWidth
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={handleNameChangeClick}
+                  >
+                    名前変更
+                  </Button>
+                </Box>
+
+                <Box mb={4}>
+                  <Typography variant="h5" color="text.primary" gutterBottom>
+                    AIプロンプト
+                  </Typography>
+                  <Card
+                    sx={{
+                      padding: 2,
+                      borderRadius: 2,
+                      background: theme.palette.background.paper,
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <TextField
+                      label="AIへの命令を入力して下さい。"
+                      multiline
+                      rows={4}
+                      value={aiPrompt}
+                      onChange={(e) => {
+                        setAiPrompt(e.target.value);
+                      }}
+                      fullWidth
+                      sx={{ mt: 2 }}
+                    />
+                  </Card>
+                </Box>
+              </div>
+            ) : (
+              <div>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleProfileEditClick}
+                >
+                  プロフィール編集
+                </Button>
+
+                <Box mb={4}>
+                  <Typography variant="h5" color="text.primary" gutterBottom>
+                    スコア
+                  </Typography>
+                  <Card
+                    sx={{
+                      padding: 3,
+                      borderRadius: 2,
+                      textAlign: "center",
+                      background: theme.palette.primary.main,
+                      color: "#fff",
+                      boxShadow: "0 4px 20px rgba(0, 0, 0, 0.2)",
+                    }}
+                  >
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Typography
+                        variant="h4"
+                        sx={{ fontWeight: "bold", mr: 1 }}
+                      >
+                        {score}
+                      </Typography>
+                      <EmojiEvents fontSize="large" />
+                    </Box>
+                    <Typography
+                      variant="body1"
+                      sx={{ mt: 1, fontStyle: "italic" }}
+                    >
+                      {getCommentByScore(score)}
+                    </Typography>
+                  </Card>
+                </Box>
+
+                <Box mb={4}>
+                  <Typography variant="h5" color="text.primary" gutterBottom>
+                    AIプロンプト
+                  </Typography>
+                  <Card
+                    sx={{
+                      padding: 2,
+                      borderRadius: 2,
+                      background: theme.palette.background.paper,
+                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <Typography
+                      variant="body1"
+                      color="text.primary"
+                      sx={{ whiteSpace: "pre-wrap" }}
+                    >
+                      {aiPrompt}
+                    </Typography>
+                    <CardActions>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        sx={{ mt: 2 }}
+                        onClick={handlePromptEdit}
+                      >
+                        プロンプト編集
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Box>
+              </div>
+            )}
+            <Box textAlign="center">
+              {isPushedMatching ? (
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={cancelMatching}
+                  fullWidth
+                >
+                  キャンセル
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={startMatch}
+                  fullWidth
+                >
+                  マッチング開始
+                </Button>
+              )}
+              {roomListened && (
+                <Box
+                  mt={2}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <CircularProgress size={24} />
+                  <Typography variant="body1" style={{ marginLeft: 8 }}>
+                    マッチング中...
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Container>
+        </>
+      ) : (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          mt={4}
+        >
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={() => navigate("/login")}
+            sx={{
+              width: "80%",
+              maxWidth: "300px",
+              mb: 2,
+              textTransform: "none",
+              fontSize: "1rem",
+            }}
+          >
+            ログイン
+          </Button>
+          <Button
+            variant="outlined"
+            color="secondary"
+            size="large"
+            onClick={handleAnonymousLogin}
+            sx={{
+              width: "80%",
+              maxWidth: "300px",
+              textTransform: "none",
+              fontSize: "1rem",
+            }}
+          >
+            ゲストアカウントでプレイ
+          </Button>
         </Box>
-      </Container>
+      )}
     </ThemeProvider>
   );
 };

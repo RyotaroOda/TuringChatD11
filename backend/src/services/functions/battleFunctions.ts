@@ -76,6 +76,10 @@ export const calculateBattleResultFunction = functions.https.onCall(
     await db.ref(DATABASE_PATHS.endBattle(roomId)).set(end);
     await db.ref(DATABASE_PATHS.status(roomId)).set("finished");
 
+    // レーティングの更新
+    await updateRating(firstAnswer.playerId, scores.player1Score);
+    await updateRating(secondAnswer.playerId, scores.player2Score);
+
     // ルームデータのバックアップ
     await saveRoomDataToStore(roomId);
     console.log(
@@ -83,6 +87,20 @@ export const calculateBattleResultFunction = functions.https.onCall(
     );
   }
 );
+
+const updateRating = async (userId: string, score: number) => {
+  // レーティングの更新処理
+  const ref = firestore().collection("profiles").doc(userId);
+  await firestore().runTransaction(async (transaction) => {
+    const doc = await transaction.get(ref);
+    if (!doc.exists) {
+      //ゲスト
+    } else {
+      const currentRating = doc.data()?.rating || 0;
+      transaction.update(ref, { rating: currentRating + score });
+    }
+  });
+};
 
 /**
  * ルームデータをFirestoreにバックアップ

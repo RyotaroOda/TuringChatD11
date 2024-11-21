@@ -246,7 +246,10 @@ export const onResultUpdated = (
           opponentAnswer: isHost
             ? serverData.answers[1]
             : serverData.answers[0],
-          corrects: serverData.corrects,
+          myCorrects: isHost ? serverData.corrects[0] : serverData.corrects[1],
+          opponentCorrects: isHost
+            ? serverData.corrects[1]
+            : serverData.corrects[0],
           win: isHost
             ? serverData.scores[0] > serverData.scores[1]
               ? "win"

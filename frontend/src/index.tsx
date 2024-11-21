@@ -16,51 +16,11 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// カスタムテーマの作成
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: "#1976d2", // 深いブルー
-    },
-    secondary: {
-      main: "#ff4081", // 明るいピンク
-    },
-    background: {
-      default: "#f5f5f5", // 優しいグレー
-      paper: "#ffffff", // カードやモーダルの背景
-    },
-    text: {
-      primary: "#333333", // 主要なテキスト
-      secondary: "#757575", // 補足的なテキスト
-    },
-  },
-  typography: {
-    fontFamily: "'Noto Sans JP', sans-serif",
-    h4: {
-      fontWeight: 700, // 見出しを太字に
-    },
-    body1: {
-      lineHeight: 1.6, // 読みやすさのための行間
-    },
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8, // ボタンの角を少し丸める
-        },
-      },
-    },
-  },
-});
-
 // アプリケーションのレンダリング
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <App />
-    </ThemeProvider>
+    <CssBaseline />
+    <App />
   </React.StrictMode>
 );
 

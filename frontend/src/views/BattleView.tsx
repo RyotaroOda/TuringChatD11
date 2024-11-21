@@ -94,7 +94,10 @@ const BattleView: React.FC = () => {
     roomData.battleConfig.maxTurn
   );
   const [timeLeft, setTimeLeft] = useState<number>(battleConfig.oneTurnTime);
-  const [isWaitResponse, setIsWaitResponse] = useState<boolean>(false);
+
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generatedAnswer, setGeneratedAnswer] = useState<string>(""); // 生成された回答
+
   const [answer, setAnswer] = useState<SubmitAnswer>({
     playerId: myId,
     isHuman: isHuman,
@@ -103,7 +106,6 @@ const BattleView: React.FC = () => {
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const endRef = useRef<HTMLDivElement | null>(null); // スクロール用の参照
-
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -124,7 +126,7 @@ const BattleView: React.FC = () => {
 
   // ボットによるメッセージ生成
   const generateMessage = async () => {
-    setIsWaitResponse(true);
+    setIsGenerating(true);
     if (bot) {
       const generatedMessage = await generateBattleMessage(
         promptMessages,
@@ -133,10 +135,11 @@ const BattleView: React.FC = () => {
         battleConfig
       );
       setMessage(generatedMessage);
+      setGeneratedAnswer(generatedMessage);
     } else {
       console.error("Bot setting is null");
     }
-    setIsWaitResponse(false);
+    setIsGenerating(false);
   };
 
   // メッセージ更新リスナー
@@ -271,7 +274,7 @@ const BattleView: React.FC = () => {
             戻る
           </Button> */}
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            対戦画面 - ルームID: {roomId}
+            対戦画面
           </Typography>
         </Toolbar>
       </AppBar>
@@ -339,40 +342,15 @@ const BattleView: React.FC = () => {
           {/* メッセージ入力 */}
           {remainTurn > 0 ? (
             <Box mb={2}>
-              {isHuman ? (
-                <TextField
-                  label="メッセージを入力"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  fullWidth
-                  disabled={!isMyTurn || loading}
-                  sx={{
-                    backgroundColor: isMyTurn ? "white" : "grey.200",
-                    border: isMyTurn ? "2px solid #3f51b5" : "1px solid grey",
-                    transition:
-                      "background-color 0.3s ease, border-color 0.3s ease",
-                    "& .MuiOutlinedInput-root": {
-                      "& fieldset": {
-                        borderColor: isMyTurn ? "#3f51b5" : "grey",
-                      },
-                      "&:hover fieldset": {
-                        borderColor: isMyTurn ? "#303f9f" : "grey",
-                      },
-                      "&.Mui-focused fieldset": {
-                        borderColor: "#3f51b5",
-                      },
-                    },
-                  }}
-                />
-              ) : (
-                <Box>
+              <>
+                {isHuman ? (
                   <TextField
-                    label="命令（オプション）"
-                    value={promptInstruction}
-                    onChange={(e) => setPromptInstruction(e.target.value)}
+                    label="メッセージを入力"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                     fullWidth
+                    disabled={!isMyTurn || loading}
                     sx={{
-                      mb: 2,
                       backgroundColor: isMyTurn ? "white" : "grey.200",
                       border: isMyTurn ? "2px solid #3f51b5" : "1px solid grey",
                       transition:
@@ -390,23 +368,73 @@ const BattleView: React.FC = () => {
                       },
                     }}
                   />
-                  <Button
-                    variant="contained"
-                    onClick={generateMessage}
-                    disabled={isWaitResponse || !isMyTurn}
-                    sx={{
-                      backgroundColor: isMyTurn ? "primary.main" : "grey.300",
-                      color: isMyTurn ? "white" : "grey.500",
-                      "&:hover": {
-                        backgroundColor: isMyTurn ? "primary.dark" : "grey.300",
-                      },
-                      transition: "background-color 0.3s ease, color 0.3s ease",
-                    }}
-                  >
-                    {isWaitResponse ? "生成中..." : "メッセージ生成"}
-                  </Button>
+                ) : (
+                  <Box>
+                    <TextField
+                      label="命令（オプション）"
+                      value={promptInstruction}
+                      onChange={(e) => setPromptInstruction(e.target.value)}
+                      fullWidth
+                      sx={{
+                        mb: 2,
+                        backgroundColor: isMyTurn ? "white" : "grey.200",
+                        border: isMyTurn
+                          ? "2px solid #3f51b5"
+                          : "1px solid grey",
+                        transition:
+                          "background-color 0.3s ease, border-color 0.3s ease",
+                        "& .MuiOutlinedInput-root": {
+                          "& fieldset": {
+                            borderColor: isMyTurn ? "#3f51b5" : "grey",
+                          },
+                          "&:hover fieldset": {
+                            borderColor: isMyTurn ? "#303f9f" : "grey",
+                          },
+                          "&.Mui-focused fieldset": {
+                            borderColor: "#3f51b5",
+                          },
+                        },
+                      }}
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={generateMessage}
+                      disabled={isGenerating || !isMyTurn}
+                      sx={{
+                        backgroundColor: isMyTurn ? "primary.main" : "grey.300",
+                        color: isMyTurn ? "white" : "grey.500",
+                        "&:hover": {
+                          backgroundColor: isMyTurn
+                            ? "primary.dark"
+                            : "grey.300",
+                        },
+                        transition:
+                          "background-color 0.3s ease, color 0.3s ease",
+                      }}
+                    >
+                      {isGenerating ? "生成中..." : "メッセージ生成"}
+                    </Button>
+                  </Box>
+                )}
+                <Box
+                  mt={4}
+                  p={2}
+                  sx={{
+                    backgroundColor: "info.main",
+                    color: "white",
+                    borderRadius: 2,
+                    boxShadow: 3,
+                  }}
+                  ref={endRef} // スクロール用の参照
+                >
+                  <Typography variant="h6" gutterBottom>
+                    生成された回答:
+                  </Typography>
+                  <Typography variant="body1">{generatedAnswer}</Typography>
                 </Box>
-              )}
+              </>
+              {/* 生成された回答表示エリア */}
+
               <Box mt={2} display="flex" justifyContent="flex-end">
                 <Button
                   variant="contained"

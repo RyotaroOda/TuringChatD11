@@ -101,7 +101,7 @@ const ResultView: React.FC = () => {
                   </Typography>
                   <Typography variant="body1" sx={{ mt: 2 }}>
                     <strong>判定:</strong>{" "}
-                    {resultData.corrects[0] ? "正解" : "不正解"}
+                    {resultData.myCorrects ? "正解" : "不正解"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -129,7 +129,7 @@ const ResultView: React.FC = () => {
                   </Typography>
                   <Typography variant="body1" sx={{ mt: 2 }}>
                     <strong>判定:</strong>{" "}
-                    {resultData.corrects[1] ? "正解" : "不正解"}
+                    {resultData.opponentCorrects ? "正解" : "不正解"}
                   </Typography>
                 </CardContent>
               </Card>

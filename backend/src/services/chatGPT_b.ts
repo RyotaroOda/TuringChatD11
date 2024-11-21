@@ -46,10 +46,7 @@ const generateChat = async (prompt: ChatGPTRequest): Promise<string> => {
       );
     }
 
-    console.log(
-      "Sending request to ChatGPT API with prompt:",
-      JSON.stringify(prompt, null, 2)
-    );
+    console.log("Sending to ChatGPT...");
 
     // ChatGPT APIにリクエストを送信
     const response = await fetch(apiUrl, {
