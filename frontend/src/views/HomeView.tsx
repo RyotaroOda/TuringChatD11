@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getRoomData,
+  getBattleRoomData,
   onMatched,
 } from "../services/firebase-realtime-database.ts";
 import {
@@ -13,7 +13,7 @@ import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
 import { AIModel, BotData, PlayerData, ProfileData } from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
-import { OnlineRoomViewProps } from "./RoomView.tsx";
+import { OnlineRoomViewProps } from "./BattleRoomView.tsx";
 import {
   AppBar,
   Toolbar,
@@ -29,6 +29,8 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
+import { appPaths } from "../App.tsx";
+import { BattleRoomIds } from "../shared/database-paths.ts";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -44,6 +46,10 @@ const HomeView: React.FC = () => {
 
   // State variables
   const [aiPrompt, setAiPrompt] = useState<string>("default prompt");
+  const [ids, setIds] = useState<BattleRoomIds>({
+    roomId: "",
+    battleRoomId: "",
+  });
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -52,7 +58,7 @@ const HomeView: React.FC = () => {
   const [bots, setBots] = useState<BotData | null>(null);
   const [newName, setNewName] = useState<string>("");
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
-  const [roomListened, setRoomListened] = useState<boolean>(false);
+  const [battleRoomListened, setBattleRoomListened] = useState<boolean>(false);
 
   //#endregion
 
@@ -137,9 +143,9 @@ const HomeView: React.FC = () => {
         rating: score,
       };
       const result = await requestMatch(player);
-      if (result.roomId !== "") {
-        setRoomId(result.roomId);
-        setRoomListened(true);
+      if (result.ids.roomId !== "" && result.ids.battleRoomId !== "") {
+        setIds(result.ids);
+        setBattleRoomListened(true);
       } else {
         console.error("マッチングエラー: ", result.message);
         cancelMatching();
@@ -152,7 +158,7 @@ const HomeView: React.FC = () => {
 
   const cancelMatching = async () => {
     setIsPushedMatching(false);
-    setRoomListened(false);
+    setBattleRoomListened(false);
     setRoomId(null);
     try {
       await cancelRequest();
@@ -162,21 +168,21 @@ const HomeView: React.FC = () => {
   };
 
   useEffect(() => {
-    if (roomListened && roomId) {
-      const unsubscribe = onMatched(roomId, (isMatched) => {
+    if (battleRoomListened && ids.roomId !== "" && ids.battleRoomId !== "") {
+      const unsubscribe = onMatched(ids, (isMatched) => {
         if (isMatched) {
           console.log("マッチング成立");
-          toRoomViewSegue(roomId);
+          toBattleRoomViewSegue(ids);
         }
       });
       return () => {
         unsubscribe();
-        setRoomListened(false);
+        setBattleRoomListened(false);
       };
     }
 
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
-      if (roomListened) {
+      if (battleRoomListened) {
         await cancelMatching();
         event.preventDefault();
         event.returnValue = "";
@@ -187,7 +193,7 @@ const HomeView: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [roomListened, roomId]);
+  }, [battleRoomListened, ids]);
   //#endregion
 
   //#region 画面遷移処理
@@ -195,46 +201,88 @@ const HomeView: React.FC = () => {
     try {
       await signOut(auth);
       alert("ログアウトしました");
-      navigate("/login");
+      navigate(appPaths.login);
     } catch (error) {
       console.error("ログアウトエラー: ", error);
     }
   };
 
   const handleLogin = () => {
-    navigate("/login");
+    navigate(appPaths.login);
   };
 
   const handleFeedback = () => {
-    navigate("/impression_edit");
+    navigate(appPaths.impression_edit);
   };
 
   const handleAnonymousLogin = async () => {
     try {
       await signInAnonymously(auth);
       alert("ゲストでログインしました");
-      navigate("/");
+      navigate(appPaths.HomeView);
     } catch (error) {
       console.error("ゲストログインエラー: ", error);
     }
   };
 
   const handleProfileEditClick = () => {
-    navigate("/profile_edit", { state: profile });
+    navigate(appPaths.profile_edit, { state: profile });
   };
 
   const handlePromptEdit = () => {
-    navigate("/prompt_edit", { state: bots });
+    navigate(appPaths.prompt_edit, { state: bots });
   };
 
-  const toRoomViewSegue = (roomId: string) => {
-    setRoomListened(false);
-    getRoomData(roomId).then((roomData) => {
-      if (roomData.status === "matched") {
+  // const toRoomViewSegue = (roomId: string) => {
+  //   setBattleRoomListened(false);
+  //   getRoomData(roomId).then((roomData) => {
+  //     const battleData = roomData.battleData[ids.battleRoomId];
+  //     if (roomData.status === "matched") {
+  //       if (user && user.isAnonymous) {
+  //         // ゲストユーザーの場合はデフォルトのAIを使用
+  //         const props: OnlineRoomViewProps = {
+  //           battleData: battleData,
+  //           botData: {
+  //             defaultId: 0,
+  //             data: [
+  //               {
+  //                 id: 0,
+  //                 name: "default",
+  //                 prompt: aiPrompt,
+  //                 model: AIModel["gpt-4"],
+  //                 temperature: 0,
+  //                 top_p: 0,
+  //               },
+  //             ],
+  //           },
+  //         };
+  //         navigate(appPaths.BattleRoomView(ids), {
+  //           state: props,
+  //         });
+  //       } else if (bots) {
+  //         // プレイヤーの場合はプロフィールのAIを使用
+  //         const props: OnlineRoomViewProps = {
+  //           battleData: battleData,
+  //           botData: bots,
+  //         };
+  //         navigate(appPaths.RoomView(roomId), { state: props });
+  //       } else {
+  //         console.error("ルームに入室できませんでした。");
+  //         cancelMatching();
+  //       }
+  //     }
+  //   });
+  // };
+
+  const toBattleRoomViewSegue = (ids: BattleRoomIds) => {
+    setBattleRoomListened(false);
+    getBattleRoomData(ids).then((battleData) => {
+      console.log("roomData: ", battleData);
+      if (battleData.status === "matched") {
         if (user && user.isAnonymous) {
           // ゲストユーザーの場合はデフォルトのAIを使用
           const props: OnlineRoomViewProps = {
-            roomData: roomData,
+            battleData: battleData,
             botData: {
               defaultId: 0,
               data: [
@@ -249,14 +297,17 @@ const HomeView: React.FC = () => {
               ],
             },
           };
-          navigate(`/${roomId}`, { state: props });
+          console.log("props: ", props);
+          navigate(appPaths.BattleRoomView(ids), {
+            state: props,
+          });
         } else if (bots) {
           // プレイヤーの場合はプロフィールのAIを使用
           const props: OnlineRoomViewProps = {
-            roomData: roomData,
+            battleData: battleData,
             botData: bots,
           };
-          navigate(`/${roomId}`, { state: props });
+          navigate(appPaths.BattleRoomView(ids), { state: props });
         } else {
           console.error("ルームに入室できませんでした。");
           cancelMatching();
@@ -461,7 +512,7 @@ const HomeView: React.FC = () => {
                   マッチング開始
                 </Button>
               )}
-              {roomListened && (
+              {battleRoomListened && (
                 <Box
                   mt={2}
                   display="flex"
@@ -489,7 +540,7 @@ const HomeView: React.FC = () => {
             variant="contained"
             color="primary"
             size="large"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate(appPaths.login)}
             sx={{
               width: "80%",
               maxWidth: "300px",

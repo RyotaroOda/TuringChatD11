@@ -1,10 +1,13 @@
 // frontend/src/services/chatGPT_f.ts
+import { update } from "firebase/database";
 import {
   AIModel,
-  BattleConfig,
+  BattleRules,
   BotSetting,
   GPTMessage,
 } from "../shared/types.ts";
+import { updateTopic } from "./firebase-realtime-database.ts";
+import { BattleRoomIds } from "../shared/database-paths.ts";
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -82,7 +85,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
 };
 
 /**
- * メッセージ生成用関数
+ * テストメッセージ生成用関数
  * @param messages 会話履歴
  * @returns ChatGPTの応答
  */
@@ -116,7 +119,7 @@ export const generateBattleMessage = async (
   log: GPTMessage[],
   instruction: string,
   bot: BotSetting,
-  config: BattleConfig
+  config: BattleRules
 ): Promise<string> => {
   // システムメッセージの作成
   const systemMessage: GPTMessage = {
@@ -171,4 +174,40 @@ export const generateBattleMessage = async (
   const answer = await generate(prompt);
   console.log("Generated Battle Message:", answer);
   return answer;
+};
+
+/**
+ * トピックを生成する関数
+ * @returns 生成されたトピック
+ */
+export const generateTopic = async (ids: BattleRoomIds) => {
+  // GPT-4に送信するシステムメッセージ
+  const message: GPTMessage[] = [
+    {
+      role: "system",
+      content: `子供向けにランダムに会話の話題を設定してください。回答の形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
+    },
+  ];
+
+  const prompt: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: message,
+    max_tokens: 100,
+    temperature: 1.0, // 高めのランダム性を設定
+    top_p: 0.9, // 多様性を考慮したトークン選択
+    n: 1,
+    stop: null,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  };
+
+  try {
+    const topic = await generate(prompt);
+    console.log("Generated topic:", topic);
+
+    updateTopic(ids, topic);
+  } catch (error) {
+    console.error("Failed to generate topic:", error);
+    throw new Error("Failed to generate topic.");
+  }
 };

@@ -29,7 +29,7 @@ interface ChatGPTRequest {
  * @param prompt ChatGPT APIへのリクエスト内容
  * @returns ChatGPTからの応答テキスト
  */
-const generateChat = async (prompt: ChatGPTRequest): Promise<string> => {
+const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   try {
     const apiUrl = process.env.CHATGPT_API_URL;
     const apiKey = process.env.OPENAI_API_KEY;
@@ -106,7 +106,7 @@ export const generateTopic = async (): Promise<string> => {
   };
 
   try {
-    const topic = await generateChat(prompt);
+    const topic = await generate(prompt);
     console.log("Generated topic:", topic);
     return topic;
   } catch (error) {

@@ -9,7 +9,7 @@ import {
 import HomeView from "./views/HomeView.tsx";
 import BattleView from "./views/BattleView.tsx";
 import ResultView from "./views/ResultView.tsx";
-import RoomView from "./views/RoomView.tsx";
+import BattleRoomView from "./views/BattleRoomView.tsx";
 import Auth from "./components/Auth.tsx";
 import Profile from "./components/Profile.tsx"; // 任意のプロフィールページ
 import ProtectedRoute from "./components/ProtectedRoute.tsx"; // 認証保護されたルート
@@ -20,6 +20,25 @@ import QuestionnaireEdit from "./components/QuestionnaireEdit.tsx";
 import ImpressionEdit from "./components/ImpressionEdit.tsx";
 import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
+import RoomView from "./views/RoomView.tsx";
+import { BattleRoomIds } from "./shared/database-paths.ts";
+
+export const appPaths = {
+  HomeView: "/",
+  RoomView: (roomId: string) => `/${roomId}`,
+  BattleRoomView: (ids: BattleRoomIds) => `/${ids.roomId}/${ids.battleRoomId}`,
+  BattleView: (ids: BattleRoomIds) =>
+    `/${ids.roomId}/${ids.battleRoomId}/battle`,
+  ResultView: (ids: BattleRoomIds) =>
+    `/${ids.roomId}/${ids.battleRoomId}/result`,
+  battleRoom: "/battleRoom",
+  login: "/login",
+  profile: "/profile",
+  profile_edit: "/profile_edit",
+  prompt_edit: "/prompt_edit",
+  questionnaire_edit: "/questionnaire_edit",
+  impression_edit: "/impression_edit",
+};
 
 // カスタムテーマの作成
 const theme = createTheme({
@@ -69,7 +88,7 @@ function App() {
             <Route path="/" element={<HomeView />} />
             {/* 認証が必要なルート */}
             <Route
-              path="/:roomId"
+              path={appPaths.RoomView(":roomId")}
               element={
                 <ProtectedRoute>
                   <RoomView />
@@ -77,7 +96,15 @@ function App() {
               }
             />
             <Route
-              path="/:roomId/battle"
+              path="/:roomId/:battleRoomId"
+              element={
+                <ProtectedRoute>
+                  <BattleRoomView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/:roomId/:battleRoomId/battle"
               element={
                 <ProtectedRoute>
                   <BattleView />
@@ -85,7 +112,7 @@ function App() {
               }
             />
             <Route
-              path="/:roomId/battle/result"
+              path="/:roomId/:battleRoomId/result"
               element={
                 <ProtectedRoute>
                   <ResultView />
@@ -107,7 +134,10 @@ function App() {
             <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
             <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
             {/* 認証済みでない場合のリダイレクト */}
-            <Route path="*" element={<Navigate to="/" />} />{" "}
+            <Route
+              path="*"
+              element={<Navigate to={appPaths.HomeView} />}
+            />{" "}
             {/* その他のパスはホームにリダイレクト */}
           </Routes>
         </Router>

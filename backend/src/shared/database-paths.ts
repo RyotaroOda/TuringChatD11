@@ -1,23 +1,47 @@
 //database-paths.ts
+export type BattleRoomIds = {
+  roomId: string;
+  battleRoomId: string;
+};
 
 // Firebase Databaseの共通パスを管理
 export const DATABASE_PATHS = {
+  //realtime database
+  //root
   route_rooms: "rooms",
+  waitingPlayers: `randomMatching/waitingPlayers`,
 
+  //room
   room: (roomId: string) => `rooms/${roomId}`,
   players: (roomId: string) => `rooms/${roomId}/players`,
-  ready: (roomId: string, playerId: string) =>
-    `rooms/${roomId}/players/${playerId}`,
-  status: (roomId: string) => `rooms/${roomId}/status`,
-  battleLog: (roomId: string) => `rooms/${roomId}/battleLog`,
-  messages: (roomId: string) => `rooms/${roomId}/battleLog/messages`,
-  phase: (roomId: string) => `rooms/${roomId}/battleLog/phase`,
-  startBattle: (roomId: string) => `rooms/${roomId}/battleLog/timestamps/start`,
-  endBattle: (roomId: string) => `rooms/${roomId}/battleLog/timestamps/end`,
-  submittedAnswers: (roomId: string) =>
-    `rooms/${roomId}/battleLog/submitAnswer`,
-  result: (roomId: string) => `rooms/${roomId}/battleLog/battleResult`,
-  waitingPlayers: `randomMatching/waitingPlayers`,
+  battleData: (roomId: string) => `rooms/${roomId}/battleData`,
+
+  //battleRoom
+  battleRoom: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}`,
+  status: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/status`,
+  battlePlayers: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/players`,
+  ready: (ids: BattleRoomIds, playerId: string) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/players/${playerId}`,
+  rules: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleRules`,
+  topic: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleRules/topic`,
+  //battleLog
+  messages: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleLog/messages`,
+  phase: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleLog/phase`,
+  startBattle: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleLog/timestamps/start`,
+  endBattle: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleLog/timestamps/end`,
+  submittedAnswers: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}//battleLog/submitAnswer`,
+  result: (ids: BattleRoomIds) =>
+    `rooms/${ids.roomId}/battleData/${ids.battleRoomId}/battleLog/battleResult`,
 
   //firestore
   route_profiles: "profiles",

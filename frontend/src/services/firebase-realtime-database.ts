@@ -10,6 +10,7 @@ import {
 } from "firebase/database";
 import { db, auth } from "./firebase_f.ts";
 import {
+  BattleData,
   BattleLog,
   BattleResult,
   Message,
@@ -18,7 +19,7 @@ import {
   RoomData,
   SubmitAnswer,
 } from "../shared/types.ts";
-import { DATABASE_PATHS } from "../shared/database-paths.ts";
+import { BattleRoomIds, DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateBattleResult } from "./firebase-functions-client.ts";
 
 //#region HomeView
@@ -30,10 +31,10 @@ import { calculateBattleResult } from "./firebase-functions-client.ts";
  * @returns リスナー解除関数
  */
 export const onMatched = (
-  roomId: string,
+  ids: BattleRoomIds,
   callback: (isMatched: boolean) => void
 ) => {
-  const statusRef = ref(db, DATABASE_PATHS.status(roomId));
+  const statusRef = ref(db, DATABASE_PATHS.status(ids));
   const listener = onValue(statusRef, (snapshot) => {
     const status = snapshot.val();
     console.log("現在のステータス:", status);
@@ -53,20 +54,42 @@ export const onMatched = (
   };
 };
 
+// /**
+//  * ルームデータを取得
+//  * @param roomId ルームID
+//  * @returns ルームデータ
+//  * @throws ルームが存在しない場合にエラー
+//  */
+// export const getRoomData = async (roomId: string): Promise<RoomData> => {
+//   const roomRef = ref(db, DATABASE_PATHS.room(roomId));
+//   const snapshot = await get(roomRef);
+
+//   if (snapshot.exists()) {
+//     const roomData = snapshot.val();
+//     console.log("ルームデータを取得:", roomData);
+//     return roomData as RoomData;
+//   } else {
+//     console.error("ルームが存在しません");
+//     throw new Error("ルームが存在しません");
+//   }
+// };
+
 /**
  * ルームデータを取得
  * @param roomId ルームID
  * @returns ルームデータ
  * @throws ルームが存在しない場合にエラー
  */
-export const getRoomData = async (roomId: string): Promise<RoomData> => {
-  const roomRef = ref(db, DATABASE_PATHS.room(roomId));
-  const snapshot = await get(roomRef);
+export const getBattleRoomData = async (
+  ids: BattleRoomIds
+): Promise<BattleData> => {
+  const battleRoomRef = ref(db, DATABASE_PATHS.battleRoom(ids));
+  const snapshot = await get(battleRoomRef);
 
   if (snapshot.exists()) {
-    const roomData = snapshot.val();
-    console.log("ルームデータを取得:", roomData);
-    return roomData as RoomData;
+    const battleData = snapshot.val();
+    console.log("ルームデータを取得:", battleData);
+    return battleData as BattleData;
   } else {
     console.error("ルームが存在しません");
     throw new Error("ルームが存在しません");
@@ -82,13 +105,16 @@ export const getRoomData = async (roomId: string): Promise<RoomData> => {
  * @param roomId ルームID
  * @param playerId プレイヤーID
  */
-export const preparationComplete = async (roomId: string, playerId: string) => {
+export const preparationComplete = async (
+  ids: BattleRoomIds,
+  playerId: string
+) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const readyRef = ref(db, DATABASE_PATHS.ready(roomId, playerId));
+  const readyRef = ref(db, DATABASE_PATHS.ready(ids, playerId));
   const playerData = { isReady: true };
   await update(readyRef, playerData);
   console.log("準備完了:", playerData);
@@ -101,10 +127,10 @@ export const preparationComplete = async (roomId: string, playerId: string) => {
  * @returns リスナー解除関数
  */
 export const onPlayerPrepared = (
-  roomId: string,
+  ids: BattleRoomIds,
   callback: (players: PlayerData[]) => void
 ) => {
-  const playersRef = ref(db, DATABASE_PATHS.players(roomId));
+  const playersRef = ref(db, DATABASE_PATHS.battlePlayers(ids));
   const listener = onValue(playersRef, (snapshot) => {
     const newPlayers = snapshot.val();
     console.log("プレイヤーデータが更新:", newPlayers);
@@ -126,6 +152,48 @@ export const onPlayerPrepared = (
   };
 };
 
+/**
+ * トピックを保存
+ * @param roomId ルームID
+ * @param topic 生成されたトピック
+ */
+export const updateTopic = async (ids: BattleRoomIds, topic: string) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ログインしていないユーザーです。");
+  }
+
+  const configRef = ref(db, DATABASE_PATHS.topic(ids));
+  const data = { topic: topic };
+  await update(configRef, data);
+  console.log("トピック生成:", data);
+};
+
+/**
+ * プレイヤーの準備状況を監視
+ * @param roomId ルームID
+ * @param callback トピックを返すコールバック
+ * @returns リスナー解除関数
+ */
+export const onGeneratedTopic = (
+  ids: BattleRoomIds,
+  callback: (topic: string) => void
+) => {
+  const configRef = ref(db, DATABASE_PATHS.topic(ids));
+  const listener = onValue(configRef, (snapshot) => {
+    const newTopic = snapshot.val();
+    console.log("トピックが更新:", newTopic);
+    callback(newTopic);
+    console.log("onGeneratedTopicのリスナー解除");
+
+    off(configRef, "value", listener);
+  });
+
+  return () => {
+    console.log("onGeneratedTopicのリスナー解除 return");
+    off(configRef, "value", listener);
+  };
+};
 //#endregion
 
 //#region BattleView
@@ -135,13 +203,13 @@ export const onPlayerPrepared = (
  * @param roomId ルームID
  * @param message メッセージ内容
  */
-export const sendMessage = async (roomId: string, message: string) => {
+export const sendMessage = async (ids: BattleRoomIds, message: string) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const messageRef = ref(db, DATABASE_PATHS.messages(roomId));
+  const messageRef = ref(db, DATABASE_PATHS.messages(ids));
   const messageData: Message = {
     senderId: user.uid,
     message,
@@ -158,10 +226,10 @@ export const sendMessage = async (roomId: string, message: string) => {
  * @param callback メッセージデータを返すコールバック
  */
 export const onMessageAdded = (
-  roomId: string,
+  ids: BattleRoomIds,
   callback: (data: any) => void
 ) => {
-  const messagesRef = ref(db, DATABASE_PATHS.messages(roomId));
+  const messagesRef = ref(db, DATABASE_PATHS.messages(ids));
 
   onChildAdded(messagesRef, (snapshot) => {
     const newMessage = snapshot.val();
@@ -175,13 +243,13 @@ export const onMessageAdded = (
  * @param roomId ルームID
  * @param answer 提出された回答
  */
-export const sendAnswer = async (roomId: string, answer: SubmitAnswer) => {
+export const sendAnswer = async (ids: BattleRoomIds, answer: SubmitAnswer) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(roomId));
+  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(ids));
   await push(answerRef, answer);
   console.log("回答送信:", answer);
 };
@@ -190,25 +258,25 @@ export const sendAnswer = async (roomId: string, answer: SubmitAnswer) => {
  * 両プレイヤーの回答を確認
  * @param roomId ルームID
  */
-export const checkAnswers = (roomId: string) => {
+export const checkAnswers = (ids: BattleRoomIds) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(roomId));
+  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(ids));
 
   get(answerRef)
     .then((answersSnapshot) => {
       const answers = answersSnapshot.val();
       if (answers && Object.keys(answers).length === 2) {
         console.log("両プレイヤーの回答が揃いました:", answers);
-        calculateBattleResult(roomId);
+        calculateBattleResult(ids);
       } else {
         onValue(answerRef, (snapshot) => {
           const updatedAnswers = snapshot.val();
           if (updatedAnswers && Object.keys(updatedAnswers).length === 2) {
-            calculateBattleResult(roomId);
+            calculateBattleResult(ids);
             off(answerRef); // リスナー解除
             console.log("checkAnswersのリスナー解除");
           }
@@ -228,11 +296,11 @@ export const checkAnswers = (roomId: string) => {
  * @returns リスナー解除関数
  */
 export const onResultUpdated = (
-  roomId: string,
+  ids: BattleRoomIds,
   isHost: boolean,
   callback: (players: ResultData | null) => void
 ) => {
-  const resultRef = ref(db, DATABASE_PATHS.result(roomId));
+  const resultRef = ref(db, DATABASE_PATHS.result(ids));
 
   const listener = onValue(
     resultRef,

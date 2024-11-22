@@ -15,6 +15,8 @@ import {
   ResultData,
   BotSetting,
   GPTMessage,
+  BattleRules,
+  BattleData,
 } from "../shared/types";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
@@ -44,6 +46,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { appPaths } from "../App.tsx";
 
 const theme = createTheme({
   typography: {
@@ -52,8 +55,7 @@ const theme = createTheme({
 });
 
 export interface BattleViewProps {
-  roomId: string;
-  roomData: RoomData;
+  battleData: BattleData;
   isHuman: boolean;
   bot: BotSetting | null;
 }
@@ -62,21 +64,21 @@ const BattleView: React.FC = () => {
   //#region init
   const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
   const location = useLocation();
-  const { roomId, roomData, isHuman, bot } = location.state as BattleViewProps;
+  const { battleData, isHuman, bot } = location.state as BattleViewProps;
+  const ids = battleData.ids;
   const user = auth.currentUser;
   const myId = user?.uid || "error";
 
-  const playersKey = Object.keys(roomData.players);
-  const isHost = myId === roomData.hostId;
+  const playersKey = Object.keys(battleData.players);
+  const isHost = myId === battleData.hostId;
   const myData: PlayerData = isHost
-    ? roomData.players[playersKey[0]]
-    : roomData.players[playersKey[1]];
-  const opponentData: PlayerData = Object.values(roomData.players).find(
+    ? battleData.players[playersKey[0]]
+    : battleData.players[playersKey[1]];
+  const opponentData: PlayerData = Object.values(battleData.players).find(
     (player) => player.id !== myId
   )!;
 
   const myName = `${myData.name} (あなた)` || "error";
-  const battleConfig = roomData.battleConfig;
   const playerNames: Record<string, string> = {
     [myId]: myName,
     [opponentData.id]: opponentData.name,
@@ -91,9 +93,11 @@ const BattleView: React.FC = () => {
   const [promptInstruction, setPromptInstruction] = useState<string>("");
   const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost);
   const [remainTurn, setRemainTurn] = useState<number>(
-    roomData.battleConfig.maxTurn
+    battleData.battleRules.maxTurn
   );
-  const [timeLeft, setTimeLeft] = useState<number>(battleConfig.oneTurnTime);
+  const [timeLeft, setTimeLeft] = useState<number>(
+    battleData.battleRules.oneTurnTime
+  );
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedAnswer, setGeneratedAnswer] = useState<string>(""); // 生成された回答
@@ -110,15 +114,15 @@ const BattleView: React.FC = () => {
 
   useEffect(() => {
     setIsLoaded(true);
-  }, [roomId]);
+  }, [ids]);
   //#endregion
 
   //#region メッセージ処理
   // メッセージを送信する
   const handleSendMessage = async () => {
-    if (message.trim() && isMyTurn && roomId && remainTurn > 0) {
+    if (message.trim() && isMyTurn && ids && remainTurn > 0) {
       setLoading(true);
-      await sendMessage(roomId, message);
+      await sendMessage(ids, message);
       setMessage("");
       setLoading(false);
     }
@@ -132,7 +136,7 @@ const BattleView: React.FC = () => {
         promptMessages,
         "メッセージ生成",
         bot,
-        battleConfig
+        battleData.battleRules
       );
       setMessage(generatedMessage);
       setGeneratedAnswer(generatedMessage);
@@ -144,9 +148,9 @@ const BattleView: React.FC = () => {
 
   // メッセージ更新リスナー
   useEffect(() => {
-    if (!roomId) return;
+    if (!ids) return;
 
-    const unsubscribe = onMessageAdded(roomId, (newMessage) => {
+    const unsubscribe = onMessageAdded(ids, (newMessage) => {
       console.log("onMessageAdded:", newMessage);
 
       setChatLog((prevChatLog) => {
@@ -198,7 +202,7 @@ const BattleView: React.FC = () => {
 
   // 回答を送信する
   const handleSubmit = async () => {
-    if (answer.select === null || !roomId || !myId) {
+    if (answer.select === null || !ids || !myId) {
       console.error("Invalid answer data");
       return;
     }
@@ -206,11 +210,11 @@ const BattleView: React.FC = () => {
       console.warn("メッセージが空です");
       return;
     }
-    sendAnswer(roomId, answer);
+    sendAnswer(ids, answer);
     setIsSubmitted(true);
 
     if (isHost) {
-      checkAnswers(roomId);
+      checkAnswers(ids);
     }
   };
 
@@ -232,14 +236,14 @@ const BattleView: React.FC = () => {
   // ターンが切り替わる際にタイマーをリセット
   useEffect(() => {
     if (isMyTurn) {
-      setTimeLeft(battleConfig.oneTurnTime);
+      setTimeLeft(battleData.battleRules.oneTurnTime);
     }
-  }, [isMyTurn, battleConfig.oneTurnTime]);
+  }, [isMyTurn, battleData.battleRules.oneTurnTime]);
 
   // リザルトを監視する
   useEffect(() => {
-    if (isSubmitted && roomId) {
-      const unsubscribe = onResultUpdated(roomId, isHost, (result) => {
+    if (isSubmitted && ids) {
+      const unsubscribe = onResultUpdated(ids, isHost, (result) => {
         if (result) {
           console.log("Result updated:", result);
           toResultSegue(result);
@@ -249,7 +253,7 @@ const BattleView: React.FC = () => {
         unsubscribe();
       };
     }
-  }, [isSubmitted, roomId, isHost]);
+  }, [isSubmitted, ids, isHost]);
 
   // 結果画面への遷移
   const toResultSegue = (result: ResultData) => {
@@ -257,7 +261,7 @@ const BattleView: React.FC = () => {
       resultData: result,
     };
     console.log("ResultView props:", props);
-    navigate(`/${roomId}/battle/result`, { state: props });
+    navigate(appPaths.ResultView(ids), { state: props });
   };
   //#endregion
 
@@ -283,7 +287,7 @@ const BattleView: React.FC = () => {
           {/* トピックとターン情報 */}
           <Box mb={2}>
             <Typography variant="h5" gutterBottom>
-              {battleConfig.topic}
+              {battleData.battleRules.topic}
             </Typography>
             <Typography variant="body1">
               ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}
@@ -293,7 +297,7 @@ const BattleView: React.FC = () => {
             </Typography>
             <LinearProgress
               variant="determinate"
-              value={(timeLeft / battleConfig.oneTurnTime) * 100}
+              value={(timeLeft / battleData.battleRules.oneTurnTime) * 100}
               sx={{ mt: 1 }}
             />
             <Typography variant="body1">

@@ -2,6 +2,7 @@
 import { httpsCallable } from "firebase/functions";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
 import { PlayerData, MatchResult } from "../shared/types.ts";
+import { BattleRoomIds } from "../shared/database-paths.ts";
 
 //#region HomeView
 
@@ -49,7 +50,7 @@ export const requestMatch = async (
 
       if (attempt >= retryCount) {
         return {
-          roomId: "",
+          ids: { roomId: "", battleRoomId: "" },
           startBattle: false,
           message: `マッチング失敗（試行${attempt}回目）: ${error.message}`,
         };
@@ -64,7 +65,7 @@ export const requestMatch = async (
 
   // 再試行が全て失敗した場合
   return {
-    roomId: "",
+    ids: { roomId: "", battleRoomId: "" },
     startBattle: false,
     message: "再試行失敗",
   };
@@ -103,7 +104,7 @@ export const cancelRequest = async () => {
  * @param roomId バトルルームID
  * @throws 未ログインエラー
  */
-export const calculateBattleResult = async (roomId: string) => {
+export const calculateBattleResult = async (ids: BattleRoomIds) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
@@ -115,8 +116,8 @@ export const calculateBattleResult = async (roomId: string) => {
   );
 
   try {
-    console.log("バトル結果の計算を開始します:", roomId);
-    calculateBattleResultFunction(roomId); // 非同期実行、応答を待たない
+    console.log("バトル結果の計算を開始します:", ids);
+    calculateBattleResultFunction(ids); // 非同期実行、応答を待たない
   } catch (error) {
     console.error("バトル結果計算エラー:", error);
     throw new Error("バトル結果の計算中にエラーが発生しました。");

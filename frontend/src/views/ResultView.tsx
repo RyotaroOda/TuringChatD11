@@ -16,6 +16,7 @@ import {
   CardContent,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { appPaths } from "../App.tsx";
 
 const theme = createTheme({
   typography: {
@@ -34,7 +35,11 @@ const ResultView: React.FC = () => {
   const navigate = useNavigate();
 
   const toHomeSegue = () => {
-    navigate("/");
+    navigate(appPaths.HomeView);
+  };
+
+  const toBattleRoomSegue = () => {
+    //戻る
   };
   //#endregion
 
