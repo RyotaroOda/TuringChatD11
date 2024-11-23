@@ -6,7 +6,7 @@ import {
   BotSetting,
   GPTMessage,
 } from "../shared/types.ts";
-import { updateTopic } from "./firebase-realtime-database.ts";
+import { updateBattleRules } from "./firebase-realtime-database.ts";
 import { BattleRoomIds } from "../shared/database-paths.ts";
 
 interface ChatGPTResponse {
@@ -204,8 +204,9 @@ export const generateTopic = async (ids: BattleRoomIds) => {
   try {
     const topic = await generate(prompt);
     console.log("Generated topic:", topic);
+    const data = { topic: topic };
 
-    updateTopic(ids, topic);
+    updateBattleRules(ids, data);
   } catch (error) {
     console.error("Failed to generate topic:", error);
     throw new Error("Failed to generate topic.");

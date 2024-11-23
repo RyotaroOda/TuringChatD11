@@ -13,6 +13,7 @@ import {
   BattleData,
   BattleLog,
   BattleResult,
+  BattleRules,
   Message,
   PlayerData,
   ResultData,
@@ -20,7 +21,7 @@ import {
   SubmitAnswer,
 } from "../shared/types.ts";
 import { BattleRoomIds, DATABASE_PATHS } from "../shared/database-paths.ts";
-import { calculateBattleResult } from "./firebase-functions-client.ts";
+import { calculateResult } from "./firebase-functions-client.ts";
 
 //#region HomeView
 
@@ -153,25 +154,24 @@ export const onPlayerPrepared = (
 };
 
 /**
- * トピックを保存
- * @param roomId ルームID
- * @param topic 生成されたトピック
+ * バトルルールを更新
+ * @param ids バトルルームID
+ * @param rules 更新するバトルルール
  */
-export const updateTopic = async (ids: BattleRoomIds, topic: string) => {
+export const updateBattleRules = async (ids: BattleRoomIds, rules: any) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const configRef = ref(db, DATABASE_PATHS.topic(ids));
-  const data = { topic: topic };
-  await update(configRef, data);
-  console.log("トピック生成:", data);
+  const configRef = ref(db, DATABASE_PATHS.rules(ids));
+  await update(configRef, rules);
+  console.log("update rules:", rules);
 };
 
 /**
- * プレイヤーの準備状況を監視
- * @param roomId ルームID
+ * トピックの更新を監視
+ * @param ids バトルルームID
  * @param callback トピックを返すコールバック
  * @returns リスナー解除関数
  */
@@ -186,6 +186,7 @@ export const onGeneratedTopic = (
     callback(newTopic);
     console.log("onGeneratedTopicのリスナー解除");
 
+    // トピックが更新されたらリスナーを解除
     off(configRef, "value", listener);
   });
 
@@ -271,12 +272,12 @@ export const checkAnswers = (ids: BattleRoomIds) => {
       const answers = answersSnapshot.val();
       if (answers && Object.keys(answers).length === 2) {
         console.log("両プレイヤーの回答が揃いました:", answers);
-        calculateBattleResult(ids);
+        calculateResult(ids);
       } else {
         onValue(answerRef, (snapshot) => {
           const updatedAnswers = snapshot.val();
           if (updatedAnswers && Object.keys(updatedAnswers).length === 2) {
-            calculateBattleResult(ids);
+            calculateResult(ids);
             off(answerRef); // リスナー解除
             console.log("checkAnswersのリスナー解除");
           }

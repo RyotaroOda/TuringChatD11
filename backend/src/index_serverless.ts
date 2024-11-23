@@ -3,6 +3,6 @@ export {
   requestMatchFunction,
   cancelMatchFunction,
 } from "./services/functions/matchingFunctions";
-export { calculateBattleResultFunction } from "./services/functions/battleFunctions";
+export { calculateResultFunction } from "./services/functions/resultFunctions";
 
 export { testFunction } from "./services/functions/matchingFunctions";

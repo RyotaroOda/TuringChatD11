@@ -20,7 +20,7 @@ import QuestionnaireEdit from "./components/QuestionnaireEdit.tsx";
 import ImpressionEdit from "./components/ImpressionEdit.tsx";
 import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
-import RoomView from "./views/RoomView.tsx";
+import RoomView from "./views/PrivateRoomView.tsx";
 import { BattleRoomIds } from "./shared/database-paths.ts";
 
 export const appPaths = {

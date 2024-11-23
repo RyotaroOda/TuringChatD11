@@ -1,4 +1,4 @@
-//frontend/src/views/RoomView.tsx
+//frontend/src/views/PrivateRoomView.tsx
 import React from "react";
 
 const RoomView: React.FC = () => {

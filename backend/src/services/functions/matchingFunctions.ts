@@ -142,7 +142,7 @@ const createBattleRoom = async (
     maxTurn: 4,
     battleType: "Single",
     oneTurnTime: 60,
-    topic: "default topic",
+    topic: "",
   };
 
   const newBattleData: BattleData = {

@@ -7,6 +7,7 @@ import {
   PlayerData,
   AIModel,
   BattleData,
+  BattleRules,
 } from "../shared/types.ts";
 import { BattleViewProps } from "./BattleView.tsx";
 import {
@@ -38,6 +39,7 @@ import {
   Grid,
   InputLabel,
   ListItemIcon,
+  CircularProgress,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -60,6 +62,9 @@ const BattleRoomView: React.FC = () => {
   //#region init
   const location = useLocation();
   const { battleData, botData } = location.state as OnlineRoomViewProps;
+  const [battleRules, setBattleRules] = useState<BattleRules>(
+    battleData.battleRules
+  );
   const ids = battleData.ids;
   const myId = auth.currentUser?.uid ?? "";
 
@@ -78,7 +83,7 @@ const BattleRoomView: React.FC = () => {
   );
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // 例: 準備時間120秒
-  const [countdown, setCountdown] = useState<number | null>(null);
+  const [isBattleStarting, setIsBattleStarting] = useState<boolean>(false);
   //#endregion
 
   // タイマー処理
@@ -147,37 +152,62 @@ const BattleRoomView: React.FC = () => {
   // すべてのプレイヤーが準備完了になったらカウントダウン開始
   useEffect(() => {
     if (players.every((player) => player.isReady)) {
-      setCountdown(5); // 5秒カウントダウンを設定
+      setIsBattleStarting(true);
       if (battleData.hostId === myId) {
         generateTopic(ids);
       }
-      onGeneratedTopic(ids, (topic) => {});
+      onGeneratedTopic(ids, (topic) => {
+        setBattleRules((prev) => ({ ...prev, topic: topic }));
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players]);
 
-  // カウントダウン処理
+  // // カウントダウン処理
+  // useEffect(() => {
+  //   if (countdown === null) return;
+
+  //   if (countdown > 0) {
+  //     const countdownTimer = setInterval(() => {
+  //       setCountdown((prev) => (prev !== null ? prev - 1 : null));
+  //     }, 1000);
+
+  //     return () => clearInterval(countdownTimer);
+  //   } else if (countdown === 0) {
+  //     toBattleViewSegue();
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [countdown]);
+
   useEffect(() => {
-    if (countdown === null) return;
-
-    if (countdown > 0) {
-      const countdownTimer = setInterval(() => {
-        setCountdown((prev) => (prev !== null ? prev - 1 : null));
-      }, 1000);
-
-      return () => clearInterval(countdownTimer);
-    } else if (countdown === 0) {
+    if (battleRules.topic !== "") {
       toBattleViewSegue();
     }
-  }, [countdown]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [battleRules.topic]);
 
+  useEffect(() => {
+    if (isBattleStarting) {
+      //ぐるぐる
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBattleStarting]);
   //#endregion
 
   //#region バトル画面遷移
   // バトル画面に遷移する関数
   const toBattleViewSegue = () => {
     const props: BattleViewProps = {
-      battleData: battleData,
+      battleData: {
+        ids: ids,
+        battleRules: battleRules,
+        players: players,
+        battleLog: battleData.battleLog,
+        phase: battleData.phase,
+        status: battleData.status,
+        hostId: battleData.hostId,
+        winnerId: battleData.winnerId,
+      },
       isHuman: selectedIsHuman,
       bot:
         selectedIsHuman === false && selectedBotId !== null
@@ -212,11 +242,12 @@ const BattleRoomView: React.FC = () => {
       <Container maxWidth="md">
         <Box mt={4}>
           {/* カウントダウン中の表示 */}
-          {countdown !== null ? (
+          {isBattleStarting ? (
             <Box textAlign="center" mt={8}>
               <Typography variant="h4" gutterBottom>
-                バトル開始まで {countdown} 秒
+                まもなくバトルが始まります。
               </Typography>
+              <CircularProgress size={24} />
             </Box>
           ) : (
             <Grid container spacing={4}>

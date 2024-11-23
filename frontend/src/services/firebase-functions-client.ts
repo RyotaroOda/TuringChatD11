@@ -104,20 +104,17 @@ export const cancelRequest = async () => {
  * @param roomId バトルルームID
  * @throws 未ログインエラー
  */
-export const calculateBattleResult = async (ids: BattleRoomIds) => {
+export const calculateResult = async (ids: BattleRoomIds) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const calculateBattleResultFunction = httpsCallable(
-    functions,
-    "calculateBattleResultFunction"
-  );
+  const func = httpsCallable(functions, "calculateResultFunction");
 
   try {
     console.log("バトル結果の計算を開始します:", ids);
-    calculateBattleResultFunction(ids); // 非同期実行、応答を待たない
+    func(ids); // 非同期実行、応答を待たない
   } catch (error) {
     console.error("バトル結果計算エラー:", error);
     throw new Error("バトル結果の計算中にエラーが発生しました。");

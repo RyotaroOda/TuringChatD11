@@ -373,69 +373,73 @@ const BattleView: React.FC = () => {
                     }}
                   />
                 ) : (
-                  <Box>
-                    <TextField
-                      label="命令（オプション）"
-                      value={promptInstruction}
-                      onChange={(e) => setPromptInstruction(e.target.value)}
-                      fullWidth
-                      sx={{
-                        mb: 2,
-                        backgroundColor: isMyTurn ? "white" : "grey.200",
-                        border: isMyTurn
-                          ? "2px solid #3f51b5"
-                          : "1px solid grey",
-                        transition:
-                          "background-color 0.3s ease, border-color 0.3s ease",
-                        "& .MuiOutlinedInput-root": {
-                          "& fieldset": {
-                            borderColor: isMyTurn ? "#3f51b5" : "grey",
+                  <div>
+                    <Box>
+                      <TextField
+                        label="命令（オプション）"
+                        value={promptInstruction}
+                        onChange={(e) => setPromptInstruction(e.target.value)}
+                        fullWidth
+                        sx={{
+                          mb: 2,
+                          backgroundColor: isMyTurn ? "white" : "grey.200",
+                          border: isMyTurn
+                            ? "2px solid #3f51b5"
+                            : "1px solid grey",
+                          transition:
+                            "background-color 0.3s ease, border-color 0.3s ease",
+                          "& .MuiOutlinedInput-root": {
+                            "& fieldset": {
+                              borderColor: isMyTurn ? "#3f51b5" : "grey",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: isMyTurn ? "#303f9f" : "grey",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#3f51b5",
+                            },
                           },
-                          "&:hover fieldset": {
-                            borderColor: isMyTurn ? "#303f9f" : "grey",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#3f51b5",
-                          },
-                        },
-                      }}
-                    />
-                    <Button
-                      variant="contained"
-                      onClick={generateMessage}
-                      disabled={isGenerating || !isMyTurn}
-                      sx={{
-                        backgroundColor: isMyTurn ? "primary.main" : "grey.300",
-                        color: isMyTurn ? "white" : "grey.500",
-                        "&:hover": {
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={generateMessage}
+                        disabled={isGenerating || !isMyTurn}
+                        sx={{
                           backgroundColor: isMyTurn
-                            ? "primary.dark"
+                            ? "primary.main"
                             : "grey.300",
-                        },
-                        transition:
-                          "background-color 0.3s ease, color 0.3s ease",
+                          color: isMyTurn ? "white" : "grey.500",
+                          "&:hover": {
+                            backgroundColor: isMyTurn
+                              ? "primary.dark"
+                              : "grey.300",
+                          },
+                          transition:
+                            "background-color 0.3s ease, color 0.3s ease",
+                        }}
+                      >
+                        {isGenerating ? "生成中..." : "メッセージ生成"}
+                      </Button>
+                    </Box>
+                    <Box
+                      mt={4}
+                      p={2}
+                      sx={{
+                        backgroundColor: "info.main",
+                        color: "white",
+                        borderRadius: 2,
+                        boxShadow: 3,
                       }}
+                      ref={endRef} // スクロール用の参照
                     >
-                      {isGenerating ? "生成中..." : "メッセージ生成"}
-                    </Button>
-                  </Box>
+                      <Typography variant="h6" gutterBottom>
+                        生成された回答:
+                      </Typography>
+                      <Typography variant="body1">{generatedAnswer}</Typography>
+                    </Box>
+                  </div>
                 )}
-                <Box
-                  mt={4}
-                  p={2}
-                  sx={{
-                    backgroundColor: "info.main",
-                    color: "white",
-                    borderRadius: 2,
-                    boxShadow: 3,
-                  }}
-                  ref={endRef} // スクロール用の参照
-                >
-                  <Typography variant="h6" gutterBottom>
-                    生成された回答:
-                  </Typography>
-                  <Typography variant="body1">{generatedAnswer}</Typography>
-                </Box>
               </>
               {/* 生成された回答表示エリア */}
 
