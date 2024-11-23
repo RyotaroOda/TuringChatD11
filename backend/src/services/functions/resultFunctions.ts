@@ -71,18 +71,18 @@ export const calculateResultFunction = functions.https.onCall(
 
     // Firebase Realtime Databaseに結果を保存
     await db.ref(DATABASE_PATHS.result(ids)).set(result);
-    await db.ref(DATABASE_PATHS.endBattle(ids)).set(end);
+    await db.ref(DATABASE_PATHS.endBattle(ids)).update(end);
     await db.ref(DATABASE_PATHS.status(ids)).set("finished");
 
     // レーティングの更新
     await updateRating(firstAnswer.playerId, scores.player1Score);
     await updateRating(secondAnswer.playerId, scores.player2Score);
 
-    // ルームデータのバックアップ
+    // バトルルームデータのバックアップ
     await saveBattleRoomDataToStore(ids);
-    console.log(
-      `バトル結果が保存され、バックアップが完了しました: roomId ${ids}`
-    );
+
+    // バトルルームデータの削除
+    removeBattleRoomData(ids);
   }
 );
 
@@ -252,6 +252,34 @@ const removeRoomData = async (roomId: string) => {
     return {
       success: true,
       message: `ルームデータの削除が成功しました: ${roomId}`,
+    };
+  } catch (error) {
+    console.error("ルームデータの削除中にエラーが発生しました:", error);
+    throw new functions.https.HttpsError(
+      "internal",
+      "データ削除中にエラーが発生しました。"
+    );
+  }
+};
+
+/**
+ * バトルルームデータを削除
+ * @param roomId バトルルームID
+ */
+export const removeBattleRoomData = async (ids: BattleRoomIds) => {
+  if (!ids) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "roomIdが必要です。"
+    );
+  }
+
+  try {
+    await db.ref(DATABASE_PATHS.battleRoom(ids)).remove();
+    console.log(`ルームデータの削除が成功しました: ${ids}`);
+    return {
+      success: true,
+      message: `ルームデータの削除が成功しました: ${ids}`,
     };
   } catch (error) {
     console.error("ルームデータの削除中にエラーが発生しました:", error);

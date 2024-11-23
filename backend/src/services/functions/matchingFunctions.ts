@@ -210,6 +210,11 @@ const removeRoom = async (roomId: string) => {
   console.log(`ルーム ${roomId} が削除されました。`);
 };
 
+const removeBattleRoom = async (ids: BattleRoomIds) => {
+  await db.ref(DATABASE_PATHS.battleRoom(ids)).remove();
+  console.log(`バトルルーム ${ids} が削除されました。`);
+};
+
 //#endregion
 
 //#region Matchmaking
