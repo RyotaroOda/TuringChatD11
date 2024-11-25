@@ -7,7 +7,7 @@ import {
   BattleLog,
   BattleData,
 } from "../../shared/types";
-import { BattleRoomIds, DATABASE_PATHS } from "../../shared/database-paths";
+import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { generateTopic } from "../chatGPT_b";
@@ -38,13 +38,13 @@ const waitingPlayersRef = db.ref(DATABASE_PATHS.waitingPlayers);
  * @param playerId プレイヤーID
  * @param roomId ルームID
  */
-export const addToWaitingList = async (ids: BattleRoomIds) => {
+export const addToWaitingList = async (battleId: string) => {
   const waitingData = {
-    ids: { roomId: ids.roomId, battleRoomId: ids.battleRoomId },
+    battleId: battleId,
     timeWaiting: Date.now(),
   };
   await waitingPlayersRef.push(waitingData);
-  console.log(`${ids} が待機リストに追加されました。`);
+  console.log(`${battleId} が待機リストに追加されました。`);
 };
 
 /**
@@ -60,31 +60,32 @@ export const removeFromWaitingList = async (playerId: string) => {
  * 待機リストから次のプレイヤーを取得し、roomIdを返す
  * @returns ルームIDまたはnull
  */
-export const getNextRoomIdFromWaitingList =
-  async (): Promise<BattleRoomIds | null> => {
-    let ids: BattleRoomIds | null = null;
+export const getNextRoomIdFromWaitingList = async (): Promise<
+  string | null
+> => {
+  let battleId: string | null = null;
 
-    try {
-      const result = await waitingPlayersRef.transaction((waitingPlayers) => {
-        if (waitingPlayers) {
-          const opponentKey = Object.keys(waitingPlayers)[0];
-          const opponent = waitingPlayers[opponentKey];
-          ids = opponent.ids;
+  try {
+    const result = await waitingPlayersRef.transaction((waitingPlayers) => {
+      if (waitingPlayers) {
+        const opponentKey = Object.keys(waitingPlayers)[0];
+        const opponent = waitingPlayers[opponentKey];
+        battleId = opponent.battleId;
 
-          if (ids) {
-            delete waitingPlayers[opponentKey];
-            return waitingPlayers;
-          }
+        if (battleId) {
+          delete waitingPlayers[opponentKey];
+          return waitingPlayers;
         }
-        return waitingPlayers;
-      });
+      }
+      return waitingPlayers;
+    });
 
-      return result.committed ? ids : null;
-    } catch (error) {
-      console.error("待機リストからroomIdの取得に失敗しました:", error);
-      throw new Error("待機リストからroomIdの取得に失敗しました");
-    }
-  };
+    return result.committed ? battleId : null;
+  } catch (error) {
+    console.error("待機リストからroomIdの取得に失敗しました:", error);
+    throw new Error("待機リストからroomIdの取得に失敗しました");
+  }
+};
 
 //#endregion
 
@@ -109,7 +110,7 @@ const createRoom = async (player: PlayerData): Promise<string> => {
   };
 
   await db.ref(DATABASE_PATHS.room(roomId)).set(roomData);
-  await db.ref(DATABASE_PATHS.players(roomId)).push(player);
+  await db.ref(DATABASE_PATHS.players(roomId)).child(player.id).set(player);
   console.log(`新しいルーム ${roomId} が作成されました。`);
 
   return roomId;
@@ -121,12 +122,9 @@ const createRoom = async (player: PlayerData): Promise<string> => {
  * @param roomId ルームID
  * @returns 新しいバトルルームID
  */
-const createBattleRoom = async (
-  player: PlayerData,
-  roomId: string
-): Promise<string> => {
+const createBattleRoom = async (player: PlayerData): Promise<string> => {
   //BattleDataの作成
-  const battleRoomId = (await db.ref(DATABASE_PATHS.battleData(roomId)).push()
+  const battleId = (await db.ref(DATABASE_PATHS.route_battles).push()
     .key) as string;
   const newBattleLog: BattleLog = {
     phase: "waiting",
@@ -146,11 +144,7 @@ const createBattleRoom = async (
   };
 
   const newBattleData: BattleData = {
-    ids: {
-      roomId: roomId,
-      battleRoomId: battleRoomId,
-    },
-    phase: "waiting",
+    battleId: battleId,
     hostId: player.id,
     players: [],
     battleRules: newBattleRules,
@@ -159,22 +153,15 @@ const createBattleRoom = async (
     status: "waiting",
   };
 
+  await db.ref(DATABASE_PATHS.battle(battleId)).set(newBattleData);
   await db
-    .ref(DATABASE_PATHS.battleData(roomId))
-    .child(battleRoomId)
-    .set(newBattleData);
-  await db
-    .ref(
-      DATABASE_PATHS.battlePlayers({
-        roomId: roomId,
-        battleRoomId: battleRoomId,
-      })
-    )
-    .push(player);
+    .ref(DATABASE_PATHS.battlePlayers(battleId))
+    .child(player.id)
+    .set(player);
 
-  console.log(`新しいバトルルーム ${battleRoomId} が作成されました。`);
+  console.log(`新しいバトルルーム ${battleId} が作成されました。`);
 
-  return battleRoomId;
+  return battleId;
 };
 
 /**
@@ -184,16 +171,19 @@ const createBattleRoom = async (
  * @returns 成功した場合はtrue
  */
 const joinRandomRoom = async (
-  ids: BattleRoomIds,
+  battleId: string,
   player: PlayerData
 ): Promise<boolean> => {
-  console.log(`joinRoom: ${ids}, Player: ${player.name}`);
+  console.log(`joinRoom: ${battleId}, Player: ${player.name}`);
 
   try {
     // await db.ref(DATABASE_PATHS.phase(roomId)).set("chat");
-    await db.ref(DATABASE_PATHS.players(ids.roomId)).push(player);
-    await db.ref(DATABASE_PATHS.battlePlayers(ids)).push(player);
-    await db.ref(DATABASE_PATHS.status(ids)).set("matched");
+    await db.ref(DATABASE_PATHS.players(battleId)).child(player.id).set(player);
+    await db
+      .ref(DATABASE_PATHS.battlePlayers(battleId))
+      .child(player.id)
+      .set(player);
+    await db.ref(DATABASE_PATHS.status(battleId)).set("matched");
     return true;
   } catch (error) {
     console.error("ルームへの参加中に競合が発生しました:", error);
@@ -210,9 +200,9 @@ const removeRoom = async (roomId: string) => {
   console.log(`ルーム ${roomId} が削除されました。`);
 };
 
-const removeBattleRoom = async (ids: BattleRoomIds) => {
-  await db.ref(DATABASE_PATHS.battleRoom(ids)).remove();
-  console.log(`バトルルーム ${ids} が削除されました。`);
+const removeBattleRoom = async (battleId: string) => {
+  await db.ref(DATABASE_PATHS.battleRoom(battleId)).remove();
+  console.log(`バトルルーム ${battleId} が削除されました。`);
 };
 
 //#endregion
@@ -226,25 +216,23 @@ export const requestMatchFunction = onCall(
   async (request): Promise<MatchResult> => {
     const player = request.data as PlayerData;
 
-    const ids = await getNextRoomIdFromWaitingList();
+    const battleId = await getNextRoomIdFromWaitingList();
 
-    if (ids && (await joinRandomRoom(ids, player))) {
-      console.log(`入室成功: roomId ${ids}`);
-      return { ids, startBattle: true, message: "Match successful" };
+    if (battleId && (await joinRandomRoom(battleId, player))) {
+      console.log(`入室成功: roomId ${battleId}`);
+      return { battleId, startBattle: true, message: "Match successful" };
     }
 
-    if (ids) {
-      await removeRoom(ids.roomId);
+    if (battleId) {
+      await removeRoom(battleId);
     }
 
-    const newRoomId = await createRoom(player);
-    const newBattleRoomId = await createBattleRoom(player, newRoomId);
+    const newBattleId = await createBattleRoom(player);
 
-    const newIds = { roomId: newRoomId, battleRoomId: newBattleRoomId };
-    await addToWaitingList(newIds);
+    await addToWaitingList(newBattleId);
 
     return {
-      ids: newIds,
+      battleId: newBattleId,
       startBattle: false,
       message: "Waiting for an opponent...",
     };

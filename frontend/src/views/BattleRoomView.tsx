@@ -14,6 +14,7 @@ import {
   onGeneratedTopic,
   onPlayerPrepared,
   preparationComplete,
+  updateIsHuman,
 } from "../services/firebase-realtime-database.ts";
 import { auth } from "../services/firebase_f.ts";
 import {
@@ -65,7 +66,7 @@ const BattleRoomView: React.FC = () => {
   const [battleRules, setBattleRules] = useState<BattleRules>(
     battleData.battleRules
   );
-  const ids = battleData.ids;
+  const battleId = battleData.battleId;
   const myId = auth.currentUser?.uid ?? "";
 
   const myKey =
@@ -109,7 +110,7 @@ const BattleRoomView: React.FC = () => {
       return;
     }
     setIsReady(true);
-    preparationComplete(ids, myKey);
+    preparationComplete(battleId, myKey);
   };
 
   // // 準備時間が切れた際に自動的に準備完了にする
@@ -129,7 +130,8 @@ const BattleRoomView: React.FC = () => {
 
   // 他プレイヤーの準備完了を監視
   useEffect(() => {
-    const unsubscribe = onPlayerPrepared(ids, (result) => {
+    console.log("battleId:", battleId);
+    const unsubscribe = onPlayerPrepared(battleId, (result) => {
       if (result) {
         console.log("preparations updated:", result);
         setPlayers(Object.values(result));
@@ -139,7 +141,7 @@ const BattleRoomView: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, [ids]);
+  }, [battleId]);
 
   // // すべてのプレイヤーが準備完了になったらバトルビューに遷移
   // useEffect(() => {
@@ -153,12 +155,16 @@ const BattleRoomView: React.FC = () => {
   useEffect(() => {
     if (players.every((player) => player.isReady)) {
       setIsBattleStarting(true);
-      if (battleData.hostId === myId) {
-        generateTopic(ids);
-      }
-      onGeneratedTopic(ids, (topic) => {
-        setBattleRules((prev) => ({ ...prev, topic: topic }));
-      });
+      const prepareBattle = async () => {
+        if (battleData.hostId === myId) {
+          await generateTopic(battleId);
+        }
+        await updateIsHuman(battleId, myId, selectedIsHuman);
+        onGeneratedTopic(battleId, (topic) => {
+          setBattleRules((prev) => ({ ...prev, topic: topic }));
+        });
+      };
+      prepareBattle();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players]);
@@ -199,22 +205,26 @@ const BattleRoomView: React.FC = () => {
   const toBattleViewSegue = () => {
     const props: BattleViewProps = {
       battleData: {
-        ids: ids,
+        battleId: battleId,
         battleRules: battleRules,
-        players: players,
+        players: {
+          ...battleData.players,
+          [myKey]: {
+            ...battleData.players[myKey],
+            isHuman: selectedIsHuman,
+          },
+        },
         battleLog: battleData.battleLog,
-        phase: battleData.phase,
         status: battleData.status,
         hostId: battleData.hostId,
         winnerId: battleData.winnerId,
       },
-      isHuman: selectedIsHuman,
       bot:
         selectedIsHuman === false && selectedBotId !== null
           ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)
           : null,
     };
-    navigate(appPaths.BattleView(ids), { state: props });
+    navigate(appPaths.BattleView(battleId), { state: props });
   };
 
   const toHomeViewSegue = () => {
@@ -272,8 +282,9 @@ const BattleRoomView: React.FC = () => {
                         </FormLabel>
                         <RadioGroup
                           value={selectedIsHuman ? "human" : "ai"}
-                          onChange={(e) =>
-                            setSelectedIsHuman(e.target.value === "human")
+                          onChange={
+                            (e) =>
+                              setSelectedIsHuman(e.target.value === "human") // "human" を boolean に変換
                           }
                         >
                           <FormControlLabel

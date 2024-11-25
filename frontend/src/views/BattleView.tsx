@@ -6,6 +6,7 @@ import {
   sendAnswer,
   checkAnswers,
   onResultUpdated,
+  getBattleRoomData,
 } from "../services/firebase-realtime-database.ts";
 import {
   BattleLog,
@@ -18,7 +19,7 @@ import {
   BattleRules,
   BattleData,
 } from "../shared/types";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
 import { ResultViewProps } from "./ResultView.tsx";
 import { generateBattleMessage } from "../services/chatGPT_f.ts";
@@ -56,73 +57,128 @@ const theme = createTheme({
 
 export interface BattleViewProps {
   battleData: BattleData;
-  isHuman: boolean;
   bot: BotSetting | null;
 }
 
 const BattleView: React.FC = () => {
   //#region init
-  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
   const location = useLocation();
-  const { battleData, isHuman, bot } = location.state as BattleViewProps;
-  const ids = battleData.ids;
-  const user = auth.currentUser;
-  const myId = user?.uid || "error";
-
-  const playersKey = Object.keys(battleData.players);
-  const isHost = myId === battleData.hostId;
-  const myData: PlayerData = isHost
-    ? battleData.players[playersKey[0]]
-    : battleData.players[playersKey[1]];
-  const opponentData: PlayerData = Object.values(battleData.players).find(
-    (player) => player.id !== myId
-  )!;
-
-  const myName = `${myData.name} (あなた)` || "error";
-  const playerNames: Record<string, string> = {
-    [myId]: myName,
-    [opponentData.id]: opponentData.name,
-  };
-
   const navigate = useNavigate();
+  const protoBattleId = useParams();
+  const battleId = protoBattleId.battleRoomId as string;
+
+  const [battleData, setBattleData] = useState<BattleData | null>(null);
+  const [isHuman, setIsHuman] = useState<boolean>(true);
+  const [bot, setBot] = useState<BotSetting | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
+
   const [chatLog, setChatLog] = useState<
     { senderId: string; message: string }[]
   >([]);
   const [message, setMessage] = useState<string>("");
   const [promptMessages, setPromptMessages] = useState<GPTMessage[]>([]);
   const [promptInstruction, setPromptInstruction] = useState<string>("");
-  const [isMyTurn, setIsMyTurn] = useState<boolean>(isHost);
-  const [remainTurn, setRemainTurn] = useState<number>(
-    battleData.battleRules.maxTurn
-  );
-  const [timeLeft, setTimeLeft] = useState<number>(
-    battleData.battleRules.oneTurnTime
-  );
+  const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
+  const [remainTurn, setRemainTurn] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedAnswer, setGeneratedAnswer] = useState<string>(""); // 生成された回答
 
   const [answer, setAnswer] = useState<SubmitAnswer>({
-    playerId: myId,
-    isHuman: isHuman,
-    select: null,
+    playerId: "",
+    isHuman: true,
+    select: true,
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const endRef = useRef<HTMLDivElement | null>(null); // スクロール用の参照
-  const [loading, setLoading] = useState<boolean>(false);
+
+  const [myId, setMyId] = useState<string>("");
+  const [myName, setMyName] = useState<string>("");
+  const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
+  const [opponentData, setOpponentData] = useState<PlayerData | null>(null);
+  const [isHost, setIsHost] = useState<boolean>(false);
 
   useEffect(() => {
-    setIsLoaded(true);
-  }, [ids]);
+    const fetchData = async () => {
+      if (location.state) {
+        const { battleData } = location.state as BattleViewProps;
+        setBattleData(battleData);
+        // `isHuman` と `bot` はサーバーから取得するため、ここでは設定しない
+      } else if (battleId) {
+        const fetchedBattleData = await getBattleRoomData(battleId);
+        if (fetchedBattleData) {
+          setBattleData(fetchedBattleData);
+        } else {
+          // エラーハンドリング
+        }
+      }
+      // // 自分のプレイヤーデータを取得
+      // if (battleId && auth.currentUser) {
+      //   const myPlayerData = await getMyPlayerData(battleId, auth.currentUser.uid);
+      //   if (myPlayerData) {
+      //     setIsHuman(myPlayerData.isHuman);
+      //     setBot(myPlayerData.bot);
+      //   } else {
+      //     // エラーハンドリング
+      //   }
+      // }
+      setLoading(false);
+    };
+    fetchData();
+  }, [location.state, battleId]);
+
+  useEffect(() => {
+    if (battleData) {
+      setIsLoaded(true);
+      const user = auth.currentUser;
+      const myId = user?.uid || "error";
+      setMyId(myId);
+
+      const playersKey = Object.keys(battleData.players);
+      const isHost = myId === battleData.hostId;
+      setIsHost(isHost);
+
+      const myData: PlayerData = isHost
+        ? battleData.players[playersKey[0]]
+        : battleData.players[playersKey[1]];
+      const opponentData: PlayerData = Object.values(battleData.players).find(
+        (player) => player.id !== myId
+      )!;
+      setOpponentData(opponentData);
+
+      const myName = `${myData.name} (あなた)` || "error";
+      setMyName(myName);
+
+      setPlayerNames({
+        [myId]: myName,
+        [opponentData.id]: opponentData.name,
+      });
+
+      setIsMyTurn(isHost);
+      setRemainTurn(battleData.battleRules.maxTurn);
+      setTimeLeft(battleData.battleRules.oneTurnTime);
+
+      setAnswer((prevAnswer) => ({
+        ...prevAnswer,
+        playerId: myId,
+        isHuman: isHuman,
+      }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [battleData]);
+
   //#endregion
 
   //#region メッセージ処理
   // メッセージを送信する
   const handleSendMessage = async () => {
-    if (message.trim() && isMyTurn && ids && remainTurn > 0) {
+    if (message.trim() && isMyTurn && battleId && remainTurn > 0) {
       setLoading(true);
-      await sendMessage(ids, message);
+      await sendMessage(battleId, message);
       setMessage("");
       setLoading(false);
     }
@@ -131,7 +187,7 @@ const BattleView: React.FC = () => {
   // ボットによるメッセージ生成
   const generateMessage = async () => {
     setIsGenerating(true);
-    if (bot) {
+    if (bot && battleData) {
       const generatedMessage = await generateBattleMessage(
         promptMessages,
         "メッセージ生成",
@@ -148,9 +204,9 @@ const BattleView: React.FC = () => {
 
   // メッセージ更新リスナー
   useEffect(() => {
-    if (!ids) return;
+    if (!battleId) return;
 
-    const unsubscribe = onMessageAdded(ids, (newMessage) => {
+    onMessageAdded(battleId, (newMessage) => {
       console.log("onMessageAdded:", newMessage);
 
       setChatLog((prevChatLog) => {
@@ -179,6 +235,7 @@ const BattleView: React.FC = () => {
         ]);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isViewLoaded]);
 
   // ターンの切り替え
@@ -187,6 +244,7 @@ const BattleView: React.FC = () => {
       setIsMyTurn((prevTurn) => !prevTurn);
       setRemainTurn((prevCount) => prevCount - 1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatLog]);
 
   //#endregion
@@ -194,15 +252,16 @@ const BattleView: React.FC = () => {
   //#region バトル終了時の処理
   // 残りターンが0の場合
   useEffect(() => {
-    if (remainTurn === 0) {
+    if (remainTurn === 0 && !loading) {
       endRef.current?.scrollIntoView({ behavior: "smooth" });
       console.log("Battle Ended");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remainTurn]);
 
   // 回答を送信する
   const handleSubmit = async () => {
-    if (answer.select === null || !ids || !myId) {
+    if (answer.select === null || !battleId || !myId) {
       console.error("Invalid answer data");
       return;
     }
@@ -210,11 +269,11 @@ const BattleView: React.FC = () => {
       console.warn("メッセージが空です");
       return;
     }
-    sendAnswer(ids, answer);
+    sendAnswer(battleId, answer);
     setIsSubmitted(true);
 
     if (isHost) {
-      checkAnswers(ids);
+      checkAnswers(battleId);
     }
   };
 
@@ -235,15 +294,15 @@ const BattleView: React.FC = () => {
 
   // ターンが切り替わる際にタイマーをリセット
   useEffect(() => {
-    if (isMyTurn) {
+    if (isMyTurn && battleData && battleData.battleRules) {
       setTimeLeft(battleData.battleRules.oneTurnTime);
     }
-  }, [isMyTurn, battleData.battleRules.oneTurnTime]);
+  }, [isMyTurn, battleData]);
 
   // リザルトを監視する
   useEffect(() => {
-    if (isSubmitted && ids) {
-      const unsubscribe = onResultUpdated(ids, isHost, (result) => {
+    if (isSubmitted && battleId && !loading) {
+      const unsubscribe = onResultUpdated(battleId, isHost, (result) => {
         if (result) {
           console.log("Result updated:", result);
           toResultSegue(result);
@@ -253,7 +312,8 @@ const BattleView: React.FC = () => {
         unsubscribe();
       };
     }
-  }, [isSubmitted, ids, isHost]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSubmitted]);
 
   // 結果画面への遷移
   const toResultSegue = (result: ResultData) => {
@@ -261,9 +321,33 @@ const BattleView: React.FC = () => {
       resultData: result,
     };
     console.log("ResultView props:", props);
-    navigate(appPaths.ResultView(ids), { state: props });
+    navigate(appPaths.ResultView(battleId), { state: props });
   };
   //#endregion
+
+  if (loading) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Container maxWidth="md">
+          <Box mt={4}>
+            <Typography variant="h6">読み込み中...</Typography>
+          </Box>
+        </Container>
+      </ThemeProvider>
+    );
+  }
+
+  if (!battleData || !opponentData) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Container maxWidth="md">
+          <Box mt={4}>
+            <Typography variant="h6">バトルを続行できません。</Typography>
+          </Box>
+        </Container>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -287,7 +371,7 @@ const BattleView: React.FC = () => {
           {/* トピックとターン情報 */}
           <Box mb={2}>
             <Typography variant="h5" gutterBottom>
-              {battleData.battleRules.topic}
+              {battleData ? battleData.battleRules.topic : ""}
             </Typography>
             <Typography variant="body1">
               ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}
@@ -297,7 +381,11 @@ const BattleView: React.FC = () => {
             </Typography>
             <LinearProgress
               variant="determinate"
-              value={(timeLeft / battleData.battleRules.oneTurnTime) * 100}
+              value={
+                battleData
+                  ? (timeLeft / battleData.battleRules.oneTurnTime) * 100
+                  : 0
+              }
               sx={{ mt: 1 }}
             />
             <Typography variant="body1">
@@ -323,8 +411,10 @@ const BattleView: React.FC = () => {
                     sx={{
                       maxWidth: "70%",
                       bgcolor:
-                        msg.senderId === myId ? "primary.main" : "grey.300",
-                      color: msg.senderId === myId ? "#fff" : "#000",
+                        msg.senderId === myId
+                          ? "primary.main"
+                          : "secondary.main",
+                      color: msg.senderId === myId ? "#fff" : "#fff",
                       borderRadius: 2,
                       p: 1,
                     }}
@@ -349,7 +439,11 @@ const BattleView: React.FC = () => {
               <>
                 {isHuman ? (
                   <TextField
-                    label="メッセージを入力"
+                    label={
+                      isMyTurn
+                        ? "メッセージを入力"
+                        : "相手のメッセージを待っています。"
+                    }
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     fullWidth
@@ -521,15 +615,15 @@ const BattleView: React.FC = () => {
                 チャット相手は人間？それともAI？
               </Typography>
               <FormControl component="fieldset">
-                <FormLabel component="legend">相手を選択</FormLabel>
+                <FormLabel component="legend">相手の正体を選択</FormLabel>
                 <RadioGroup
                   value={
-                    answer.select !== null ? String(answer.select) : undefined
+                    answer.select !== null ? String(answer.select) : "false"
                   }
                   onChange={(e) =>
                     setAnswer((prevAnswer) => ({
                       ...prevAnswer,
-                      select: e.target.value === "true",
+                      select: e.target.value === "true", // "true" or "false" を論理値に変換
                     }))
                   }
                 >

@@ -21,17 +21,13 @@ import ImpressionEdit from "./components/ImpressionEdit.tsx";
 import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
 import RoomView from "./views/PrivateRoomView.tsx";
-import { BattleRoomIds } from "./shared/database-paths.ts";
 
 export const appPaths = {
   HomeView: "/",
-  RoomView: (roomId: string) => `/${roomId}`,
-  BattleRoomView: (ids: BattleRoomIds) => `/${ids.roomId}/${ids.battleRoomId}`,
-  BattleView: (ids: BattleRoomIds) =>
-    `/${ids.roomId}/${ids.battleRoomId}/battle`,
-  ResultView: (ids: BattleRoomIds) =>
-    `/${ids.roomId}/${ids.battleRoomId}/result`,
-  battleRoom: "/battleRoom",
+  RoomView: (roomId: string) => `/room/${roomId}`,
+  BattleRoomView: (battleId: string) => `/battle/${battleId}`,
+  BattleView: (battleId: string) => `/battle/${battleId}/battle`,
+  ResultView: (battleId: string) => `/battle/${battleId}/result`,
   login: "/login",
   profile: "/profile",
   profile_edit: "/profile_edit",
@@ -88,7 +84,7 @@ function App() {
             <Route path="/" element={<HomeView />} />
             {/* 認証が必要なルート */}
             <Route
-              path={appPaths.RoomView(":roomId")}
+              path={appPaths.RoomView("/room/:roomId")}
               element={
                 <ProtectedRoute>
                   <RoomView />
@@ -96,7 +92,7 @@ function App() {
               }
             />
             <Route
-              path="/:roomId/:battleRoomId"
+              path="/battle/:battleRoomId"
               element={
                 <ProtectedRoute>
                   <BattleRoomView />
@@ -104,7 +100,7 @@ function App() {
               }
             />
             <Route
-              path="/:roomId/:battleRoomId/battle"
+              path="/battle/:battleRoomId/battle"
               element={
                 <ProtectedRoute>
                   <BattleView />
@@ -112,7 +108,7 @@ function App() {
               }
             />
             <Route
-              path="/:roomId/:battleRoomId/result"
+              path="/battle/:battleRoomId/result"
               element={
                 <ProtectedRoute>
                   <ResultView />

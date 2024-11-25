@@ -1,7 +1,4 @@
 //share/types.ts
-
-import { BattleRoomIds } from "./database-paths";
-
 //#region RoomData
 export type RoomData = {
   roomId: string;
@@ -16,13 +13,13 @@ export type PlayerData = {
   name: string;
   isReady: boolean;
   rating: number;
+  isHuman: boolean | null;
 };
 
 //バトル設定
 export type BattleData = {
-  ids: BattleRoomIds;
+  battleId: string;
   status: "waiting" | "matched" | "playing" | "finished";
-  phase: "waiting" | "chat" | "answer" | "result" | "finished";
   hostId: string;
   players: PlayerData[];
   battleRules: BattleRules;
@@ -77,7 +74,7 @@ export type BattleResult = {
 //#region firebase functions
 //マッチンング後クライアントに返すデータ
 export type MatchResult = {
-  ids: BattleRoomIds;
+  battleId: string;
   startBattle: Boolean;
   message?: string;
 };

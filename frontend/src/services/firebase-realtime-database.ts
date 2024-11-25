@@ -20,7 +20,7 @@ import {
   RoomData,
   SubmitAnswer,
 } from "../shared/types.ts";
-import { BattleRoomIds, DATABASE_PATHS } from "../shared/database-paths.ts";
+import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateResult } from "./firebase-functions-client.ts";
 
 //#region HomeView
@@ -32,10 +32,10 @@ import { calculateResult } from "./firebase-functions-client.ts";
  * @returns リスナー解除関数
  */
 export const onMatched = (
-  ids: BattleRoomIds,
+  battleId: string,
   callback: (isMatched: boolean) => void
 ) => {
-  const statusRef = ref(db, DATABASE_PATHS.status(ids));
+  const statusRef = ref(db, DATABASE_PATHS.status(battleId));
   const listener = onValue(statusRef, (snapshot) => {
     const status = snapshot.val();
     console.log("現在のステータス:", status);
@@ -82,9 +82,9 @@ export const onMatched = (
  * @throws ルームが存在しない場合にエラー
  */
 export const getBattleRoomData = async (
-  ids: BattleRoomIds
+  battleId: string
 ): Promise<BattleData> => {
-  const battleRoomRef = ref(db, DATABASE_PATHS.battleRoom(ids));
+  const battleRoomRef = ref(db, DATABASE_PATHS.battleRoom(battleId));
   const snapshot = await get(battleRoomRef);
 
   if (snapshot.exists()) {
@@ -107,7 +107,7 @@ export const getBattleRoomData = async (
  * @param playerId プレイヤーID
  */
 export const preparationComplete = async (
-  ids: BattleRoomIds,
+  battleId: string,
   playerId: string
 ) => {
   const user = auth.currentUser;
@@ -115,7 +115,7 @@ export const preparationComplete = async (
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const readyRef = ref(db, DATABASE_PATHS.ready(ids, playerId));
+  const readyRef = ref(db, DATABASE_PATHS.ready(battleId, playerId));
   const playerData = { isReady: true };
   await update(readyRef, playerData);
   console.log("準備完了:", playerData);
@@ -128,16 +128,17 @@ export const preparationComplete = async (
  * @returns リスナー解除関数
  */
 export const onPlayerPrepared = (
-  ids: BattleRoomIds,
+  battleId: string,
   callback: (players: PlayerData[]) => void
 ) => {
-  const playersRef = ref(db, DATABASE_PATHS.battlePlayers(ids));
+  const playersRef = ref(db, DATABASE_PATHS.battlePlayers(battleId));
   const listener = onValue(playersRef, (snapshot) => {
     const newPlayers = snapshot.val();
     console.log("プレイヤーデータが更新:", newPlayers);
     callback(newPlayers);
 
     if (
+      newPlayers &&
       Object.values(newPlayers).every(
         (player) => (player as PlayerData).isReady
       )
@@ -155,46 +156,80 @@ export const onPlayerPrepared = (
 
 /**
  * バトルルールを更新
- * @param ids バトルルームID
+ * @param battleId バトルルームID
  * @param rules 更新するバトルルール
  */
-export const updateBattleRules = async (ids: BattleRoomIds, rules: any) => {
+export const updateBattleRules = async (battleId: string, rules: any) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const configRef = ref(db, DATABASE_PATHS.rules(ids));
+  const configRef = ref(db, DATABASE_PATHS.rules(battleId));
   await update(configRef, rules);
   console.log("update rules:", rules);
 };
 
 /**
+ * isHumanを更新
+ * @param battleId バトルルームID
+ * @param playerId プレイヤーID
+ * @param isHuman 更新するisHuman
+ **/
+
+export const updateIsHuman = async (
+  battleId: string,
+  playerId: string,
+  isHuman: boolean
+) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ログインしていないユーザーです。");
+  }
+
+  const data = { isHuman: isHuman };
+
+  const isHumanRef = ref(
+    db,
+    DATABASE_PATHS.battlePlayers(battleId) + "/" + playerId
+  );
+  await update(isHumanRef, data);
+  console.log("update rules:", isHuman);
+};
+
+/**
  * トピックの更新を監視
- * @param ids バトルルームID
+ * @param battleId バトルルームID
  * @param callback トピックを返すコールバック
  * @returns リスナー解除関数
  */
 export const onGeneratedTopic = (
-  ids: BattleRoomIds,
+  battleId: string,
   callback: (topic: string) => void
 ) => {
-  const configRef = ref(db, DATABASE_PATHS.topic(ids));
-  const listener = onValue(configRef, (snapshot) => {
+  const configRef = ref(db, DATABASE_PATHS.topic(battleId));
+
+  // リスナー関数を名前付きで定義
+  const handleValueChange = (snapshot: any) => {
     const newTopic = snapshot.val();
     console.log("トピックが更新:", newTopic);
     callback(newTopic);
-    console.log("onGeneratedTopicのリスナー解除");
 
     // トピックが更新されたらリスナーを解除
-    off(configRef, "value", listener);
-  });
+    console.log("onGeneratedTopicのリスナー解除");
+    off(configRef, "value", handleValueChange);
+  };
 
+  // リスナーを登録
+  onValue(configRef, handleValueChange);
+
+  // クリーンアップ用の関数を返す
   return () => {
     console.log("onGeneratedTopicのリスナー解除 return");
-    off(configRef, "value", listener);
+    off(configRef, "value", handleValueChange);
   };
 };
+
 //#endregion
 
 //#region BattleView
@@ -204,13 +239,13 @@ export const onGeneratedTopic = (
  * @param roomId ルームID
  * @param message メッセージ内容
  */
-export const sendMessage = async (ids: BattleRoomIds, message: string) => {
+export const sendMessage = async (battleId: string, message: string) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const messageRef = ref(db, DATABASE_PATHS.messages(ids));
+  const messageRef = ref(db, DATABASE_PATHS.messages(battleId));
   const messageData: Message = {
     senderId: user.uid,
     message,
@@ -227,10 +262,10 @@ export const sendMessage = async (ids: BattleRoomIds, message: string) => {
  * @param callback メッセージデータを返すコールバック
  */
 export const onMessageAdded = (
-  ids: BattleRoomIds,
+  battleId: string,
   callback: (data: any) => void
 ) => {
-  const messagesRef = ref(db, DATABASE_PATHS.messages(ids));
+  const messagesRef = ref(db, DATABASE_PATHS.messages(battleId));
 
   onChildAdded(messagesRef, (snapshot) => {
     const newMessage = snapshot.val();
@@ -244,13 +279,13 @@ export const onMessageAdded = (
  * @param roomId ルームID
  * @param answer 提出された回答
  */
-export const sendAnswer = async (ids: BattleRoomIds, answer: SubmitAnswer) => {
+export const sendAnswer = async (battleId: string, answer: SubmitAnswer) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(ids));
+  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(battleId));
   await push(answerRef, answer);
   console.log("回答送信:", answer);
 };
@@ -259,25 +294,25 @@ export const sendAnswer = async (ids: BattleRoomIds, answer: SubmitAnswer) => {
  * 両プレイヤーの回答を確認
  * @param roomId ルームID
  */
-export const checkAnswers = (ids: BattleRoomIds) => {
+export const checkAnswers = (battleId: string) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(ids));
+  const answerRef = ref(db, DATABASE_PATHS.submittedAnswers(battleId));
 
   get(answerRef)
     .then((answersSnapshot) => {
       const answers = answersSnapshot.val();
       if (answers && Object.keys(answers).length === 2) {
         console.log("両プレイヤーの回答が揃いました:", answers);
-        calculateResult(ids);
+        calculateResult(battleId);
       } else {
         onValue(answerRef, (snapshot) => {
           const updatedAnswers = snapshot.val();
           if (updatedAnswers && Object.keys(updatedAnswers).length === 2) {
-            calculateResult(ids);
+            calculateResult(battleId);
             off(answerRef); // リスナー解除
             console.log("checkAnswersのリスナー解除");
           }
@@ -297,11 +332,11 @@ export const checkAnswers = (ids: BattleRoomIds) => {
  * @returns リスナー解除関数
  */
 export const onResultUpdated = (
-  ids: BattleRoomIds,
+  battleId: string,
   isHost: boolean,
   callback: (players: ResultData | null) => void
 ) => {
-  const resultRef = ref(db, DATABASE_PATHS.result(ids));
+  const resultRef = ref(db, DATABASE_PATHS.result(battleId));
 
   const listener = onValue(
     resultRef,
@@ -334,6 +369,8 @@ export const onResultUpdated = (
           time: serverData.time,
         };
         callback(result);
+        console.log("onResultUpdatedのリスナー解除:正常");
+        off(resultRef, "value", listener);
       } else {
         console.log("バトル結果なし");
         callback(null);

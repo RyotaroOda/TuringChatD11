@@ -2,7 +2,7 @@
 import * as functions from "firebase-functions";
 import { db, storage, firestore } from "../firebase_b";
 import { BattleResult, SubmitAnswer } from "../../shared/types";
-import { BattleRoomIds, DATABASE_PATHS } from "../../shared/database-paths";
+import { DATABASE_PATHS } from "../../shared/database-paths";
 
 /**
  * バトル結果を計算するクラウド関数
@@ -14,15 +14,15 @@ export const calculateResultFunction = functions.https.onCall(
       throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
     }
 
-    const ids = request.data as BattleRoomIds;
-    if (!ids) {
+    const battleId = request.data as string;
+    if (!battleId) {
       throw new functions.https.HttpsError(
         "invalid-argument",
         "roomIdが必要です。"
       );
     }
 
-    const answerRef = db.ref(DATABASE_PATHS.submittedAnswers(ids));
+    const answerRef = db.ref(DATABASE_PATHS.submittedAnswers(battleId));
     const answersSnapshot = await answerRef.get();
 
     if (!answersSnapshot.exists()) {
@@ -57,7 +57,10 @@ export const calculateResultFunction = functions.https.onCall(
 
     // バトル時間計算
     const end = Date.now();
-    const startSnapshot = await db.ref(DATABASE_PATHS.startBattle(ids)).get();
+    const endData = { end: end };
+    const startSnapshot = await db
+      .ref(DATABASE_PATHS.startBattle(battleId))
+      .get();
     const startTime = startSnapshot.val();
     const time = end - startTime;
 
@@ -70,19 +73,19 @@ export const calculateResultFunction = functions.https.onCall(
     };
 
     // Firebase Realtime Databaseに結果を保存
-    await db.ref(DATABASE_PATHS.result(ids)).set(result);
-    await db.ref(DATABASE_PATHS.endBattle(ids)).update(end);
-    await db.ref(DATABASE_PATHS.status(ids)).set("finished");
+    await db.ref(DATABASE_PATHS.result(battleId)).set(result);
+    await db.ref(DATABASE_PATHS.endBattle(battleId)).update(endData);
+    await db.ref(DATABASE_PATHS.status(battleId)).set("finished");
 
     // レーティングの更新
     await updateRating(firstAnswer.playerId, scores.player1Score);
     await updateRating(secondAnswer.playerId, scores.player2Score);
 
     // バトルルームデータのバックアップ
-    await saveBattleRoomDataToStore(ids);
+    await saveBattleRoomDataToStore(battleId);
 
     // バトルルームデータの削除
-    removeBattleRoomData(ids);
+    removeBattleRoomData(battleId);
   }
 );
 
@@ -102,15 +105,18 @@ const updateRating = async (userId: string, score: number) => {
 
 /**
  * ルームデータをFirestoreにバックアップ
- * @param ids バトルルームID
+ * @param battleId バトルルームID
  */
-const saveBattleRoomDataToStore = async (ids: BattleRoomIds) => {
-  if (!ids) {
-    throw new functions.https.HttpsError("invalid-argument", "idsが必要です。");
+const saveBattleRoomDataToStore = async (battleId: string) => {
+  if (!battleId) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "battleIdが必要です。"
+    );
   }
 
   try {
-    const roomRef = db.ref(DATABASE_PATHS.battleRoom(ids));
+    const roomRef = db.ref(DATABASE_PATHS.battleRoom(battleId));
     const snapshot = await roomRef.once("value");
     const roomData = snapshot.val();
 
@@ -123,15 +129,15 @@ const saveBattleRoomDataToStore = async (ids: BattleRoomIds) => {
 
     const firestoreRef = firestore()
       .collection("backup")
-      .doc("battleRooms")
-      .collection(ids.battleRoomId)
+      .doc("battles")
+      .collection(battleId)
       .doc();
 
     await firestoreRef.set(roomData);
-    console.log(`Firestoreへの保存が成功しました: roomId ${ids}`);
+    console.log(`Firestoreへの保存が成功しました: roomId ${battleId}`);
     return {
       success: true,
-      message: `Firestoreへの保存が成功しました: roomId ${ids}`,
+      message: `Firestoreへの保存が成功しました: roomId ${battleId}`,
     };
   } catch (error) {
     console.error("Firestoreへのバックアップ中にエラーが発生しました:", error);
@@ -266,8 +272,8 @@ const removeRoomData = async (roomId: string) => {
  * バトルルームデータを削除
  * @param roomId バトルルームID
  */
-export const removeBattleRoomData = async (ids: BattleRoomIds) => {
-  if (!ids) {
+export const removeBattleRoomData = async (battleId: string) => {
+  if (!battleId) {
     throw new functions.https.HttpsError(
       "invalid-argument",
       "roomIdが必要です。"
@@ -275,11 +281,11 @@ export const removeBattleRoomData = async (ids: BattleRoomIds) => {
   }
 
   try {
-    await db.ref(DATABASE_PATHS.battleRoom(ids)).remove();
-    console.log(`ルームデータの削除が成功しました: ${ids}`);
+    await db.ref(DATABASE_PATHS.battleRoom(battleId)).remove();
+    console.log(`ルームデータの削除が成功しました: ${battleId}`);
     return {
       success: true,
-      message: `ルームデータの削除が成功しました: ${ids}`,
+      message: `ルームデータの削除が成功しました: ${battleId}`,
     };
   } catch (error) {
     console.error("ルームデータの削除中にエラーが発生しました:", error);

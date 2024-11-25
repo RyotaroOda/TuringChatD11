@@ -30,7 +30,6 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import { appPaths } from "../App.tsx";
-import { BattleRoomIds } from "../shared/database-paths.ts";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -46,10 +45,7 @@ const HomeView: React.FC = () => {
 
   // State variables
   const [aiPrompt, setAiPrompt] = useState<string>("default prompt");
-  const [ids, setIds] = useState<BattleRoomIds>({
-    roomId: "",
-    battleRoomId: "",
-  });
+  const [battleId, setbattleId] = useState<string>("");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -141,10 +137,11 @@ const HomeView: React.FC = () => {
         name: playerName,
         isReady: false,
         rating: score,
+        isHuman: null,
       };
       const result = await requestMatch(player);
-      if (result.ids.roomId !== "" && result.ids.battleRoomId !== "") {
-        setIds(result.ids);
+      if (result.battleId !== "") {
+        setbattleId(result.battleId);
         setBattleRoomListened(true);
       } else {
         console.error("マッチングエラー: ", result.message);
@@ -168,11 +165,11 @@ const HomeView: React.FC = () => {
   };
 
   useEffect(() => {
-    if (battleRoomListened && ids.roomId !== "" && ids.battleRoomId !== "") {
-      const unsubscribe = onMatched(ids, (isMatched) => {
+    if (battleRoomListened && battleId !== "") {
+      const unsubscribe = onMatched(battleId, (isMatched) => {
         if (isMatched) {
           console.log("マッチング成立");
-          toBattleRoomViewSegue(ids);
+          toBattleRoomViewSegue(battleId);
         }
       });
       return () => {
@@ -193,7 +190,7 @@ const HomeView: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [battleRoomListened, ids]);
+  }, [battleRoomListened, battleId]);
   //#endregion
 
   //#region 画面遷移処理
@@ -236,7 +233,7 @@ const HomeView: React.FC = () => {
   // const toRoomViewSegue = (roomId: string) => {
   //   setBattleRoomListened(false);
   //   getRoomData(roomId).then((roomData) => {
-  //     const battleData = roomData.battleData[ids.battleRoomId];
+  //     const battleData = roomData.battleData[battleId.battleRoomId];
   //     if (roomData.status === "matched") {
   //       if (user && user.isAnonymous) {
   //         // ゲストユーザーの場合はデフォルトのAIを使用
@@ -256,7 +253,7 @@ const HomeView: React.FC = () => {
   //             ],
   //           },
   //         };
-  //         navigate(appPaths.BattleRoomView(ids), {
+  //         navigate(appPaths.BattleRoomView(battleId), {
   //           state: props,
   //         });
   //       } else if (bots) {
@@ -274,9 +271,9 @@ const HomeView: React.FC = () => {
   //   });
   // };
 
-  const toBattleRoomViewSegue = (ids: BattleRoomIds) => {
+  const toBattleRoomViewSegue = (battleId: string) => {
     setBattleRoomListened(false);
-    getBattleRoomData(ids).then((battleData) => {
+    getBattleRoomData(battleId).then((battleData) => {
       console.log("roomData: ", battleData);
       if (battleData.status === "matched") {
         if (user && user.isAnonymous) {
@@ -298,7 +295,7 @@ const HomeView: React.FC = () => {
             },
           };
           console.log("props: ", props);
-          navigate(appPaths.BattleRoomView(ids), {
+          navigate(appPaths.BattleRoomView(battleId), {
             state: props,
           });
         } else if (bots) {
@@ -307,7 +304,7 @@ const HomeView: React.FC = () => {
             battleData: battleData,
             botData: bots,
           };
-          navigate(appPaths.BattleRoomView(ids), { state: props });
+          navigate(appPaths.BattleRoomView(battleId), { state: props });
         } else {
           console.error("ルームに入室できませんでした。");
           cancelMatching();
