@@ -9,31 +9,35 @@ export const DATABASE_PATHS = {
 
   waitingPlayers: `waitingPlayers/randomMatching`,
   room: (roomId: string) => `rooms/${roomId}`,
-  battle: (battleId: string) => `battles/${battleId}`,
-  private: (playerId: string) => `private/${playerId}`,
+  battle: (battleId: string) => `battles/${battleId}/public`,
+  // private: (playerId: string) => `private/${playerId}`,
 
   //room
   players: (roomId: string) => `rooms/${roomId}/players`,
 
   //battle
-  battleRoom: (battleId: string) => `battles/${battleId}`,
-  status: (battleId: string) => `battles/${battleId}/status`,
-  battlePlayers: (battleId: string) => `battles/${battleId}/players`,
+  battleRoom: (battleId: string) => `battles/${battleId}/public`,
+  battlePrivate: (battleId: string, playerId: string) =>
+    `battles/${battleId}/private/${playerId}`,
+  status: (battleId: string) => `battles/${battleId}/public/status`,
+  battlePlayers: (battleId: string) => `battles/${battleId}/public/players`,
   ready: (battleId: string, playerId: string) =>
-    `battles/${battleId}/players/${playerId}`,
-  rules: (battleId: string) => `battles/${battleId}/battleRules`,
-  topic: (battleId: string) => `battles/${battleId}/battleRules/topic`,
+    `battles/${battleId}/public/players/${playerId}`,
+  rules: (battleId: string) => `battles/${battleId}/public/battleRules`,
+  topic: (battleId: string) => `battles/${battleId}/public/battleRules/topic`,
 
   //battle/battleLog
-  messages: (battleId: string) => `battles/${battleId}/battleLog/messages`,
-  phase: (battleId: string) => `battles/${battleId}/battleLog/phase`,
+  messages: (battleId: string) =>
+    `battles/${battleId}/public/battleLog/messages`,
+  phase: (battleId: string) => `battles/${battleId}/public/battleLog/phase`,
   startBattle: (battleId: string) =>
-    `battles/${battleId}/battleLog/timestamps/start`,
+    `battles/${battleId}/public/battleLog/timestamps/start`,
   endBattle: (battleId: string) =>
-    `battles/${battleId}/battleLog/timestamps/end`,
+    `battles/${battleId}/public/battleLog/timestamps/end`,
   submittedAnswers: (battleId: string) =>
-    `battles/${battleId}//battleLog/submitAnswer`,
-  result: (battleId: string) => `battles/${battleId}/battleLog/battleResult`,
+    `battles/${battleId}/public//battleLog/submitAnswer`,
+  result: (battleId: string) =>
+    `battles/${battleId}/public/battleLog/battleResult`,
 
   //firestore
   route_profiles: "profiles",

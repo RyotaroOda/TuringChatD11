@@ -137,7 +137,6 @@ const HomeView: React.FC = () => {
         name: playerName,
         isReady: false,
         rating: score,
-        isHuman: null,
       };
       const result = await requestMatch(player);
       if (result.battleId !== "") {

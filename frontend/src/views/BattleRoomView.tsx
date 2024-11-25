@@ -14,7 +14,7 @@ import {
   onGeneratedTopic,
   onPlayerPrepared,
   preparationComplete,
-  updateIsHuman,
+  updatePrivateBattleData,
 } from "../services/firebase-realtime-database.ts";
 import { auth } from "../services/firebase_f.ts";
 import {
@@ -79,9 +79,7 @@ const BattleRoomView: React.FC = () => {
   );
   const navigate = useNavigate();
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(true);
-  const [selectedBotId, setSelectedBotId] = useState<number | null>(
-    botData.defaultId
-  );
+  const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // 例: 準備時間120秒
   const [isBattleStarting, setIsBattleStarting] = useState<boolean>(false);
@@ -113,21 +111,6 @@ const BattleRoomView: React.FC = () => {
     preparationComplete(battleId, myKey);
   };
 
-  // // 準備時間が切れた際に自動的に準備完了にする
-  // const handleForceReady = () => {
-  //   if (!isReady) {
-  //     if (
-  //       selectedIsHuman === false &&
-  //       selectedBotId === null &&
-  //       botData.data.length > 0
-  //     ) {
-  //       setSelectedBotId(botData.defaultId);
-  //     }
-  //     setIsReady(true);
-  //     preparationComplete(roomId, myKey);
-  //   }
-  // };
-
   // 他プレイヤーの準備完了を監視
   useEffect(() => {
     console.log("battleId:", battleId);
@@ -143,14 +126,6 @@ const BattleRoomView: React.FC = () => {
     };
   }, [battleId]);
 
-  // // すべてのプレイヤーが準備完了になったらバトルビューに遷移
-  // useEffect(() => {
-  //   if (players.every((player) => player.isReady)) {
-  //     toBattleViewSegue();
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [players]);
-
   // すべてのプレイヤーが準備完了になったらカウントダウン開始
   useEffect(() => {
     if (players.every((player) => player.isReady)) {
@@ -159,10 +134,20 @@ const BattleRoomView: React.FC = () => {
         if (battleData.hostId === myId) {
           await generateTopic(battleId);
         }
-        await updateIsHuman(battleId, myId, selectedIsHuman);
-        onGeneratedTopic(battleId, (topic) => {
+        const unsubscribe = onGeneratedTopic(battleId, (topic) => {
           setBattleRules((prev) => ({ ...prev, topic: topic }));
         });
+        await updatePrivateBattleData(
+          battleId,
+          myId,
+          selectedIsHuman,
+          selectedIsHuman === false && selectedBotId !== null
+            ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)
+            : null
+        );
+        return () => {
+          unsubscribe();
+        };
       };
       prepareBattle();
     }
@@ -202,7 +187,7 @@ const BattleRoomView: React.FC = () => {
 
   //#region バトル画面遷移
   // バトル画面に遷移する関数
-  const toBattleViewSegue = () => {
+  const toBattleViewSegue = async () => {
     const props: BattleViewProps = {
       battleData: {
         battleId: battleId,
@@ -219,6 +204,7 @@ const BattleRoomView: React.FC = () => {
         hostId: battleData.hostId,
         winnerId: battleData.winnerId,
       },
+      isHuman: selectedIsHuman,
       bot:
         selectedIsHuman === false && selectedBotId !== null
           ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)

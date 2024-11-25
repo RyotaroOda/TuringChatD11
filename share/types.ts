@@ -13,7 +13,6 @@ export type PlayerData = {
   name: string;
   isReady: boolean;
   rating: number;
-  isHuman: boolean | null;
 };
 
 //バトル設定

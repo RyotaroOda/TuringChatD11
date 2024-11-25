@@ -7,6 +7,7 @@ import {
   onChildAdded,
   off,
   update,
+  set,
 } from "firebase/database";
 import { db, auth } from "./firebase_f.ts";
 import {
@@ -14,6 +15,7 @@ import {
   BattleLog,
   BattleResult,
   BattleRules,
+  BotSetting,
   Message,
   PlayerData,
   ResultData,
@@ -25,8 +27,7 @@ import { calculateResult } from "./firebase-functions-client.ts";
 
 //#region HomeView
 
-/**
- * ルームのマッチング状況を監視
+/** ルームのマッチング状況を監視
  * @param roomId ルームID
  * @param callback マッチング状況を返すコールバック
  * @returns リスナー解除関数
@@ -101,8 +102,7 @@ export const getBattleRoomData = async (
 
 //#region RoomView
 
-/**
- * 準備完了を通知
+/** 準備完了を通知
  * @param roomId ルームID
  * @param playerId プレイヤーID
  */
@@ -121,8 +121,7 @@ export const preparationComplete = async (
   console.log("準備完了:", playerData);
 };
 
-/**
- * プレイヤーの準備状況を監視
+/** プレイヤーの準備状況を監視
  * @param roomId ルームID
  * @param callback プレイヤーデータのリストを返すコールバック
  * @returns リスナー解除関数
@@ -154,8 +153,7 @@ export const onPlayerPrepared = (
   };
 };
 
-/**
- * バトルルールを更新
+/** バトルルールを更新
  * @param battleId バトルルームID
  * @param rules 更新するバトルルール
  */
@@ -170,35 +168,59 @@ export const updateBattleRules = async (battleId: string, rules: any) => {
   console.log("update rules:", rules);
 };
 
-/**
- * isHumanを更新
+/** プライベートデータを更新
  * @param battleId バトルルームID
  * @param playerId プレイヤーID
- * @param isHuman 更新するisHuman
+ * @param isHuman 更新するプライベートデータ
  **/
 
-export const updateIsHuman = async (
+export const updatePrivateBattleData = async (
   battleId: string,
   playerId: string,
-  isHuman: boolean
+  isHuman: boolean,
+  bot: BotSetting | null
 ) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
+  const privateRef = ref(db, DATABASE_PATHS.battlePrivate(battleId, playerId));
 
-  const data = { isHuman: isHuman };
-
-  const isHumanRef = ref(
-    db,
-    DATABASE_PATHS.battlePlayers(battleId) + "/" + playerId
-  );
-  await update(isHumanRef, data);
-  console.log("update rules:", isHuman);
+  if (bot) {
+    const data = { isHuman: isHuman, bot: bot };
+    await set(privateRef, data);
+    console.log("update rules:", data);
+  } else {
+    const data = { isHuman: isHuman };
+    await set(privateRef, data);
+    console.log("update rules:", data);
+  }
 };
 
-/**
- * トピックの更新を監視
+/** プライベートデータを取得
+ * @param battleId バトルルームID
+ * @param playerId プレイヤーID
+ * @returns プライベートデータ
+ */
+
+export const getPrivateBattleData = async (
+  battleId: string,
+  playerId: string
+) => {
+  const privateRef = ref(db, DATABASE_PATHS.battlePrivate(battleId, playerId));
+  const snapshot = await get(privateRef);
+
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    console.log("プライベートデータを取得:", data);
+    return data;
+  } else {
+    console.error("プライベートデータが存在しません");
+    return null;
+  }
+};
+
+/**トピックの更新を監視
  * @param battleId バトルルームID
  * @param callback トピックを返すコールバック
  * @returns リスナー解除関数
@@ -210,23 +232,25 @@ export const onGeneratedTopic = (
   const configRef = ref(db, DATABASE_PATHS.topic(battleId));
 
   // リスナー関数を名前付きで定義
-  const handleValueChange = (snapshot: any) => {
+  const listener = (snapshot) => {
     const newTopic = snapshot.val();
     console.log("トピックが更新:", newTopic);
     callback(newTopic);
 
     // トピックが更新されたらリスナーを解除
-    console.log("onGeneratedTopicのリスナー解除");
-    off(configRef, "value", handleValueChange);
+    if (newTopic !== "") {
+      console.log("トピックが生成されました: リスナー解除");
+      off(configRef, "value", listener);
+    }
   };
 
   // リスナーを登録
-  onValue(configRef, handleValueChange);
+  onValue(configRef, listener);
 
   // クリーンアップ用の関数を返す
   return () => {
     console.log("onGeneratedTopicのリスナー解除 return");
-    off(configRef, "value", handleValueChange);
+    off(configRef, "value", listener);
   };
 };
 
@@ -234,8 +258,7 @@ export const onGeneratedTopic = (
 
 //#region BattleView
 
-/**
- * メッセージを送信
+/** メッセージを送信
  * @param roomId ルームID
  * @param message メッセージ内容
  */
@@ -256,8 +279,7 @@ export const sendMessage = async (battleId: string, message: string) => {
   console.log("メッセージ送信:", messageData);
 };
 
-/**
- * 新しいメッセージを監視
+/** 新しいメッセージを監視
  * @param roomId ルームID
  * @param callback メッセージデータを返すコールバック
  */
@@ -274,8 +296,7 @@ export const onMessageAdded = (
   });
 };
 
-/**
- * 回答を送信
+/** 回答を送信
  * @param roomId ルームID
  * @param answer 提出された回答
  */
@@ -290,8 +311,7 @@ export const sendAnswer = async (battleId: string, answer: SubmitAnswer) => {
   console.log("回答送信:", answer);
 };
 
-/**
- * 両プレイヤーの回答を確認
+/** 両プレイヤーの回答を確認
  * @param roomId ルームID
  */
 export const checkAnswers = (battleId: string) => {
@@ -324,8 +344,7 @@ export const checkAnswers = (battleId: string) => {
     });
 };
 
-/**
- * バトル結果を監視
+/** バトル結果を監視
  * @param roomId ルームID
  * @param isHost ホストかどうか
  * @param callback バトル結果データを返すコールバック

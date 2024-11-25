@@ -7,6 +7,7 @@ import {
   checkAnswers,
   onResultUpdated,
   getBattleRoomData,
+  getPrivateBattleData,
 } from "../services/firebase-realtime-database.ts";
 import {
   BattleLog,
@@ -57,6 +58,7 @@ const theme = createTheme({
 
 export interface BattleViewProps {
   battleData: BattleData;
+  isHuman: boolean;
   bot: BotSetting | null;
 }
 
@@ -116,16 +118,19 @@ const BattleView: React.FC = () => {
           // エラーハンドリング
         }
       }
-      // // 自分のプレイヤーデータを取得
-      // if (battleId && auth.currentUser) {
-      //   const myPlayerData = await getMyPlayerData(battleId, auth.currentUser.uid);
-      //   if (myPlayerData) {
-      //     setIsHuman(myPlayerData.isHuman);
-      //     setBot(myPlayerData.bot);
-      //   } else {
-      //     // エラーハンドリング
-      //   }
-      // }
+      // 自分のプレイヤーデータを取得
+      if (battleId && auth.currentUser && !bot) {
+        const myPrivateData = await getPrivateBattleData(
+          battleId,
+          auth.currentUser.uid
+        );
+        if (myPrivateData) {
+          setIsHuman(myPrivateData.isHuman);
+          setBot(myPrivateData.bot);
+        } else {
+          // エラーハンドリング
+        }
+      }
       setLoading(false);
     };
     fetchData();
