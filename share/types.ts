@@ -5,7 +5,7 @@ export type RoomData = {
   status: "waiting" | "matched" | "playing" | "finished";
   hostId: string;
   players: PlayerData[];
-  battleData: BattleData[];
+  battleData: BattleRoomData[];
 };
 
 export type PlayerData = {
@@ -16,14 +16,17 @@ export type PlayerData = {
 };
 
 //バトル設定
-export type BattleData = {
+//バトルルームにつき1つのバトルデータがある
+export type BattleRoomData = {
   battleId: string;
-  status: "waiting" | "matched" | "playing" | "finished";
+  status: "waiting" | "matched" | "started" | "answer" | "finished";
   hostId: string;
   players: PlayerData[];
-  battleRules: BattleRules;
-  battleLog: BattleLog;
-  winnerId: string | null;
+  battleRule: BattleRules;
+  chatData: ChatData;
+  submitAnswer: SubmitAnswer[];
+  battleResult: BattleResult[];
+  timestamps: { start: number; end: number };
 };
 
 //バトルルール
@@ -42,14 +45,10 @@ export type Message = {
 };
 
 //バトルログ バトル中に参照する用
-export type BattleLog = {
-  phase: "waiting" | "chat" | "answer" | "finished";
-  currentTurn: number; //未使用
+export type ChatData = {
+  currentTurn: number;
+  activePlayerId: string;
   messages: Message[];
-  activePlayerId: string; //未使用
-  submitAnswer: SubmitAnswer[];
-  battleResult: BattleResult[];
-  timeStamps: { start: number; end: number };
 };
 
 //プレイヤーの回答

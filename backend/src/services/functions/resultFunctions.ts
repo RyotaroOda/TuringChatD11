@@ -57,11 +57,10 @@ export const calculateResultFunction = functions.https.onCall(
 
     // バトル時間計算
     const end = Date.now();
-    const endData = { end: end };
-    const startSnapshot = await db
-      .ref(DATABASE_PATHS.startBattle(battleId))
-      .get();
-    const startTime = startSnapshot.val();
+    const snapshot = await db.ref(DATABASE_PATHS.timestamps(battleId)).get();
+    const startTime = snapshot.val().start;
+    const timeData = { start: startTime, end: end };
+
     const time = end - startTime;
 
     // 結果を構築
@@ -74,7 +73,7 @@ export const calculateResultFunction = functions.https.onCall(
 
     // Firebase Realtime Databaseに結果を保存
     await db.ref(DATABASE_PATHS.result(battleId)).set(result);
-    await db.ref(DATABASE_PATHS.endBattle(battleId)).update(endData);
+    await db.ref(DATABASE_PATHS.timestamps(battleId)).update(timeData);
     await db.ref(DATABASE_PATHS.status(battleId)).set("finished");
 
     // レーティングの更新

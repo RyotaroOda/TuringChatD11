@@ -2,18 +2,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  RoomData,
   BotData,
   PlayerData,
-  AIModel,
-  BattleData,
   BattleRules,
+  BattleRoomData,
 } from "../shared/types.ts";
 import { BattleViewProps } from "./BattleView.tsx";
 import {
   onGeneratedTopic,
   onPlayerPrepared,
   preparationComplete,
+  updateBattleRoom,
   updatePrivateBattleData,
 } from "../services/firebase-realtime-database.ts";
 import { auth } from "../services/firebase_f.ts";
@@ -55,7 +54,7 @@ const theme = createTheme({
 });
 
 export interface OnlineRoomViewProps {
-  battleData: BattleData;
+  battleData: BattleRoomData;
   botData: BotData;
 }
 
@@ -64,7 +63,7 @@ const BattleRoomView: React.FC = () => {
   const location = useLocation();
   const { battleData, botData } = location.state as OnlineRoomViewProps;
   const [battleRules, setBattleRules] = useState<BattleRules>(
-    battleData.battleRules
+    battleData.battleRule
   );
   const battleId = battleData.battleId;
   const myId = auth.currentUser?.uid ?? "";
@@ -113,7 +112,6 @@ const BattleRoomView: React.FC = () => {
 
   // 他プレイヤーの準備完了を監視
   useEffect(() => {
-    console.log("battleId:", battleId);
     const unsubscribe = onPlayerPrepared(battleId, (result) => {
       if (result) {
         console.log("preparations updated:", result);
@@ -133,6 +131,11 @@ const BattleRoomView: React.FC = () => {
       const prepareBattle = async () => {
         if (battleData.hostId === myId) {
           await generateTopic(battleId);
+          const data = {
+            status: "started",
+            timestamps: { start: Date.now() },
+          };
+          await updateBattleRoom(battleId, data);
         }
         const unsubscribe = onGeneratedTopic(battleId, (topic) => {
           setBattleRules((prev) => ({ ...prev, topic: topic }));
@@ -153,22 +156,6 @@ const BattleRoomView: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [players]);
-
-  // // カウントダウン処理
-  // useEffect(() => {
-  //   if (countdown === null) return;
-
-  //   if (countdown > 0) {
-  //     const countdownTimer = setInterval(() => {
-  //       setCountdown((prev) => (prev !== null ? prev - 1 : null));
-  //     }, 1000);
-
-  //     return () => clearInterval(countdownTimer);
-  //   } else if (countdown === 0) {
-  //     toBattleViewSegue();
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [countdown]);
 
   useEffect(() => {
     if (battleRules.topic !== "") {
@@ -191,7 +178,7 @@ const BattleRoomView: React.FC = () => {
     const props: BattleViewProps = {
       battleData: {
         battleId: battleId,
-        battleRules: battleRules,
+        battleRule: battleRules,
         players: {
           ...battleData.players,
           [myKey]: {
@@ -199,10 +186,15 @@ const BattleRoomView: React.FC = () => {
             isHuman: selectedIsHuman,
           },
         },
-        battleLog: battleData.battleLog,
+        chatData: battleData.chatData,
         status: battleData.status,
         hostId: battleData.hostId,
-        winnerId: battleData.winnerId,
+        submitAnswer: [],
+        battleResult: [],
+        timestamps: {
+          start: 0,
+          end: 0,
+        },
       },
       isHuman: selectedIsHuman,
       bot:
@@ -328,10 +320,10 @@ const BattleRoomView: React.FC = () => {
                       バトルルール
                     </Typography>
                     <Typography variant="body1">
-                      ターン数: {battleData.battleRules.maxTurn} ターン
+                      ターン数: {battleData.battleRule.maxTurn} ターン
                     </Typography>
                     <Typography variant="body1">
-                      1ターンの時間: {battleData.battleRules.oneTurnTime} 秒
+                      1ターンの時間: {battleData.battleRule.oneTurnTime} 秒
                     </Typography>
                   </CardContent>
                 </Card>

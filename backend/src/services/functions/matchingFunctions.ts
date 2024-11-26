@@ -4,8 +4,8 @@ import {
   PlayerData,
   RoomData,
   MatchResult,
-  BattleLog,
-  BattleData,
+  ChatData,
+  BattleRoomData,
 } from "../../shared/types";
 import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
@@ -126,14 +126,10 @@ const createBattleRoom = async (player: PlayerData): Promise<string> => {
   //BattleDataの作成
   const battleId = (await db.ref(DATABASE_PATHS.route_battles).push()
     .key) as string;
-  const newBattleLog: BattleLog = {
-    phase: "waiting",
+  const newChatData: ChatData = {
     currentTurn: 0,
-    messages: [],
     activePlayerId: player.id,
-    submitAnswer: [],
-    battleResult: [],
-    timeStamps: { start: Date.now(), end: 0 },
+    messages: [],
   };
 
   const newBattleRules: BattleRules = {
@@ -143,14 +139,19 @@ const createBattleRoom = async (player: PlayerData): Promise<string> => {
     topic: "",
   };
 
-  const newBattleData: BattleData = {
+  const newBattleData: BattleRoomData = {
     battleId: battleId,
     hostId: player.id,
     players: [],
-    battleRules: newBattleRules,
-    battleLog: newBattleLog,
-    winnerId: null,
+    battleRule: newBattleRules,
+    chatData: newChatData,
     status: "waiting",
+    submitAnswer: [],
+    battleResult: [],
+    timestamps: {
+      start: 0,
+      end: 0,
+    },
   };
 
   await db.ref(DATABASE_PATHS.battle(battleId)).set(newBattleData);

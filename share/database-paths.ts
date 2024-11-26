@@ -1,7 +1,8 @@
 //database-paths.ts
+
 // Firebase Databaseの共通パスを管理
 export const DATABASE_PATHS = {
-  //realtime database
+  //# region realtime database
   //root
   route_rooms: "rooms",
   route_battles: "battles",
@@ -19,31 +20,31 @@ export const DATABASE_PATHS = {
   battleRoom: (battleId: string) => `battles/${battleId}/public`,
   battlePrivate: (battleId: string, playerId: string) =>
     `battles/${battleId}/private/${playerId}`,
+
+  //battleRoom/public
   status: (battleId: string) => `battles/${battleId}/public/status`,
+
   battlePlayers: (battleId: string) => `battles/${battleId}/public/players`,
   ready: (battleId: string, playerId: string) =>
     `battles/${battleId}/public/players/${playerId}`,
-  rules: (battleId: string) => `battles/${battleId}/public/battleRules`,
-  topic: (battleId: string) => `battles/${battleId}/public/battleRules/topic`,
 
-  //battle/battleLog
-  messages: (battleId: string) =>
-    `battles/${battleId}/public/battleLog/messages`,
-  phase: (battleId: string) => `battles/${battleId}/public/battleLog/phase`,
-  startBattle: (battleId: string) =>
-    `battles/${battleId}/public/battleLog/timestamps/start`,
-  endBattle: (battleId: string) =>
-    `battles/${battleId}/public/battleLog/timestamps/end`,
+  rule: (battleId: string) => `battles/${battleId}/public/battleRule`,
+  topic: (battleId: string) => `battles/${battleId}/public/battleRule/topic`,
+
+  chatData: (battleId: string) => `battles/${battleId}/public/chatData`,
   submittedAnswers: (battleId: string) =>
-    `battles/${battleId}/public//battleLog/submitAnswer`,
-  result: (battleId: string) =>
-    `battles/${battleId}/public/battleLog/battleResult`,
+    `battles/${battleId}/public/submitAnswer`,
+  result: (battleId: string) => `battles/${battleId}/public/battleResult`,
+  timestamps: (battleId: string) => `battles/${battleId}/public/timestamps`,
 
-  //firestore
+  //#endregion
+
+  //# region firestore
   route_profiles: "profiles",
   profiles: (userId: string) => `profiles/${userId}`,
   bots: (userId: string) => `profiles/${userId}/bots`,
   questionnaires: (userId: string) => `profiles/${userId}/questionnaire`,
   impression: (userId: string) => `profiles/${userId}/impressions`,
   rating: (userId: string) => `profiles/${userId}/rating`,
+  //#endregion
 };

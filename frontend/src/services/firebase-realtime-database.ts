@@ -1,25 +1,14 @@
 // frontend/src/services/firebase-realtime-database.ts
-import {
-  ref,
-  push,
-  get,
-  onValue,
-  onChildAdded,
-  off,
-  update,
-  set,
-} from "firebase/database";
+import { ref, push, get, onValue, off, update, set } from "firebase/database";
 import { db, auth } from "./firebase_f.ts";
 import {
-  BattleData,
-  BattleLog,
   BattleResult,
-  BattleRules,
+  BattleRoomData,
   BotSetting,
+  ChatData,
   Message,
   PlayerData,
   ResultData,
-  RoomData,
   SubmitAnswer,
 } from "../shared/types.ts";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
@@ -37,27 +26,28 @@ export const onMatched = (
   callback: (isMatched: boolean) => void
 ) => {
   const statusRef = ref(db, DATABASE_PATHS.status(battleId));
+  let kill = false;
   const listener = onValue(statusRef, (snapshot) => {
     const status = snapshot.val();
     console.log("現在のステータス:", status);
 
     if (status === "matched") {
       console.log("マッチング成功: リスナー解除");
-      off(statusRef, "value", listener);
+      kill = true;
       callback(true);
     } else {
       callback(false);
     }
   });
+  if (listener && kill) off(statusRef, "value", listener);
 
   return () => {
     console.log("onMatchedのリスナー解除");
-    off(statusRef, "value", listener);
+    if (listener) off(statusRef, "value", listener);
   };
 };
 
-// /**
-//  * ルームデータを取得
+// /** ルームデータを取得
 //  * @param roomId ルームID
 //  * @returns ルームデータ
 //  * @throws ルームが存在しない場合にエラー
@@ -76,22 +66,21 @@ export const onMatched = (
 //   }
 // };
 
-/**
- * ルームデータを取得
- * @param roomId ルームID
- * @returns ルームデータ
- * @throws ルームが存在しない場合にエラー
+/**バトルルームデータを取得
+ * @param battleId バトルルームID
+ * @returns バトルルームデータ
+ * @throws バトルルームが存在しない場合にエラー
  */
 export const getBattleRoomData = async (
   battleId: string
-): Promise<BattleData> => {
+): Promise<BattleRoomData> => {
   const battleRoomRef = ref(db, DATABASE_PATHS.battleRoom(battleId));
   const snapshot = await get(battleRoomRef);
 
   if (snapshot.exists()) {
     const battleData = snapshot.val();
     console.log("ルームデータを取得:", battleData);
-    return battleData as BattleData;
+    return battleData as BattleRoomData;
   } else {
     console.error("ルームが存在しません");
     throw new Error("ルームが存在しません");
@@ -131,6 +120,7 @@ export const onPlayerPrepared = (
   callback: (players: PlayerData[]) => void
 ) => {
   const playersRef = ref(db, DATABASE_PATHS.battlePlayers(battleId));
+  let kill = false;
   const listener = onValue(playersRef, (snapshot) => {
     const newPlayers = snapshot.val();
     console.log("プレイヤーデータが更新:", newPlayers);
@@ -143,13 +133,13 @@ export const onPlayerPrepared = (
       )
     ) {
       console.log("全プレイヤー準備完了: リスナー解除");
-      off(playersRef, "value", listener);
+      kill = true;
     }
   });
-
+  if (listener && kill) off(playersRef, "value", listener);
   return () => {
     console.log("onPlayerPreparedのリスナー解除");
-    off(playersRef, "value", listener);
+    if (listener) off(playersRef, "value", listener);
   };
 };
 
@@ -157,15 +147,15 @@ export const onPlayerPrepared = (
  * @param battleId バトルルームID
  * @param rules 更新するバトルルール
  */
-export const updateBattleRules = async (battleId: string, rules: any) => {
+export const updateBattleRules = async (battleId: string, rule: any) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const configRef = ref(db, DATABASE_PATHS.rules(battleId));
-  await update(configRef, rules);
-  console.log("update rules:", rules);
+  const configRef = ref(db, DATABASE_PATHS.rule(battleId));
+  await update(configRef, rule);
+  console.log("update rule:", rule);
 };
 
 /** プライベートデータを更新
@@ -173,7 +163,6 @@ export const updateBattleRules = async (battleId: string, rules: any) => {
  * @param playerId プレイヤーID
  * @param isHuman 更新するプライベートデータ
  **/
-
 export const updatePrivateBattleData = async (
   battleId: string,
   playerId: string,
@@ -202,7 +191,6 @@ export const updatePrivateBattleData = async (
  * @param playerId プレイヤーID
  * @returns プライベートデータ
  */
-
 export const getPrivateBattleData = async (
   battleId: string,
   playerId: string
@@ -230,7 +218,7 @@ export const onGeneratedTopic = (
   callback: (topic: string) => void
 ) => {
   const configRef = ref(db, DATABASE_PATHS.topic(battleId));
-
+  let kill = false;
   // リスナー関数を名前付きで定義
   const listener = (snapshot) => {
     const newTopic = snapshot.val();
@@ -240,12 +228,12 @@ export const onGeneratedTopic = (
     // トピックが更新されたらリスナーを解除
     if (newTopic !== "") {
       console.log("トピックが生成されました: リスナー解除");
-      off(configRef, "value", listener);
+      kill = true;
     }
   };
-
   // リスナーを登録
-  onValue(configRef, listener);
+  onValue(configRef, listener); //?
+  if (listener && kill) off(configRef, "value", listener);
 
   // クリーンアップ用の関数を返す
   return () => {
@@ -258,42 +246,96 @@ export const onGeneratedTopic = (
 
 //#region BattleView
 
-/** メッセージを送信
- * @param roomId ルームID
- * @param message メッセージ内容
- */
-export const sendMessage = async (battleId: string, message: string) => {
+/** バトルルームデータを更新
+ * @param battleId バトルID
+ * @param data 更新するバトルログデータ
+ * */
+export const updateBattleRoom = async (battleId: string, data: any) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
   }
 
-  const messageRef = ref(db, DATABASE_PATHS.messages(battleId));
+  await update(ref(db, DATABASE_PATHS.battleRoom(battleId)), data);
+  console.log("バトルログを更新:", data);
+};
+
+/** チャットデータの更新を監視
+ * battleId バトルID
+ * callback チャットデータを返すコールバック
+ * @returns リスナー解除関数
+ * */
+export const onUpdateChatData = (
+  battleId: string,
+  callback: (data: any) => void
+) => {
+  let kill = false;
+  const chatRef = ref(db, DATABASE_PATHS.chatData(battleId));
+  const listener = onValue(chatRef, (snapshot) => {
+    const newData = snapshot.val();
+    console.log("On Battle Log 更新!!!:", newData);
+    callback(newData);
+    if (!newData) kill = true;
+  });
+  if (listener && kill) off(chatRef, "value", listener);
+
+  return () => {
+    console.log("onUpdateChatDataのリスナー解除");
+    if (listener) off(chatRef, "value", listener);
+  };
+};
+
+/** バトルログを取得
+ * @param battleId バトルID
+ * @returns バトルログデータ
+ */
+export const getChatData = async (battleId: string): Promise<ChatData> => {
+  try {
+    const logSnapshot = await get(ref(db, DATABASE_PATHS.chatData(battleId)));
+    const logData = logSnapshot.val();
+    console.log("バトルログを取得:", logData);
+    return logData as ChatData;
+  } catch (error) {
+    console.error("バトルログ取得エラー:", error);
+    throw error;
+  }
+};
+
+/** メッセージを送信
+ * @param roomId ルームID
+ * @param message メッセージ内容
+ * @param nextTurn 次のターン
+ * @param activePlayerId アクティブプレイヤーのID
+ */
+export const addMessage = async (
+  battleId: string,
+  message: string,
+  nextTurn: number,
+  activePlayerId: string
+) => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error("ログインしていないユーザーです。");
+  }
+
   const messageData: Message = {
     senderId: user.uid,
     message,
     timestamp: Date.now(),
   };
+  await push(
+    ref(db, `${DATABASE_PATHS.chatData(battleId)}/messages`),
+    messageData
+  );
 
-  await push(messageRef, messageData);
+  //ターン更新
+  const data = {
+    currentTurn: nextTurn,
+    activePlayerId: activePlayerId,
+  };
+  await update(ref(db, DATABASE_PATHS.chatData(battleId)), data);
+
   console.log("メッセージ送信:", messageData);
-};
-
-/** 新しいメッセージを監視
- * @param roomId ルームID
- * @param callback メッセージデータを返すコールバック
- */
-export const onMessageAdded = (
-  battleId: string,
-  callback: (data: any) => void
-) => {
-  const messagesRef = ref(db, DATABASE_PATHS.messages(battleId));
-
-  onChildAdded(messagesRef, (snapshot) => {
-    const newMessage = snapshot.val();
-    console.log("新しいメッセージが追加:", newMessage);
-    callback(newMessage);
-  });
 };
 
 /** 回答を送信
@@ -356,7 +398,7 @@ export const onResultUpdated = (
   callback: (players: ResultData | null) => void
 ) => {
   const resultRef = ref(db, DATABASE_PATHS.result(battleId));
-
+  let kill = false;
   const listener = onValue(
     resultRef,
     (snapshot) => {
@@ -389,11 +431,12 @@ export const onResultUpdated = (
         };
         callback(result);
         console.log("onResultUpdatedのリスナー解除:正常");
-        off(resultRef, "value", listener);
+        kill = true;
       } else {
         console.log("バトル結果なし");
         callback(null);
       }
+      if (listener && kill) off(resultRef, "value", listener);
     },
     (error) => {
       console.error("バトル結果監視エラー:", error);
@@ -403,7 +446,7 @@ export const onResultUpdated = (
 
   return () => {
     console.log("onResultUpdatedのリスナー解除");
-    off(resultRef, "value", listener);
+    if (listener) off(resultRef, "value", listener);
   };
 };
 

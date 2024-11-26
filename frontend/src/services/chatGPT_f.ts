@@ -1,5 +1,4 @@
 // frontend/src/services/chatGPT_f.ts
-import { update } from "firebase/database";
 import {
   AIModel,
   BattleRules,
@@ -7,7 +6,6 @@ import {
   GPTMessage,
 } from "../shared/types.ts";
 import { updateBattleRules } from "./firebase-realtime-database.ts";
-import { BattleRoomIds } from "../shared/database-paths.ts";
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -180,7 +178,7 @@ export const generateBattleMessage = async (
  * トピックを生成する関数
  * @returns 生成されたトピック
  */
-export const generateTopic = async (ids: BattleRoomIds) => {
+export const generateTopic = async (battleId: string) => {
   // GPT-4に送信するシステムメッセージ
   const message: GPTMessage[] = [
     {
@@ -206,7 +204,7 @@ export const generateTopic = async (ids: BattleRoomIds) => {
     console.log("Generated topic:", topic);
     const data = { topic: topic };
 
-    updateBattleRules(ids, data);
+    updateBattleRules(battleId, data);
   } catch (error) {
     console.error("Failed to generate topic:", error);
     throw new Error("Failed to generate topic.");

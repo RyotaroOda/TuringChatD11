@@ -1,24 +1,23 @@
 // frontend/src/views/BattleView.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
-  sendMessage,
-  onMessageAdded,
+  addMessage,
   sendAnswer,
   checkAnswers,
   onResultUpdated,
   getBattleRoomData,
   getPrivateBattleData,
+  getChatData,
+  onUpdateChatData,
 } from "../services/firebase-realtime-database.ts";
 import {
-  BattleLog,
   PlayerData,
-  RoomData,
   SubmitAnswer,
   ResultData,
   BotSetting,
   GPTMessage,
-  BattleRules,
-  BattleData,
+  BattleRoomData,
+  Message,
 } from "../shared/types";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { auth } from "../services/firebase_f.ts";
@@ -57,7 +56,7 @@ const theme = createTheme({
 });
 
 export interface BattleViewProps {
-  battleData: BattleData;
+  battleData: BattleRoomData;
   isHuman: boolean;
   bot: BotSetting | null;
 }
@@ -69,21 +68,20 @@ const BattleView: React.FC = () => {
   const protoBattleId = useParams();
   const battleId = protoBattleId.battleRoomId as string;
 
-  const [battleData, setBattleData] = useState<BattleData | null>(null);
+  const [battleData, setBattleData] = useState<BattleRoomData | null>(null);
+  // const [chatData, setChatData] = useState<ChatData | null>(null);
+  const [messages, setMessages] = useState<Message[] | null>(null);
+
   const [isHuman, setIsHuman] = useState<boolean>(true);
   const [bot, setBot] = useState<BotSetting | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [isViewLoaded, setIsLoaded] = useState<boolean>(false);
-
-  const [chatLog, setChatLog] = useState<
-    { senderId: string; message: string }[]
-  >([]);
   const [message, setMessage] = useState<string>("");
   const [promptMessages, setPromptMessages] = useState<GPTMessage[]>([]);
   const [promptInstruction, setPromptInstruction] = useState<string>("");
   const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
-  const [remainTurn, setRemainTurn] = useState<number>(0);
+  const [remainTurn, setRemainTurn] = useState<number>(999);
+  const [currentTurn, setCurrentTurn] = useState<number>(1);
   const [timeLeft, setTimeLeft] = useState<number>(0);
 
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -98,51 +96,73 @@ const BattleView: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const endRef = useRef<HTMLDivElement | null>(null); // スクロール用の参照
 
-  const [myId, setMyId] = useState<string>("");
+  const myId = auth.currentUser?.uid || "";
   const [myName, setMyName] = useState<string>("");
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [opponentData, setOpponentData] = useState<PlayerData | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
+  const [isTimeout, setIsTimeout] = useState<boolean>(false);
+  //#endregion
 
+  //#region loading
   useEffect(() => {
+    setLoading(true);
     const fetchData = async () => {
       if (location.state) {
-        const { battleData } = location.state as BattleViewProps;
+        //通常遷移 前の画面からデータを受け取る
+        console.log("get BattleRoomData from location.state");
+        const { battleData, isHuman, bot } = location.state as BattleViewProps;
         setBattleData(battleData);
-        // `isHuman` と `bot` はサーバーから取得するため、ここでは設定しない
+        if (battleData.chatData.messages)
+          setMessages(Object.values(battleData.chatData.messages));
+        setIsHuman(isHuman);
+        setBot(bot);
+        navigate(appPaths.BattleView(battleData.battleId), { replace: true });
       } else if (battleId) {
+        //オンラインでデータを取得
+        console.log("get BattleRoomData from online");
         const fetchedBattleData = await getBattleRoomData(battleId);
         if (fetchedBattleData) {
           setBattleData(fetchedBattleData);
+
+          //バトルログの更新
+          const fetchBattleLog = (await getChatData(battleId)).messages;
+
+          if (fetchBattleLog) {
+            setMessages(Object.values(fetchBattleLog));
+          } else {
+            console.error("Failed to fetch battle log");
+          }
+
+          // 自分のプレイヤーデータを取得
+          if (battleId && auth.currentUser) {
+            const myPrivateData = await getPrivateBattleData(
+              battleId,
+              auth.currentUser.uid
+            );
+            if (myPrivateData) {
+              setIsHuman(myPrivateData.isHuman);
+              setBot(myPrivateData.bot);
+            }
+          }
         } else {
           // エラーハンドリング
+          alert("バトルルームが解散しました。");
+          navigate(appPaths.HomeView);
         }
-      }
-      // 自分のプレイヤーデータを取得
-      if (battleId && auth.currentUser && !bot) {
-        const myPrivateData = await getPrivateBattleData(
-          battleId,
-          auth.currentUser.uid
-        );
-        if (myPrivateData) {
-          setIsHuman(myPrivateData.isHuman);
-          setBot(myPrivateData.bot);
-        } else {
-          // エラーハンドリング
-        }
+      } else {
+        console.error("battleId is null");
+        alert("バトルルームが不明です。");
+        navigate(appPaths.HomeView);
       }
       setLoading(false);
     };
     fetchData();
-  }, [location.state, battleId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (battleData) {
-      setIsLoaded(true);
-      const user = auth.currentUser;
-      const myId = user?.uid || "error";
-      setMyId(myId);
-
       const playersKey = Object.keys(battleData.players);
       const isHost = myId === battleData.hostId;
       setIsHost(isHost);
@@ -163,9 +183,7 @@ const BattleView: React.FC = () => {
         [opponentData.id]: opponentData.name,
       });
 
-      setIsMyTurn(isHost);
-      setRemainTurn(battleData.battleRules.maxTurn);
-      setTimeLeft(battleData.battleRules.oneTurnTime);
+      setTimeLeft(battleData.battleRule.oneTurnTime);
 
       setAnswer((prevAnswer) => ({
         ...prevAnswer,
@@ -176,16 +194,42 @@ const BattleView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleData]);
 
+  // useEffect(() => {
+  //   if (battleData && messages) {
+  //     console.log("Updated Battle Log:", messages);
+  //     if (messages) {
+  //       const list = Object.values(messages);
+  //       setMessages(
+  //         list.map(({ senderId, message, timestamp }) => ({
+  //           senderId,
+  //           message,
+  //           timestamp,
+  //         }))
+  //       );
+  //     }
+
+  //     setCurrentTurn(chatData.currentTurn);
+  //     setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
+  //     setIsMyTurn(chatData.activePlayerId === myId);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [messages]);
+
   //#endregion
 
   //#region メッセージ処理
   // メッセージを送信する
   const handleSendMessage = async () => {
-    if (message.trim() && isMyTurn && battleId && remainTurn > 0) {
-      setLoading(true);
-      await sendMessage(battleId, message);
+    if (
+      message.trim() &&
+      isMyTurn &&
+      battleId &&
+      remainTurn > 0 &&
+      battleData &&
+      opponentData
+    ) {
+      await addMessage(battleId, message, currentTurn + 1, opponentData.id);
       setMessage("");
-      setLoading(false);
     }
   };
 
@@ -197,7 +241,7 @@ const BattleView: React.FC = () => {
         promptMessages,
         "メッセージ生成",
         bot,
-        battleData.battleRules
+        battleData.battleRule
       );
       setMessage(generatedMessage);
       setGeneratedAnswer(generatedMessage);
@@ -211,50 +255,89 @@ const BattleView: React.FC = () => {
   useEffect(() => {
     if (!battleId) return;
 
-    onMessageAdded(battleId, (newMessage) => {
-      console.log("onMessageAdded:", newMessage);
+    const unsubscribe = () =>
+      onUpdateChatData(battleId, (newChatData) => {
+        if (!newChatData) return;
+        if (newChatData.messages && !isSubmitted) {
+          const newMessage = newChatData.messages;
+          console.log("onMessageAdded:", newMessage);
+          setMessages(Object.values(newMessage));
 
-      setChatLog((prevChatLog) => {
-        // 同じメッセージが追加されないように確認
-        const isDuplicate = prevChatLog.some(
-          (msg) =>
-            msg.senderId === newMessage.senderId &&
-            msg.message === newMessage.message
-        );
-        if (isDuplicate) {
-          console.warn("Duplicate message detected, skipping...");
-          return prevChatLog; // 同じ内容なら既存のログをそのまま返す
+          // setMessages((prevChatLog) => {
+          //   // 同じメッセージが追加されないように確認
+          //   const isDuplicate =
+          //     prevChatLog &&
+          //     prevChatLog.some(
+          //       (msg) =>
+          //         msg.senderId === newMessage.senderId &&
+          //         msg.message === newMessage.message
+          //     );
+          //   if (isDuplicate) {
+          //     console.warn("Duplicate message detected, skipping...");
+          //     return prevChatLog; // 同じ内容なら既存のログをそのまま返す
+          //   }
+          //   return [
+          //     ...(prevChatLog || []),
+          //     {
+          //       senderId: newMessage.senderId,
+          //       message: newMessage.message,
+          //       timestamp: newMessage.timestamp,
+          //     },
+          //   ];
+          // });
+
+          // ボットプレイヤーのためのプロンプトメッセージ処理
+          if (!isHuman) {
+            const id =
+              newMessage.senderId === myId ? "[opponent]" : "[proponent]";
+            setPromptMessages((prevMessages) => [
+              ...prevMessages,
+              { role: "user", content: id + newMessage.message },
+            ]);
+          }
         }
-        return [
-          ...prevChatLog,
-          { senderId: newMessage.senderId, message: newMessage.message },
-        ];
+        setIsMyTurn(newChatData.activePlayerId === myId);
+        setCurrentTurn(newChatData.currentTurn);
       });
+    return () => {
+      unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
-      // ボットプレイヤーのためのプロンプトメッセージ処理
-      if (!isHuman) {
-        const id = newMessage.senderId === myId ? "[opponent]" : "[proponent]";
-        setPromptMessages((prevMessages) => [
-          ...prevMessages,
-          { role: "user", content: id + newMessage.message },
-        ]);
-      }
+  useEffect(() => {
+    onUpdateChatData(battleId, (updatedLog) => {
+      console.log("Battle Log Updated:", updatedLog);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isViewLoaded]);
+  }, [battleId]);
 
-  // ターンの切り替え
-  useEffect(() => {
-    if (isViewLoaded) {
-      setIsMyTurn((prevTurn) => !prevTurn);
-      setRemainTurn((prevCount) => prevCount - 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatLog]);
+  // useEffect(() => {
+  //   if (loading) return;
+
+  //   console.log("turn change!");
+  //   changeTurn();
+
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [messages]);
+
+  // // ターンの切り替え
+  // const changeTurn = () => {
+  //   setIsMyTurn((prevTurn) => !prevTurn);
+  //   setCurrentTurn((prevCount) => prevCount + 1);
+  // };
 
   //#endregion
 
   //#region バトル終了時の処理
+
+  useEffect(() => {
+    if (battleData && !loading) {
+      setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentTurn, battleData]);
+
   // 残りターンが0の場合
   useEffect(() => {
     if (remainTurn === 0 && !loading) {
@@ -284,24 +367,41 @@ const BattleView: React.FC = () => {
 
   // タイマーの処理
   useEffect(() => {
-    if (remainTurn <= 0) return;
+    if (remainTurn <= 0 || loading) return;
     const timer = setInterval(() => {
       setTimeLeft((prev) => Math.max(prev - 1, 0));
     }, 1000);
 
-    if (timeLeft === 0 && isMyTurn) {
+    if ((timeLeft === 0 || timeLeft < 0) && isMyTurn) {
       handleSendMessage();
+    }
+    if ((timeLeft === 0 || timeLeft < 0) && !isMyTurn) {
+      setIsTimeout(true);
     }
 
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isMyTurn]);
 
+  const exitBattle = () => {
+    const isConfirmed = window.confirm("解散しますか？");
+
+    if (isConfirmed) {
+      // 「OK」がクリックされた場合の処理
+      // disband();
+      navigate(appPaths.HomeView);
+    } else {
+      // 「キャンセル」の場合は何もしない
+      console.log("解散がキャンセルされました。");
+    }
+  };
+
   // ターンが切り替わる際にタイマーをリセット
   useEffect(() => {
-    if (isMyTurn && battleData && battleData.battleRules) {
-      setTimeLeft(battleData.battleRules.oneTurnTime);
-    }
+    if (!battleData || loading) return;
+    setTimeLeft(battleData.battleRule.oneTurnTime);
+    setIsTimeout(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMyTurn, battleData]);
 
   // リザルトを監視する
@@ -376,7 +476,7 @@ const BattleView: React.FC = () => {
           {/* トピックとターン情報 */}
           <Box mb={2}>
             <Typography variant="h5" gutterBottom>
-              {battleData ? battleData.battleRules.topic : ""}
+              {battleData ? battleData.battleRule.topic : ""}
             </Typography>
             <Typography variant="body1">
               ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}
@@ -388,14 +488,11 @@ const BattleView: React.FC = () => {
               variant="determinate"
               value={
                 battleData
-                  ? (timeLeft / battleData.battleRules.oneTurnTime) * 100
+                  ? (timeLeft / battleData.battleRule.oneTurnTime) * 100
                   : 0
               }
               sx={{ mt: 1 }}
             />
-            <Typography variant="body1">
-              残りメッセージ数: {remainTurn}
-            </Typography>
           </Box>
 
           {/* チャットログ */}
@@ -404,40 +501,51 @@ const BattleView: React.FC = () => {
             sx={{ maxHeight: 300, overflowY: "auto", p: 2, mb: 2 }}
           >
             <List>
-              {chatLog.map((msg, index) => (
-                <ListItem
-                  key={index}
-                  sx={{
-                    justifyContent:
-                      msg.senderId === myId ? "flex-end" : "flex-start",
-                  }}
-                >
-                  <Box
+              {/* chatLog が配列である場合のみ map を実行 */}
+              {messages ? (
+                messages.map((msg, index) => (
+                  <ListItem
+                    key={index}
                     sx={{
-                      maxWidth: "70%",
-                      bgcolor:
-                        msg.senderId === myId
-                          ? "primary.main"
-                          : "secondary.main",
-                      color: msg.senderId === myId ? "#fff" : "#fff",
-                      borderRadius: 2,
-                      p: 1,
+                      justifyContent:
+                        msg.senderId === myId ? "flex-end" : "flex-start",
                     }}
                   >
-                    <ListItemText
-                      primary={msg.message}
-                      secondary={
-                        msg.senderId === myId
-                          ? myName
-                          : playerNames[msg.senderId]
-                      }
-                    />
-                  </Box>
+                    <Box
+                      sx={{
+                        maxWidth: "70%",
+                        bgcolor:
+                          msg.senderId === myId
+                            ? "primary.main"
+                            : "secondary.main",
+                        color: "#fff",
+                        borderRadius: 2,
+                        p: 1,
+                      }}
+                    >
+                      <ListItemText
+                        primary={msg.message}
+                        secondary={
+                          msg.senderId === myId
+                            ? myName
+                            : playerNames[msg.senderId] || "Unknown Player"
+                        }
+                      />
+                    </Box>
+                  </ListItem>
+                ))
+              ) : (
+                // 配列でない場合のフォールバック
+                <ListItem>
+                  <ListItemText primary="チャットログがありません。" />
                 </ListItem>
-              ))}
+              )}
             </List>
           </Paper>
 
+          <Typography variant="body1">
+            残りメッセージ数: {remainTurn}
+          </Typography>
           {/* メッセージ入力 */}
           {remainTurn > 0 ? (
             <Box mb={2}>
@@ -672,6 +780,15 @@ const BattleView: React.FC = () => {
                   {isSubmitted ? "送信完了" : "送信"}
                 </Button>
               </Box>
+            </Box>
+          )}
+
+          {isTimeout && (
+            <Box mt={2}>
+              <Typography variant="h6">相手からの応答がありません。</Typography>
+              <Button variant="contained" color="primary" onClick={exitBattle}>
+                バトルルームから退出
+              </Button>
             </Box>
           )}
 
