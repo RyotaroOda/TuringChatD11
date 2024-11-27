@@ -115,6 +115,8 @@ const BattleView: React.FC = () => {
         setBattleData(battleData);
         if (battleData.chatData.messages)
           setMessages(Object.values(battleData.chatData.messages));
+        setCurrentTurn(battleData.chatData.currentTurn);
+        setIsMyTurn(battleData.chatData.activePlayerId === myId);
         setIsHuman(isHuman);
         setBot(bot);
         navigate(appPaths.BattleView(battleData.battleId), { replace: true });
@@ -126,10 +128,12 @@ const BattleView: React.FC = () => {
           setBattleData(fetchedBattleData);
 
           //バトルログの更新
-          const fetchBattleLog = (await getChatData(battleId)).messages;
+          const fetchChatData = await getChatData(battleId);
 
-          if (fetchBattleLog) {
-            setMessages(Object.values(fetchBattleLog));
+          if (fetchChatData) {
+            setMessages(Object.values(fetchChatData.messages));
+            setCurrentTurn(fetchChatData.currentTurn);
+            setIsMyTurn(fetchChatData.activePlayerId === myId);
           } else {
             console.error("Failed to fetch battle log");
           }
@@ -194,27 +198,6 @@ const BattleView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleData]);
 
-  // useEffect(() => {
-  //   if (battleData && messages) {
-  //     console.log("Updated Battle Log:", messages);
-  //     if (messages) {
-  //       const list = Object.values(messages);
-  //       setMessages(
-  //         list.map(({ senderId, message, timestamp }) => ({
-  //           senderId,
-  //           message,
-  //           timestamp,
-  //         }))
-  //       );
-  //     }
-
-  //     setCurrentTurn(chatData.currentTurn);
-  //     setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
-  //     setIsMyTurn(chatData.activePlayerId === myId);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [messages]);
-
   //#endregion
 
   //#region メッセージ処理
@@ -263,29 +246,6 @@ const BattleView: React.FC = () => {
           console.log("onMessageAdded:", newMessage);
           setMessages(Object.values(newMessage));
 
-          // setMessages((prevChatLog) => {
-          //   // 同じメッセージが追加されないように確認
-          //   const isDuplicate =
-          //     prevChatLog &&
-          //     prevChatLog.some(
-          //       (msg) =>
-          //         msg.senderId === newMessage.senderId &&
-          //         msg.message === newMessage.message
-          //     );
-          //   if (isDuplicate) {
-          //     console.warn("Duplicate message detected, skipping...");
-          //     return prevChatLog; // 同じ内容なら既存のログをそのまま返す
-          //   }
-          //   return [
-          //     ...(prevChatLog || []),
-          //     {
-          //       senderId: newMessage.senderId,
-          //       message: newMessage.message,
-          //       timestamp: newMessage.timestamp,
-          //     },
-          //   ];
-          // });
-
           // ボットプレイヤーのためのプロンプトメッセージ処理
           if (!isHuman) {
             const id =
@@ -312,27 +272,12 @@ const BattleView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleId]);
 
-  // useEffect(() => {
-  //   if (loading) return;
-
-  //   console.log("turn change!");
-  //   changeTurn();
-
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [messages]);
-
-  // // ターンの切り替え
-  // const changeTurn = () => {
-  //   setIsMyTurn((prevTurn) => !prevTurn);
-  //   setCurrentTurn((prevCount) => prevCount + 1);
-  // };
-
   //#endregion
 
   //#region バトル終了時の処理
 
   useEffect(() => {
-    if (battleData && !loading) {
+    if (battleData) {
       setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
