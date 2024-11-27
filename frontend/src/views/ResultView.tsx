@@ -58,7 +58,16 @@ const ResultView: React.FC = () => {
     <ThemeProvider theme={theme}>
       <AppBar position="static">
         <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              textAlign: "center",
+              whiteSpace: "nowrap", // テキストの折り返しを防止
+              overflow: "hidden", // 必要に応じてあふれたテキストを隠す
+              textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+            }}
+          >
             ゲーム結果
           </Typography>
         </Toolbar>

@@ -178,7 +178,16 @@ const EditPromptView: React.FC = () => {
           >
             戻る
           </Button>
-          <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "center" }}>
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              textAlign: "center",
+              whiteSpace: "nowrap", // テキストの折り返しを防止
+              overflow: "hidden", // 必要に応じてあふれたテキストを隠す
+              textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+            }}
+          >
             プロンプト編集
           </Typography>
         </Toolbar>

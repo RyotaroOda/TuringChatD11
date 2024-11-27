@@ -212,18 +212,6 @@ export const addUserImpression = async (data: string) => {
 //#region Rating
 export const updateRating = async (userId: string, score: number) => {
   // レーティングの更新処理
-  console.log("updateRating", userId, score);
-  const ref = collection(firestore, DATABASE_PATHS.rating(userId));
-  // await runTransaction(firestore, async (transaction) => {
-  //   const doc = await transaction.get(ref);
-  //   if (!doc.exists) {
-  //     //ゲスト
-  //   } else {
-  //     const currentRating = doc.data()?.rating || 0;
-  //     console.log("currentRating", currentRating);
-  //     transaction.update(ref, currentRating + score);
-  //   }
-  // });
   const profile = await getUserProfile();
   const newRating = profile.rating + score;
   console.log("newRating", newRating);

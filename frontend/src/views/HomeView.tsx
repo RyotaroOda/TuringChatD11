@@ -320,14 +320,23 @@ const HomeView: React.FC = () => {
         <>
           <AppBar position="static">
             <Toolbar>
-              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+              <Typography
+                variant="h6"
+                sx={{
+                  flexGrow: 1,
+                  textAlign: "center",
+                  whiteSpace: "nowrap", // テキストの折り返しを防止
+                  overflow: "hidden", // 必要に応じてあふれたテキストを隠す
+                  textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+                }}
+              >
                 チューリングゲーム
               </Typography>
               <Button
                 variant="outlined"
                 color="inherit"
                 onClick={handleFeedback}
-                sx={{ mr: 2 }} // 右側に余白を追加
+                sx={{ mr: 2, whiteSpace: "nowrap" }} // 右側に余白を追加
               >
                 フィードバック
               </Button>
@@ -336,6 +345,9 @@ const HomeView: React.FC = () => {
                   variant="outlined"
                   color="inherit"
                   onClick={handleLogin}
+                  sx={{
+                    whiteSpace: "nowrap", // テキストを折り返さない
+                  }}
                 >
                   ログイン
                 </Button>
@@ -344,6 +356,9 @@ const HomeView: React.FC = () => {
                   variant="outlined"
                   color="inherit"
                   onClick={handleLogout}
+                  sx={{
+                    whiteSpace: "nowrap", // テキストを折り返さない
+                  }}
                 >
                   ログアウト
                 </Button>
