@@ -26,7 +26,7 @@ export type BattleRoomData = {
   chatData: ChatData;
   submitAnswer: SubmitAnswer[];
   battleResult: BattleResult[];
-  timestamps: { start: number; end: number };
+  timestamps: { start: Date; end: Date };
 };
 
 //バトルルール
@@ -95,8 +95,8 @@ export type ProfileData = {
   userId: string;
   name: string;
 
-  signUpDate: number;
-  lastLoginDate: number;
+  signUpDate: Date;
+  lastLoginDate: Date;
 
   rating: number;
   win: number;
@@ -151,6 +151,8 @@ export type QuestionnaireData = {
 export type Impression = {
   impression: string;
   date: Date;
+  user: string;
+  userId: string;
 };
 
 //#endregion

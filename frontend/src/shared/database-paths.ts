@@ -45,9 +45,9 @@ export const DATABASE_PATHS = {
   bots: (userId: string) => `profiles/${userId}/bots`,
   questionnaires: (userId: string) => `profiles/${userId}/questionnaire`,
   impression: (userId: string) => `profiles/${userId}/impressions`,
+  route_impressions: "impressions",
   rating: (userId: string) => `profiles/${userId}/rating`,
-  backup: "backup",
-  backup_battle: (battleId: string) => `backup/battles/${battleId}`,
+  battleBackups: (battleId: string) => `battleBackups/${battleId}`,
 
   //#endregion
 };

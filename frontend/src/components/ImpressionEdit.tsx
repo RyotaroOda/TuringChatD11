@@ -29,7 +29,6 @@ const ImpressionEdit: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message) {
-      console.log("message", message);
       await addUserImpression(message);
       alert("送信しました。");
       navigate(-1);

@@ -82,8 +82,8 @@ export const createUserProfile = async () => {
       data: botData,
     },
     questionnaire: null,
-    signUpDate: Date.now(),
-    lastLoginDate: Date.now(),
+    signUpDate: new Date(),
+    lastLoginDate: new Date(),
     age: null,
     gender: "no_answer",
     language: "Japanese",
@@ -201,10 +201,15 @@ export const addUserImpression = async (data: string) => {
   const impressionData: Impression = {
     impression: data,
     date: new Date(),
+    user: auth.currentUser?.displayName || "未設定",
+    userId: userId,
   };
 
   await addDoc(impressionRef, impressionData);
   console.log("感想が追加されました:", impressionData);
+
+  const rootRef = collection(firestore, DATABASE_PATHS.route_impressions);
+  await addDoc(rootRef, impressionData);
 };
 
 //#endregion

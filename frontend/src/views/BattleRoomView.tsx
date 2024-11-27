@@ -192,8 +192,8 @@ const BattleRoomView: React.FC = () => {
         submitAnswer: [],
         battleResult: [],
         timestamps: {
-          start: 0,
-          end: 0,
+          start: new Date(),
+          end: new Date(),
         },
       },
       isHuman: selectedIsHuman,

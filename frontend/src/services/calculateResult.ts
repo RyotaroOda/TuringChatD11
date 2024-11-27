@@ -1,14 +1,7 @@
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { BattleResult, SubmitAnswer } from "../shared/types.ts";
 import { auth, db, firestore } from "./firebase_f.ts";
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  runTransaction,
-  addDoc,
-} from "firebase/firestore";
+import { collection, addDoc, doc, setDoc } from "firebase/firestore";
 import { ref, set, get, child, remove } from "firebase/database";
 
 /** バトル結果を計算
@@ -74,11 +67,6 @@ export const calculateResultFunction = async (battleId: string) => {
   await set(ref(db, DATABASE_PATHS.result(battleId)), result);
   await set(ref(db, DATABASE_PATHS.timestamps(battleId)), timeData);
   await set(ref(db, DATABASE_PATHS.status(battleId)), "finished");
-
-  // レーティングの更新
-  //   await updateRating(firstAnswer.playerId, scores.player1Score);
-  //   await updateRating(secondAnswer.playerId, scores.player2Score);
-
   // バトルルームデータのバックアップ
   await saveBattleRoomDataToStore(battleId);
 
@@ -93,19 +81,17 @@ const saveBattleRoomDataToStore = async (battleId: string) => {
   if (!battleId) {
     console.error("invalid-argument", "battleIdが必要です。");
   }
-  console.log("battleIzetsrdxfcgjhvjbknld");
-
   try {
     const roomRef = ref(db, DATABASE_PATHS.battleRoom(battleId));
     const snapshot = await get(roomRef);
     const roomData = snapshot.val();
 
     if (roomData) {
-      const firestoreRef = collection(
+      const firestoreRef = doc(
         firestore,
-        DATABASE_PATHS.backup_battle(battleId)
+        DATABASE_PATHS.battleBackups(battleId)
       );
-      await addDoc(firestoreRef, roomData);
+      await setDoc(firestoreRef, roomData);
       console.log(`Firestoreへの保存が成功しました: roomId ${battleId}`);
       return {
         success: true,
