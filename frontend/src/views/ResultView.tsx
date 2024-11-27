@@ -1,7 +1,7 @@
 // frontend/src/views/ResultView.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ResultData } from "../shared/types";
+import { ResultData } from "../shared/types.ts";
 import {
   AppBar,
   Toolbar,
@@ -17,6 +17,8 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { appPaths } from "../App.tsx";
+import { updateRating } from "../services/firestore-database_f.ts";
+import { auth } from "../services/firebase_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -33,6 +35,15 @@ const ResultView: React.FC = () => {
   const location = useLocation();
   const { resultData } = location.state as ResultViewProps;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    const myId = user ? user.uid : null;
+    if (resultData && myId && !user?.isAnonymous) {
+      updateRating(myId, resultData.score);
+    }
+    // eslint-disable-next-line
+  }, [resultData]);
 
   const toHomeSegue = () => {
     navigate(appPaths.HomeView);

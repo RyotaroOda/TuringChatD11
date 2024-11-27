@@ -10,7 +10,6 @@ import {
 import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { generateTopic } from "../chatGPT_b";
 
 //#region Utility Functions
 
@@ -38,12 +37,14 @@ const waitingPlayersRef = db.ref(DATABASE_PATHS.waitingPlayers);
  * @param playerId プレイヤーID
  * @param roomId ルームID
  */
-export const addToWaitingList = async (battleId: string) => {
+export const addToWaitingList = async (playerId: string, battleId: string) => {
   const waitingData = {
-    battleId: battleId,
-    timeWaiting: Date.now(),
+    [playerId]: {
+      battleId: battleId,
+      timeWaiting: Date.now(),
+    },
   };
-  await waitingPlayersRef.push(waitingData);
+  await waitingPlayersRef.set(waitingData);
   console.log(`${battleId} が待機リストに追加されました。`);
 };
 
@@ -230,7 +231,7 @@ export const requestMatchFunction = onCall(
 
     const newBattleId = await createBattleRoom(player);
 
-    await addToWaitingList(newBattleId);
+    await addToWaitingList(player.id, newBattleId);
 
     return {
       battleId: newBattleId,
@@ -245,9 +246,6 @@ export const requestMatchFunction = onCall(
  */
 export const cancelMatchFunction = onCall(async (request) => {
   const playerId = authCheck(request.auth?.uid ?? "");
-
-  await removeFromWaitingList(playerId);
-
   const playerSnapshot = await db
     .ref(`${waitingPlayersRef}/${playerId}`)
     .once("value");
@@ -256,6 +254,8 @@ export const cancelMatchFunction = onCall(async (request) => {
   if (playerData?.roomId) {
     await removeRoom(playerData.roomId);
   }
+
+  await removeFromWaitingList(playerId);
 });
 
 //#endregion

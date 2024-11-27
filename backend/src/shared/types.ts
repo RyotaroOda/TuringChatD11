@@ -105,7 +105,6 @@ export type ProfileData = {
   bots: BotData;
 
   questionnaire: QuestionnaireData | null;
-  impressions: Impression[];
 
   age: number | null; // 年齢（オプション）
   gender: "male" | "female" | "other" | "no_answer"; // 性別（選択式）

@@ -46,5 +46,8 @@ export const DATABASE_PATHS = {
   questionnaires: (userId: string) => `profiles/${userId}/questionnaire`,
   impression: (userId: string) => `profiles/${userId}/impressions`,
   rating: (userId: string) => `profiles/${userId}/rating`,
+  backup: "backup",
+  backup_battle: (battleId: string) => `backup/battles/${battleId}`,
+
   //#endregion
 };

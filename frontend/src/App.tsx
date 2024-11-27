@@ -22,6 +22,11 @@ import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
 import RoomView from "./views/PrivateRoomView.tsx";
 
+export const variables = {
+  experiment: true,
+  backend: false,
+};
+
 export const appPaths = {
   HomeView: "/",
   RoomView: (roomId: string) => `/room/${roomId}`,
