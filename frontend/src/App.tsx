@@ -21,6 +21,7 @@ import ImpressionEdit from "./components/ImpressionEdit.tsx";
 import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
 import RoomView from "./views/PrivateRoomView.tsx";
+import HowToPlay from "./components/HowToPlay.tsx";
 
 export const variables = {
   experiment: true,
@@ -40,6 +41,7 @@ export const appPaths = {
   prompt_edit: "/prompt_edit",
   questionnaire_edit: "/questionnaire_edit",
   impression_edit: "/impression_edit",
+  how_to_play: "/how_to_play",
 };
 
 // カスタムテーマの作成
@@ -135,6 +137,7 @@ function App() {
             <Route path="/questionnaire_edit" element={<QuestionnaireEdit />} />{" "}
             <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
             <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
+            <Route path="/how_to_play" element={<HowToPlay />} />{" "}
             {/* 認証済みでない場合のリダイレクト */}
             <Route
               path="*"
