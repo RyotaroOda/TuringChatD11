@@ -150,8 +150,8 @@ const createBattleRoom = async (player: PlayerData): Promise<string> => {
     submitAnswer: [],
     battleResult: [],
     timestamps: {
-      start: 0,
-      end: 0,
+      start: new Date(),
+      end: new Date(),
     },
   };
 

@@ -41,12 +41,9 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
-  Select,
-  MenuItem,
   CircularProgress,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { appPaths } from "../App.tsx";
 
 const theme = createTheme({
@@ -220,9 +217,16 @@ const BattleView: React.FC = () => {
   const generateMessage = async () => {
     setIsGenerating(true);
     if (bot && battleData) {
+      console.log(
+        "Generate message with bot:",
+        promptMessages,
+        promptInstruction,
+        bot,
+        battleData.battleRule
+      );
       const generatedMessage = await generateBattleMessage(
         promptMessages,
-        "メッセージ生成",
+        promptInstruction,
         bot,
         battleData.battleRule
       );

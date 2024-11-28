@@ -147,6 +147,7 @@ export const generateBattleMessage = async (
       - 以下に今までのゲームのチャットログを送信します。
       - ゲーム開始時のトークテーマはAIで自動生成され、メッセージの先頭に[AI]と表示されます。
       - プレイヤー(自分)は[proponent], 相手プレイヤーは[opponent]とメッセージの先頭に表示されます。
+      ${postMessage}
     `,
   };
 

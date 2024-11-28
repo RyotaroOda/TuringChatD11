@@ -1,7 +1,7 @@
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { BattleResult, SubmitAnswer } from "../shared/types.ts";
 import { auth, db, firestore } from "./firebase_f.ts";
-import { collection, addDoc, doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { ref, set, get, child, remove } from "firebase/database";
 
 /** バトル結果を計算

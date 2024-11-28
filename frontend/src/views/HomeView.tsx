@@ -29,7 +29,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
-import { appPaths } from "../App.tsx";
+import { appPaths, variables } from "../App.tsx";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -44,8 +44,8 @@ const HomeView: React.FC = () => {
   const user = auth.currentUser;
 
   // State variables
-  const [aiPrompt, setAiPrompt] = useState<string>("default prompt");
-  const [battleId, setbattleId] = useState<string>("");
+  const [aiPrompt, setAiPrompt] = useState<string>(variables.defaultPrompt);
+  const [battleId, setBattleId] = useState<string>("");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
@@ -140,7 +140,7 @@ const HomeView: React.FC = () => {
       };
       const result = await requestMatch(player);
       if (result.battleId !== "") {
-        setbattleId(result.battleId);
+        setBattleId(result.battleId);
         setBattleRoomListened(true);
       } else {
         console.error("マッチングエラー: ", result.message);

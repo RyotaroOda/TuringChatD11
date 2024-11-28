@@ -6,6 +6,7 @@ import {
   PlayerData,
   BattleRules,
   BattleRoomData,
+  BotSetting,
 } from "../shared/types.ts";
 import { BattleViewProps } from "./BattleView.tsx";
 import {
@@ -40,8 +41,8 @@ import {
   InputLabel,
   ListItemIcon,
   CircularProgress,
+  Divider,
 } from "@mui/material";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { generateTopic } from "../services/chatGPT_f.ts";
@@ -79,10 +80,21 @@ const BattleRoomView: React.FC = () => {
   const navigate = useNavigate();
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(true);
   const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
+  const [selectedBot, setSelectedBot] = useState<BotSetting | null>(null);
+
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // 例: 準備時間120秒
   const [isBattleStarting, setIsBattleStarting] = useState<boolean>(false);
   //#endregion
+
+  useEffect(() => {
+    if (selectedBotId !== null) {
+      const bot = botData.data.find((bot) => bot.id === selectedBotId) ?? null;
+      setSelectedBot(bot);
+    } else {
+      setSelectedBot(null);
+    }
+  }, [selectedBotId, botData.data]);
 
   // タイマー処理
   useEffect(() => {
@@ -214,22 +226,14 @@ const BattleRoomView: React.FC = () => {
     <ThemeProvider theme={theme}>
       <AppBar position="static">
         <Toolbar>
-          {/* <Button
-            color="inherit"
-            startIcon={<ArrowBackIcon />}
-            onClick={() => navigate("/")}
-            sx={{ textTransform: "none", color: "#fff", mr: 2 }}
-          >
-            戻る
-          </Button> */}
           <Typography
             variant="h6"
             sx={{
               flexGrow: 1,
               textAlign: "center",
-              whiteSpace: "nowrap", // テキストの折り返しを防止
-              overflow: "hidden", // 必要に応じてあふれたテキストを隠す
-              textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             ランダムマッチ ルーム
@@ -238,7 +242,6 @@ const BattleRoomView: React.FC = () => {
       </AppBar>
       <Container maxWidth="md">
         <Box mt={4}>
-          {/* カウントダウン中の表示 */}
           {isBattleStarting ? (
             <Box textAlign="center" mt={8}>
               <Typography variant="h4" gutterBottom>
@@ -269,9 +272,8 @@ const BattleRoomView: React.FC = () => {
                         </FormLabel>
                         <RadioGroup
                           value={selectedIsHuman ? "human" : "ai"}
-                          onChange={
-                            (e) =>
-                              setSelectedIsHuman(e.target.value === "human") // "human" を boolean に変換
+                          onChange={(e) =>
+                            setSelectedIsHuman(e.target.value === "human")
                           }
                         >
                           <FormControlLabel
@@ -287,25 +289,64 @@ const BattleRoomView: React.FC = () => {
                         </RadioGroup>
                       </FormControl>
                     </Box>
-                    {selectedIsHuman === false && (
-                      <Box mt={2}>
-                        <FormControl fullWidth>
-                          <InputLabel>使用するAIボット</InputLabel>
-                          <Select
-                            value={selectedBotId ?? ""}
-                            onChange={(e) =>
-                              setSelectedBotId(Number(e.target.value))
-                            }
-                          >
-                            {botData.data.map((bot) => (
-                              <MenuItem key={bot.id} value={bot.id}>
-                                {bot.name} ({bot.model})
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
+                    {selectedIsHuman === false && selectedBot && (
+                      <>
+                        <Box mt={2}>
+                          <FormControl fullWidth>
+                            <InputLabel>使用するAIボット</InputLabel>
+                            <Select
+                              value={selectedBotId ?? ""}
+                              onChange={(e) =>
+                                setSelectedBotId(Number(e.target.value))
+                              }
+                            >
+                              {botData.data.map((bot) => (
+                                <MenuItem key={bot.id} value={bot.id}>
+                                  {bot.name} ({bot.model})
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        {/* 選択中のボット情報 */}
+                        <Card sx={{ mt: 4 }}>
+                          <CardContent>
+                            <Typography variant="h6" gutterBottom>
+                              選択中のAIボットの情報
+                            </Typography>
+                            <Divider sx={{ mb: 2 }} />
+
+                            <Typography variant="body1">
+                              <strong>モデル:</strong> {selectedBot.model}
+                            </Typography>
+                            <Typography variant="body1">
+                              <strong>創造性:</strong> {selectedBot.temperature}
+                            </Typography>
+                            <Typography variant="body1">
+                              <strong>確実性:</strong> {selectedBot.top_p}
+                            </Typography>
+                            <Typography variant="body1" sx={{ mt: 2 }}>
+                              <strong>プロンプト:</strong>
+                            </Typography>
+                            <Box
+                              sx={{
+                                maxHeight: 150,
+                                overflowY: "auto",
+                                backgroundColor: "#f5f5f5",
+                                padding: 1,
+                                borderRadius: 1,
+                                mt: 1,
+                              }}
+                            >
+                              <Typography variant="body2">
+                                {selectedBot.prompt}
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </>
                     )}
+
                     <Box mt={4}>
                       <Button
                         variant="contained"

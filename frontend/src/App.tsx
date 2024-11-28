@@ -25,6 +25,7 @@ import RoomView from "./views/PrivateRoomView.tsx";
 export const variables = {
   experiment: true,
   backend: false,
+  defaultPrompt: "未設定",
 };
 
 export const appPaths = {
