@@ -32,6 +32,11 @@ import {
   DialogContent,
   DialogActions,
   Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -68,6 +73,7 @@ const HomeView: React.FC = () => {
   const [newName, setNewName] = useState<string>("");
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
   const [battleRoomListened, setBattleRoomListened] = useState<boolean>(false);
+  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
   const [singlePlayDifficulty, setSinglePlayDifficulty] = useState<
     "初級" | "中級" | "上級"
   >("初級");
@@ -142,6 +148,15 @@ const HomeView: React.FC = () => {
       return "まだまだこれから！頑張りましょう！";
     } else {
       return "スタート地点です！チャレンジを続けて成長しましょう！";
+    }
+  };
+
+  // プロンプトが選択されたときのハンドラー
+  const handlePromptChange = (event: SelectChangeEvent<number>) => {
+    const promptId = event.target.value as number;
+    setSelectedPromptId(promptId);
+    if (bots) {
+      setAiPrompt(bots.data[promptId].prompt);
     }
   };
 
@@ -581,7 +596,30 @@ const HomeView: React.FC = () => {
                     />
                     ひとりであそぶ
                   </Typography>
-                  <ButtonGroup fullWidth sx={{ mt: 2 }}>
+                  {!user.isAnonymous && bots && (
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                      <InputLabel id="prompt-select-label">
+                        使用するプロンプト
+                      </InputLabel>
+                      <Select
+                        labelId="prompt-select-label"
+                        value={
+                          selectedPromptId !== null
+                            ? selectedPromptId
+                            : bots.defaultId
+                        }
+                        label="使用するプロンプト"
+                        onChange={handlePromptChange}
+                      >
+                        {bots.data.map((bot) => (
+                          <MenuItem key={bot.id} value={bot.id}>
+                            {bot.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                  <ButtonGroup fullWidth sx={{ mt: 3 }}>
                     <Button
                       onClick={() => setSinglePlayDifficulty("初級")}
                       variant={
@@ -617,7 +655,7 @@ const HomeView: React.FC = () => {
                     variant="contained"
                     color="primary"
                     fullWidth
-                    sx={{ mt: 2 }}
+                    sx={{ mt: 3 }}
                     onClick={handleSinglePlayChallenge}
                   >
                     挑戦する
@@ -692,7 +730,12 @@ const HomeView: React.FC = () => {
                   <Divider sx={{ mt: 2 }} />
                   {/* プライベートルーム */}
 
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                  <Typography
+                    sx={{ mt: 2 }}
+                    variant="h6"
+                    color="text.secondary"
+                    gutterBottom
+                  >
                     プライベートルーム
                   </Typography>
                   <Box
@@ -706,6 +749,7 @@ const HomeView: React.FC = () => {
                       variant="contained"
                       color="primary"
                       onClick={handleCreateRoom}
+                      fullWidth
                     >
                       ルームを作る
                     </Button>
@@ -713,6 +757,7 @@ const HomeView: React.FC = () => {
                       variant="contained"
                       color="primary"
                       onClick={handleJoinRoom}
+                      fullWidth
                     >
                       ルームに入る
                     </Button>
