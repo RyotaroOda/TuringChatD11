@@ -27,7 +27,6 @@ import {
   Card,
   CardActions,
   ButtonGroup,
-  colors,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -196,6 +195,7 @@ const HomeView: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleRoomListened, battleId]);
   //#endregion
 
@@ -256,19 +256,6 @@ const HomeView: React.FC = () => {
     // シングルプレイのゲーム画面に遷移（仮のパス）
     const props = {
       difficulty: singlePlayDifficulty,
-      botData: bots || {
-        defaultId: 0,
-        data: [
-          {
-            id: 0,
-            name: "default",
-            prompt: aiPrompt,
-            model: AIModel["gpt-4"],
-            temperature: 0,
-            top_p: 0,
-          },
-        ],
-      },
     };
     // navigate(appPaths.single_play_game, { state: props });
   };
@@ -654,7 +641,7 @@ const HomeView: React.FC = () => {
             <Toolbar sx={{ justifyContent: "center", gap: 2 }}>
               <CopyrightIcon fontSize="small" />
               <Typography variant="body2" color="inherit">
-                <strong>© 2024 RyotaroOda @ WashizakiUbayashi Lab</strong>
+                <strong>2024 RyotaroOda @ WashizakiUbayashi Lab</strong>
               </Typography>
               <Button
                 variant="outlined"
@@ -662,7 +649,7 @@ const HomeView: React.FC = () => {
                 onClick={handleFeedback}
                 sx={{ ml: 2 }}
               >
-                フィードバックを送信する
+                フィードバックを送信
               </Button>
             </Toolbar>
           </AppBar>

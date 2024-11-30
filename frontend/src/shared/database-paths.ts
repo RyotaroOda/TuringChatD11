@@ -29,7 +29,7 @@ export const DATABASE_PATHS = {
     `battles/${battleId}/public/players/${playerId}`,
 
   rule: (battleId: string) => `battles/${battleId}/public/battleRule`,
-  topic: (battleId: string) => `battles/${battleId}/public/battleRule/topic`,
+  // topic: (battleId: string) => `battles/${battleId}/public/battleRule/topic`,
 
   chatData: (battleId: string) => `battles/${battleId}/public/chatData`,
   submittedAnswers: (battleId: string) =>

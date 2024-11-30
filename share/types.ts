@@ -34,7 +34,6 @@ export type BattleRules = {
   maxTurn: number;
   battleType: "Single" | "Double" | "Short" | "Werewolf";
   oneTurnTime: number;
-  topic: string;
 };
 
 //メッセージ

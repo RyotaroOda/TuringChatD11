@@ -4,8 +4,10 @@ import {
   BattleRules,
   BotSetting,
   GPTMessage,
+  Message,
 } from "../shared/types.ts";
-import { updateBattleRules } from "./firebase-realtime-database.ts";
+import { addMessage } from "./firebase-realtime-database.ts";
+import { auth } from "./firebase_f.ts";
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -114,11 +116,24 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
  * @returns ChatGPTの応答メッセージ
  */
 export const generateBattleMessage = async (
-  log: GPTMessage[],
+  log: Message[],
   instruction: string,
   bot: BotSetting,
   config: BattleRules
 ): Promise<string> => {
+  const myId = auth.currentUser?.uid;
+  const chatLog: GPTMessage[] = log.map((message) => {
+    return {
+      role: "user",
+      content:
+        message.senderId === "system"
+          ? "[system]"
+          : myId
+            ? "[proponent]"
+            : "[opponent]" + message.message,
+    };
+  });
+
   // システムメッセージの作成
   const systemMessage: GPTMessage = {
     role: "system",
@@ -130,7 +145,6 @@ export const generateBattleMessage = async (
       - ゲームの参加者はプレイヤー(自分)と相手プレイヤーの2人です。
       - メッセージの入力時間: ${config.oneTurnTime}秒
       - メッセージ終了ターン: ${config.maxTurn}ターン
-      - トークテーマ: ${config.topic}
 
       # 出力形式
       - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。出力がそのまま相手プレイヤーに送信されます。
@@ -145,22 +159,14 @@ export const generateBattleMessage = async (
 
       # メッセージログ
       - 以下に今までのゲームのチャットログを送信します。
-      - ゲーム開始時のトークテーマはAIで自動生成され、メッセージの先頭に[AI]と表示されます。
+      - ゲーム開始時のトークテーマはAIで自動生成され、メッセージの先頭に[system]と表示されます。
       - プレイヤー(自分)は[proponent], 相手プレイヤーは[opponent]とメッセージの先頭に表示されます。
-      ${postMessage}
     `,
   };
 
-  // プロンプトの構築
-  const messages: GPTMessage[] = [
-    systemMessage,
-    ...log,
-    { role: "user", content: "メッセージを生成して" },
-  ];
-
   const prompt: ChatGPTRequest = {
     model: AIModel[bot.model],
-    messages,
+    messages: [...chatLog, systemMessage],
     max_tokens: 100,
     temperature: bot.temperature,
     top_p: bot.top_p,
@@ -170,6 +176,7 @@ export const generateBattleMessage = async (
     stop: null,
   };
 
+  console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
   const answer = await generate(prompt);
   console.log("Generated Battle Message:", answer);
   return answer;
@@ -184,7 +191,9 @@ export const generateTopic = async (battleId: string) => {
   const message: GPTMessage[] = [
     {
       role: "system",
-      content: `子供向けにランダムに会話の話題を設定してください。回答の形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
+      content: `ランダムに会話の話題を設定して、チャットの最初のメッセージを生成してください。
+      メッセージは具体的で20〜30文字で返信できる疑問形にして下さい。
+      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
     },
   ];
 
@@ -203,9 +212,8 @@ export const generateTopic = async (battleId: string) => {
   try {
     const topic = await generate(prompt);
     console.log("Generated topic:", topic);
-    const data = { topic: topic };
 
-    updateBattleRules(battleId, data);
+    addMessage(battleId, topic, 0, null);
   } catch (error) {
     console.error("Failed to generate topic:", error);
     throw new Error("Failed to generate topic.");

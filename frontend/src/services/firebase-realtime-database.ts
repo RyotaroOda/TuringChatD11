@@ -217,11 +217,16 @@ export const onGeneratedTopic = (
   battleId: string,
   callback: (topic: string) => void
 ) => {
-  const configRef = ref(db, DATABASE_PATHS.topic(battleId));
+  const configRef = ref(db, DATABASE_PATHS.chatData(battleId));
   let kill = false;
   // リスナー関数を名前付きで定義
   const listener = (snapshot) => {
-    const newTopic = snapshot.val();
+    const val = snapshot.val() as ChatData;
+    console.log("トピック更新:", val);
+    if (!val.messages) return;
+    const messages = Object.values(val.messages);
+    const newTopic = messages[0].message;
+
     console.log("トピックが更新:", newTopic);
     callback(newTopic);
 
@@ -311,7 +316,7 @@ export const addMessage = async (
   battleId: string,
   message: string,
   nextTurn: number,
-  activePlayerId: string
+  activePlayerId: string | null
 ) => {
   const user = auth.currentUser;
   if (!user) {
@@ -319,7 +324,7 @@ export const addMessage = async (
   }
 
   const messageData: Message = {
-    senderId: user.uid,
+    senderId: activePlayerId ? user.uid : "system",
     message,
     timestamp: Date.now(),
   };
@@ -327,14 +332,19 @@ export const addMessage = async (
     ref(db, `${DATABASE_PATHS.chatData(battleId)}/messages`),
     messageData
   );
-
-  //ターン更新
-  const data = {
-    currentTurn: nextTurn,
-    activePlayerId: activePlayerId,
-  };
-  await update(ref(db, DATABASE_PATHS.chatData(battleId)), data);
-
+  if (activePlayerId) {
+    //ターン更新
+    const data = {
+      currentTurn: nextTurn,
+      activePlayerId: activePlayerId,
+    };
+    await update(ref(db, DATABASE_PATHS.chatData(battleId)), data);
+  } else {
+    const data = {
+      currentTurn: nextTurn,
+    };
+    await update(ref(db, DATABASE_PATHS.chatData(battleId)), data);
+  }
   console.log("メッセージ送信:", messageData);
 };
 

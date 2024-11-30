@@ -85,6 +85,7 @@ const BattleRoomView: React.FC = () => {
   const [isReady, setIsReady] = useState<boolean>(false);
   const [timeLeft, setTimeLeft] = useState<number>(120); // 例: 準備時間120秒
   const [isBattleStarting, setIsBattleStarting] = useState<boolean>(false);
+  const [topic, setTopic] = useState<string>("");
   //#endregion
 
   useEffect(() => {
@@ -141,17 +142,6 @@ const BattleRoomView: React.FC = () => {
     if (players.every((player) => player.isReady)) {
       setIsBattleStarting(true);
       const prepareBattle = async () => {
-        if (battleData.hostId === myId) {
-          await generateTopic(battleId);
-          const data = {
-            status: "started",
-            timestamps: { start: Date.now() },
-          };
-          await updateBattleRoom(battleId, data);
-        }
-        const unsubscribe = onGeneratedTopic(battleId, (topic) => {
-          setBattleRules((prev) => ({ ...prev, topic: topic }));
-        });
         await updatePrivateBattleData(
           battleId,
           myId,
@@ -160,6 +150,18 @@ const BattleRoomView: React.FC = () => {
             ? (botData.data.find((bot) => bot.id === selectedBotId) ?? null)
             : null
         );
+        const unsubscribe = onGeneratedTopic(battleId, (topic) => {
+          setTopic(topic);
+        });
+        if (battleData.hostId === myId) {
+          await generateTopic(battleId);
+          const data = {
+            status: "started",
+            timestamps: { start: Date.now() },
+          };
+          await updateBattleRoom(battleId, data);
+        }
+
         return () => {
           unsubscribe();
         };
@@ -170,11 +172,11 @@ const BattleRoomView: React.FC = () => {
   }, [players]);
 
   useEffect(() => {
-    if (battleRules.topic !== "") {
+    if (topic !== "") {
       toBattleViewSegue();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [battleRules.topic]);
+  }, [topic]);
 
   useEffect(() => {
     if (isBattleStarting) {

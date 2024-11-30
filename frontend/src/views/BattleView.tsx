@@ -60,21 +60,20 @@ export interface BattleViewProps {
 
 const BattleView: React.FC = () => {
   //#region init
-  const location = useLocation();
-  const navigate = useNavigate();
   const protoBattleId = useParams();
   const battleId = protoBattleId.battleRoomId as string;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const [battleData, setBattleData] = useState<BattleRoomData | null>(null);
   // const [chatData, setChatData] = useState<ChatData | null>(null);
-  const [messages, setMessages] = useState<Message[] | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const [isHuman, setIsHuman] = useState<boolean>(true);
   const [bot, setBot] = useState<BotSetting | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [message, setMessage] = useState<string>("");
-  const [promptMessages, setPromptMessages] = useState<GPTMessage[]>([]);
+  const [sendMessage, setSendMessage] = useState<string>("");
   const [promptInstruction, setPromptInstruction] = useState<string>("");
   const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
   const [remainTurn, setRemainTurn] = useState<number>(999);
@@ -186,6 +185,8 @@ const BattleView: React.FC = () => {
 
       setTimeLeft(battleData.battleRule.oneTurnTime);
 
+      setMessages(battleData.chatData.messages);
+
       setAnswer((prevAnswer) => ({
         ...prevAnswer,
         playerId: myId,
@@ -201,15 +202,15 @@ const BattleView: React.FC = () => {
   // メッセージを送信する
   const handleSendMessage = async () => {
     if (
-      message.trim() &&
+      sendMessage.trim() &&
       isMyTurn &&
       battleId &&
       remainTurn > 0 &&
       battleData &&
       opponentData
     ) {
-      await addMessage(battleId, message, currentTurn + 1, opponentData.id);
-      setMessage("");
+      await addMessage(battleId, sendMessage, currentTurn + 1, opponentData.id);
+      setSendMessage("");
     }
   };
 
@@ -217,20 +218,13 @@ const BattleView: React.FC = () => {
   const generateMessage = async () => {
     setIsGenerating(true);
     if (bot && battleData) {
-      console.log(
-        "Generate message with bot:",
-        promptMessages,
-        promptInstruction,
-        bot,
-        battleData.battleRule
-      );
       const generatedMessage = await generateBattleMessage(
-        promptMessages,
+        messages,
         promptInstruction,
         bot,
         battleData.battleRule
       );
-      setMessage(generatedMessage);
+      setSendMessage(generatedMessage);
       setGeneratedAnswer(generatedMessage);
     } else {
       console.error("Bot setting is null");
@@ -249,16 +243,6 @@ const BattleView: React.FC = () => {
           const newMessage = newChatData.messages;
           console.log("onMessageAdded:", newMessage);
           setMessages(Object.values(newMessage));
-
-          // ボットプレイヤーのためのプロンプトメッセージ処理
-          if (!isHuman) {
-            const id =
-              newMessage.senderId === myId ? "[opponent]" : "[proponent]";
-            setPromptMessages((prevMessages) => [
-              ...prevMessages,
-              { role: "user", content: id + newMessage.message },
-            ]);
-          }
         }
         setIsMyTurn(newChatData.activePlayerId === myId);
         setCurrentTurn(newChatData.currentTurn);
@@ -433,9 +417,9 @@ const BattleView: React.FC = () => {
         <Box mt={4}>
           {/* トピックとターン情報 */}
           <Box mb={2}>
-            <Typography variant="h5" gutterBottom>
+            {/* <Typography variant="h5" gutterBottom>
               {battleData ? battleData.battleRule.topic : ""}
-            </Typography>
+            </Typography> */}
             <Typography variant="body1">
               ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}
             </Typography>
@@ -460,7 +444,7 @@ const BattleView: React.FC = () => {
           >
             <List>
               {/* chatLog が配列である場合のみ map を実行 */}
-              {messages ? (
+              {Array.isArray(messages) ? (
                 messages.map((msg, index) => (
                   <ListItem
                     key={index}
@@ -473,9 +457,11 @@ const BattleView: React.FC = () => {
                       sx={{
                         maxWidth: "70%",
                         bgcolor:
-                          msg.senderId === myId
-                            ? "primary.main"
-                            : "secondary.main",
+                          msg.senderId === "system"
+                            ? "gray"
+                            : myId
+                              ? "primary.main"
+                              : "secondary.main",
                         color: "#fff",
                         borderRadius: 2,
                         p: 1,
@@ -484,9 +470,11 @@ const BattleView: React.FC = () => {
                       <ListItemText
                         primary={msg.message}
                         secondary={
-                          msg.senderId === myId
-                            ? myName
-                            : playerNames[msg.senderId] || "Unknown Player"
+                          msg.senderId === "system"
+                            ? "システム"
+                            : myId
+                              ? myName
+                              : playerNames[msg.senderId] || "Unknown Player"
                         }
                       />
                     </Box>
@@ -515,8 +503,8 @@ const BattleView: React.FC = () => {
                         ? "メッセージを入力"
                         : "相手のメッセージを待っています。"
                     }
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    value={sendMessage}
+                    onChange={(e) => setSendMessage(e.target.value)}
                     fullWidth
                     disabled={!isMyTurn || loading}
                     sx={{
@@ -617,20 +605,20 @@ const BattleView: React.FC = () => {
                     remainTurn <= 0 ||
                     !isMyTurn ||
                     loading ||
-                    message.trim() === ""
+                    sendMessage.trim() === ""
                   }
                   sx={{
                     backgroundColor:
                       remainTurn > 0 &&
                       isMyTurn &&
-                      message.trim() !== "" &&
+                      sendMessage.trim() !== "" &&
                       !loading
                         ? "primary.main"
                         : "grey.300",
                     color:
                       remainTurn > 0 &&
                       isMyTurn &&
-                      message.trim() !== "" &&
+                      sendMessage.trim() !== "" &&
                       !loading
                         ? "white"
                         : "grey.500",
@@ -638,7 +626,7 @@ const BattleView: React.FC = () => {
                       backgroundColor:
                         remainTurn > 0 &&
                         isMyTurn &&
-                        message.trim() !== "" &&
+                        sendMessage.trim() !== "" &&
                         !loading
                           ? "primary.dark"
                           : "grey.300",
