@@ -46,7 +46,7 @@ const HowToPlay: React.FC = () => {
           </Typography>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="md">
+      <Container maxWidth="md" sx={{ mt: 4, pb: 8 }}>
         <Box mt={4}>
           <Paper elevation={3}>
             <Tabs
@@ -59,7 +59,7 @@ const HowToPlay: React.FC = () => {
               <Tab label="小学生向け" />
               <Tab label="中高生向け" />
             </Tabs>
-            <Box p={3} sx={{ maxHeight: "70vh", overflowY: "auto" }}>
+            <Box p={3} sx={{ overflowY: "auto" }}>
               {tabIndex === 0 && (
                 <Typography variant="body1" component="div">
                   <div>

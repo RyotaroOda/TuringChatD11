@@ -37,6 +37,10 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
+  Stepper,
+  StepLabel,
+  Step,
+  IconButton,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -49,6 +53,11 @@ import CodeIcon from "@mui/icons-material/Code";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CloseIcon from "@mui/icons-material/Close";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -266,6 +275,111 @@ const HomeView: React.FC = () => {
   const handleHowToPlay = () => {
     navigate(appPaths.how_to_play);
   };
+
+  //# region チュートリアルダイアログ
+  const [openTutorial, setTutorialOpen] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+
+  const handleTutorialOpen = () => setTutorialOpen(true);
+  const handleTutorialClose = () => {
+    setTutorialOpen(false);
+    setActiveStep(0); // Reset stepper when dialog is closed
+  };
+
+  const handleStepNext = () => setActiveStep((prevStep) => prevStep + 1);
+  const handleStepBack = () => setActiveStep((prevStep) => prevStep - 1);
+
+  const steps = [
+    "ゲーム概要",
+    "バトルに参加する",
+    "バトル準備",
+    "バトル開始",
+    "結果発表",
+  ];
+
+  const stepContent = [
+    // Step 0: ゲーム概要
+    <>
+      <Typography variant="h6">チューリングゲームとは？</Typography>
+      <Typography>
+        このゲームは、相手プレーヤーとチャットしながら相手が
+        「人間」か「AI」かを見破るゲームです！
+      </Typography>
+      <Typography>
+        AIになりきったり、自分なりにAIをカスタマイズしたりして、
+        相手に自分の正体を悟られないようにしましょう。
+      </Typography>
+    </>,
+    // Step 1: バトルに参加する
+    <>
+      <Typography variant="h6">バトルに参加する</Typography>
+      <Typography>以下のモードから選んでプレイを開始しましょう：</Typography>
+      <ul>
+        <li>
+          <strong>ひとりであそぶ</strong>：AIプレイヤーと対戦します。
+        </li>
+        <li>
+          <strong>だれかとあそぶ</strong>
+          ：オンライン上の誰かとマッチングして対戦します。
+        </li>
+      </ul>
+    </>,
+    // Step 2: バトル準備
+    <>
+      <Typography variant="h6">バトル準備</Typography>
+      <Typography>2つのプレイモードがあります：</Typography>
+      <ul>
+        <li>
+          <strong>自分でプレイする</strong>：あなた自身が相手とチャットします。
+        </li>
+        <li>
+          <strong>AIがプレイする</strong>
+          ：あなたがAIに指示を出し、AIが相手とチャットします。
+        </li>
+      </ul>
+    </>,
+    // Step 3: バトル開始
+    <>
+      <Typography variant="h6">バトル開始</Typography>
+      <Typography>
+        システムからお題（チャットの話題）が提示されます：
+      </Typography>
+      <ul>
+        <li>お題に沿って相手と自由にチャットしましょう。</li>
+        <li>
+          チャット終了後、以下を送信してください：
+          <ul>
+            <li>
+              <strong>相手の正体</strong>（人間 or AI）
+            </li>
+            <li>
+              <strong>そう判断した理由</strong>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </>,
+    // Step 4: 結果発表
+    <>
+      <Typography variant="h6">結果発表</Typography>
+      <Typography>お互いの「正体」と「理由」を答え合わせします。</Typography>
+      <ul>
+        <li>
+          <strong>得点ルール</strong>：
+          <ul>
+            <li>
+              相手の正体を当てたら <strong>1ポイント</strong>
+            </li>
+            <li>
+              相手が自分の正体を間違えたら <strong>1ポイント</strong>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
+    </>,
+  ];
+  //#endregion
 
   const handleCreateRoom = () => {
     // ルーム作成のロジックを実装
@@ -590,13 +704,28 @@ const HomeView: React.FC = () => {
                     flex: 1,
                   }}
                 >
-                  <Typography variant="h5" color="text.primary" gutterBottom>
-                    <SportsEsportsIcon
-                      fontSize="large"
-                      sx={{ verticalAlign: "middle", mr: 1 }}
-                    />
-                    バトル
-                  </Typography>
+                  {/* タイトルと「遊び方」ボタンを横並びに配置 */}
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography variant="h5" color="text.primary" gutterBottom>
+                      <SportsEsportsIcon
+                        fontSize="large"
+                        sx={{ verticalAlign: "middle", mr: 1 }}
+                      />
+                      バトル
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={handleTutorialOpen}
+                      startIcon={<HelpOutlineIcon />}
+                    >
+                      遊び方
+                    </Button>
+                  </Box>
 
                   {/* 新しいGridコンテナを追加 */}
                   <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -688,6 +817,7 @@ const HomeView: React.FC = () => {
                           fullWidth
                           sx={{ mt: 3 }}
                           onClick={handleSinglePlayChallenge}
+                          disabled
                         >
                           挑戦する
                         </Button>
@@ -788,6 +918,7 @@ const HomeView: React.FC = () => {
                             color="primary"
                             onClick={handleCreateRoom}
                             fullWidth
+                            disabled
                           >
                             ルームを作る
                           </Button>
@@ -796,6 +927,7 @@ const HomeView: React.FC = () => {
                             color="primary"
                             onClick={handleJoinRoom}
                             fullWidth
+                            disabled
                           >
                             ルームに入る
                           </Button>
@@ -890,6 +1022,78 @@ const HomeView: React.FC = () => {
             </DialogActions>
           </Dialog>
 
+          {/* チュートリアルダイアログ */}
+
+          <Dialog
+            open={openTutorial}
+            onClose={handleTutorialClose}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: {
+                width: "800px", // 固定幅
+                height: "500px", // 固定高さ
+                padding: 2,
+                borderRadius: 8,
+              },
+            }}
+          >
+            <DialogTitle>
+              <MenuBookIcon
+                fontSize="large"
+                sx={{ verticalAlign: "middle", mr: 1 }}
+              />
+              チュートリアル
+              {/* <IconButton
+                aria-label="close"
+                onClick={handleTutorialClose}
+                sx={{
+                  position: "absolute",
+                  right: 8,
+                  top: 8,
+                }}
+              >
+                <CloseIcon />
+              </IconButton> */}
+            </DialogTitle>
+            <DialogContent>
+              {/* Stepper */}
+              <Stepper activeStep={activeStep} alternativeLabel>
+                {steps.map((label) => (
+                  <Step key={label}>
+                    <StepLabel>{label}</StepLabel>
+                  </Step>
+                ))}
+              </Stepper>
+              <Box sx={{ mt: 3 }}>{stepContent[activeStep]}</Box>
+            </DialogContent>
+            <DialogActions>
+              <Box
+                sx={{
+                  flexGrow: 1,
+                  display: "flex",
+                  justifyContent: "space-between",
+                }}
+              >
+                <IconButton
+                  onClick={handleStepBack}
+                  disabled={activeStep === 0}
+                  color="primary"
+                >
+                  <ArrowBackIcon />
+                </IconButton>
+                {activeStep < steps.length - 1 ? (
+                  <IconButton onClick={handleStepNext} color="primary">
+                    <ArrowForwardIcon />
+                  </IconButton>
+                ) : (
+                  <IconButton onClick={handleTutorialClose} color="success">
+                    <CloseIcon />
+                  </IconButton>
+                )}
+              </Box>
+            </DialogActions>
+          </Dialog>
           {/* フッター */}
           <AppBar
             position="fixed"
