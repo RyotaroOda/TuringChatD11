@@ -48,6 +48,7 @@ import StarIcon from "@mui/icons-material/Star";
 import CodeIcon from "@mui/icons-material/Code";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -572,108 +573,17 @@ const HomeView: React.FC = () => {
                 </Card>
               </Grid>
 
-              {/* ひとりであそぶ */}
-              <Grid
-                item
-                xs={xsSize}
-                sm={6}
-                md={6}
-                sx={{ display: "flex", flexDirection: "column" }}
-              >
-                <Card
-                  sx={{
-                    padding: 4,
-                    borderRadius: 2,
-                    boxShadow: 3,
-                    mb: 4,
-                    flex: 1,
-                  }}
-                >
-                  <Typography variant="h5" color="text.primary" gutterBottom>
-                    <PersonIcon
-                      fontSize="large"
-                      sx={{ verticalAlign: "middle", mr: 1 }}
-                    />
-                    ひとりであそぶ
-                  </Typography>
-                  {!user.isAnonymous && bots && (
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                      <InputLabel id="prompt-select-label">
-                        使用するプロンプト
-                      </InputLabel>
-                      <Select
-                        labelId="prompt-select-label"
-                        value={
-                          selectedPromptId !== null
-                            ? selectedPromptId
-                            : bots.defaultId
-                        }
-                        label="使用するプロンプト"
-                        onChange={handlePromptChange}
-                      >
-                        {bots.data.map((bot) => (
-                          <MenuItem key={bot.id} value={bot.id}>
-                            {bot.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                  <ButtonGroup fullWidth sx={{ mt: 3 }}>
-                    <Button
-                      onClick={() => setSinglePlayDifficulty("初級")}
-                      variant={
-                        singlePlayDifficulty === "初級"
-                          ? "contained"
-                          : "outlined"
-                      }
-                    >
-                      初級
-                    </Button>
-                    <Button
-                      onClick={() => setSinglePlayDifficulty("中級")}
-                      variant={
-                        singlePlayDifficulty === "中級"
-                          ? "contained"
-                          : "outlined"
-                      }
-                    >
-                      中級
-                    </Button>
-                    <Button
-                      onClick={() => setSinglePlayDifficulty("上級")}
-                      variant={
-                        singlePlayDifficulty === "上級"
-                          ? "contained"
-                          : "outlined"
-                      }
-                    >
-                      上級
-                    </Button>
-                  </ButtonGroup>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    sx={{ mt: 3 }}
-                    onClick={handleSinglePlayChallenge}
-                  >
-                    挑戦する
-                  </Button>
-                </Card>
-              </Grid>
-
-              {/* だれかとあそぶ */}
+              {/* バトル */}
               <Grid
                 item
                 xs={12}
-                sm={6}
-                md={6}
+                sm={12}
+                md={12}
                 sx={{ display: "flex", flexDirection: "column" }}
               >
                 <Card
                   sx={{
-                    padding: 4,
+                    padding: 3,
                     borderRadius: 2,
                     boxShadow: 3,
                     mb: 4,
@@ -681,87 +591,218 @@ const HomeView: React.FC = () => {
                   }}
                 >
                   <Typography variant="h5" color="text.primary" gutterBottom>
-                    <GroupIcon
+                    <SportsEsportsIcon
                       fontSize="large"
                       sx={{ verticalAlign: "middle", mr: 1 }}
                     />
-                    だれかとあそぶ
+                    バトル
                   </Typography>
 
-                  {/* ランダムマッチ */}
+                  {/* 新しいGridコンテナを追加 */}
+                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                    {/* ひとりであそぶ */}
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={6}
+                      sx={{ display: "flex", flexDirection: "column" }}
+                    >
+                      <Card
+                        sx={{
+                          padding: 3,
+                          borderRadius: 2,
+                          boxShadow: 1,
+                          flex: 1,
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          color="text.primary"
+                          gutterBottom
+                        >
+                          <PersonIcon
+                            fontSize="large"
+                            sx={{ verticalAlign: "middle", mr: 1 }}
+                          />
+                          ひとりであそぶ
+                        </Typography>
+                        {!user.isAnonymous && bots && (
+                          <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel id="prompt-select-label">
+                              使用するプロンプト
+                            </InputLabel>
+                            <Select
+                              labelId="prompt-select-label"
+                              value={
+                                selectedPromptId !== null
+                                  ? selectedPromptId
+                                  : bots.defaultId
+                              }
+                              label="使用するプロンプト"
+                              onChange={handlePromptChange}
+                            >
+                              {bots.data.map((bot) => (
+                                <MenuItem key={bot.id} value={bot.id}>
+                                  {bot.name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        )}
+                        <ButtonGroup fullWidth sx={{ mt: 3 }}>
+                          <Button
+                            onClick={() => setSinglePlayDifficulty("初級")}
+                            variant={
+                              singlePlayDifficulty === "初級"
+                                ? "contained"
+                                : "outlined"
+                            }
+                          >
+                            初級
+                          </Button>
+                          <Button
+                            onClick={() => setSinglePlayDifficulty("中級")}
+                            variant={
+                              singlePlayDifficulty === "中級"
+                                ? "contained"
+                                : "outlined"
+                            }
+                          >
+                            中級
+                          </Button>
+                          <Button
+                            onClick={() => setSinglePlayDifficulty("上級")}
+                            variant={
+                              singlePlayDifficulty === "上級"
+                                ? "contained"
+                                : "outlined"
+                            }
+                          >
+                            上級
+                          </Button>
+                        </ButtonGroup>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          fullWidth
+                          sx={{ mt: 3 }}
+                          onClick={handleSinglePlayChallenge}
+                        >
+                          挑戦する
+                        </Button>
+                      </Card>
+                    </Grid>
 
-                  <Typography variant="h6" color="text.secondary" gutterBottom>
-                    ランダムマッチ
-                  </Typography>
-                  {isPushedMatching ? (
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={cancelMatching}
-                      fullWidth
-                      sx={{ mt: 1 }}
+                    {/* だれかとあそぶ */}
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={6}
+                      sx={{ display: "flex", flexDirection: "column" }}
                     >
-                      キャンセル
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={startMatch}
-                      fullWidth
-                      sx={{ mt: 1 }}
-                    >
-                      マッチング開始
-                    </Button>
-                  )}
-                  {battleRoomListened && (
-                    <Box
-                      mt={2}
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      <CircularProgress size={24} />
-                      <Typography variant="body1" sx={{ ml: 2 }}>
-                        マッチング中...
-                      </Typography>
-                    </Box>
-                  )}
-                  <Divider sx={{ mt: 2 }} />
-                  {/* プライベートルーム */}
+                      <Card
+                        sx={{
+                          padding: 3,
+                          borderRadius: 2,
+                          boxShadow: 1,
+                          flex: 1,
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          color="text.primary"
+                          gutterBottom
+                        >
+                          <GroupIcon
+                            fontSize="large"
+                            sx={{ verticalAlign: "middle", mr: 1 }}
+                          />
+                          だれかとあそぶ
+                        </Typography>
 
-                  <Typography
-                    sx={{ mt: 2 }}
-                    variant="h6"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    プライベートルーム
-                  </Typography>
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    sx={{ mt: 2 }}
-                    gap={2}
-                  >
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleCreateRoom}
-                      fullWidth
-                    >
-                      ルームを作る
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleJoinRoom}
-                      fullWidth
-                    >
-                      ルームに入る
-                    </Button>
-                  </Box>
+                        {/* ランダムマッチ */}
+                        <Typography
+                          variant="subtitle1"
+                          color="text.secondary"
+                          gutterBottom
+                          sx={{ mt: 2 }}
+                        >
+                          ランダムマッチ
+                        </Typography>
+                        {isPushedMatching ? (
+                          <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={cancelMatching}
+                            fullWidth
+                            sx={{ mt: 1 }}
+                          >
+                            キャンセル
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={startMatch}
+                            fullWidth
+                            sx={{ mt: 1 }}
+                          >
+                            マッチング開始
+                          </Button>
+                        )}
+                        {battleRoomListened && (
+                          <Box
+                            mt={2}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                          >
+                            <CircularProgress size={24} />
+                            <Typography variant="body1" sx={{ ml: 2 }}>
+                              マッチング中...
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <Divider sx={{ mt: 4, mb: 4 }} />
+
+                        {/* プライベートルーム */}
+                        <Typography
+                          variant="subtitle1"
+                          color="text.secondary"
+                          gutterBottom
+                        >
+                          プライベートルーム
+                        </Typography>
+                        <Box
+                          display="flex"
+                          justifyContent="center"
+                          alignItems="center"
+                          sx={{ mt: 2 }}
+                          gap={2}
+                        >
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleCreateRoom}
+                            fullWidth
+                          >
+                            ルームを作る
+                          </Button>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleJoinRoom}
+                            fullWidth
+                          >
+                            ルームに入る
+                          </Button>
+                        </Box>
+                      </Card>
+                    </Grid>
+                  </Grid>
                 </Card>
               </Grid>
 

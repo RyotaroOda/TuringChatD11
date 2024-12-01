@@ -459,7 +459,7 @@ const BattleView: React.FC = () => {
                         bgcolor:
                           msg.senderId === "system"
                             ? "gray"
-                            : myId
+                            : msg.senderId === myId
                               ? "primary.main"
                               : "secondary.main",
                         color: "#fff",
@@ -472,9 +472,9 @@ const BattleView: React.FC = () => {
                         secondary={
                           msg.senderId === "system"
                             ? "システム"
-                            : myId
+                            : msg.senderId === myId
                               ? myName
-                              : playerNames[msg.senderId] || "Unknown Player"
+                              : playerNames?.[msg.senderId] || "Unknown Player"
                         }
                       />
                     </Box>

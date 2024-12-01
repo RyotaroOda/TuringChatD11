@@ -122,24 +122,25 @@ export const generateBattleMessage = async (
   config: BattleRules
 ): Promise<string> => {
   const myId = auth.currentUser?.uid;
+  console.log("log", log);
   const chatLog: GPTMessage[] = log.map((message) => {
     return {
       role: "user",
       content:
-        message.senderId === "system"
+        (message.senderId === "system"
           ? "[system]"
-          : myId
+          : message.senderId === myId
             ? "[proponent]"
-            : "[opponent]" + message.message,
+            : "[opponent]") + message.message,
     };
   });
 
   // システムメッセージの作成
   const systemMessage: GPTMessage = {
     role: "system",
-    content: `
-      あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
+    content: `あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
       あなたはプレイヤーになりきって、新たに相手に送信するメッセージを生成してください。
+      あなたは[proponent]として表示されます。
       
       # ゲームルール
       - ゲームの参加者はプレイヤー(自分)と相手プレイヤーの2人です。
@@ -147,7 +148,9 @@ export const generateBattleMessage = async (
       - メッセージ終了ターン: ${config.maxTurn}ターン
 
       # 出力形式
-      - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。出力がそのまま相手プレイヤーに送信されます。
+      - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
+      - 先頭の[proponent]は主力に含めないでください。
+      - 出力がそのまま相手プレイヤーに送信されます。
 
       # カスタムプロンプト
       - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
@@ -166,7 +169,7 @@ export const generateBattleMessage = async (
 
   const prompt: ChatGPTRequest = {
     model: AIModel[bot.model],
-    messages: [...chatLog, systemMessage],
+    messages: [systemMessage, ...chatLog],
     max_tokens: 100,
     temperature: bot.temperature,
     top_p: bot.top_p,

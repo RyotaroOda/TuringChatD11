@@ -200,7 +200,13 @@ const BattleRoomView: React.FC = () => {
             isHuman: selectedIsHuman,
           },
         },
-        chatData: battleData.chatData,
+        chatData: {
+          currentTurn: 0,
+          activePlayerId: battleData.hostId,
+          messages: [
+            { senderId: "system", message: topic, timestamp: Date.now() },
+          ],
+        },
         status: battleData.status,
         hostId: battleData.hostId,
         submitAnswer: [],
