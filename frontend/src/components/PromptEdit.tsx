@@ -22,6 +22,10 @@ import {
   Divider,
   CircularProgress,
   SelectChangeEvent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -29,6 +33,16 @@ import { AIModel, BotSetting, BotData, GPTMessage } from "../shared/types.ts";
 import { updateUserProfile } from "../services/firestore-database_f.ts";
 import { generateChat } from "../services/chatGPT_f.ts";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import PromptGenerator from "../components/PromptGenerator.tsx";
+import { Add as AddIcon } from "@mui/icons-material";
+import SaveIcon from "@mui/icons-material/Save"; // 保存アイコン
+import EditIcon from "@mui/icons-material/Edit"; // プロンプト編集のアイコン
+import SettingsIcon from "@mui/icons-material/Settings"; // 設定セクションのアイコン
+import ChatIcon from "@mui/icons-material/Chat"; // テストチャットセクションのアイコン
+import PersonIcon from "@mui/icons-material/Person"; // ユーザーのアイコン
+import SmartToyIcon from "@mui/icons-material/SmartToy"; // ボットのアイコン
+import Avatar from "@mui/material/Avatar"; // Avatarコンポーネント
+import ListItemAvatar from "@mui/material/ListItemAvatar"; // リストアイテム内でAvatarを配置するコンポーネント
 
 const theme = createTheme({
   typography: {
@@ -79,6 +93,25 @@ const EditPromptView: React.FC = () => {
       setChatHistory([]); // チャット履歴をリセット
     }
   };
+
+  //#region プロンプト編集ダイアログ
+  const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
+
+  const handleOpenGeneratePrompt = () => {
+    setOpenGeneratePrompt(true);
+  };
+
+  const handleCloseGeneratePrompt = () => {
+    setOpenGeneratePrompt(false);
+  };
+
+  // プロンプトが完成したときの処理
+  const handleCompleteGeneratePrompt = (generatedPrompt) => {
+    setPrompt(prompt + "\n" + generatedPrompt); // 完成したプロンプトを保存
+    console.log("プロンプトを更新:", prompt); // 必要に応じてログ出力
+  };
+
+  //#endregion
 
   // プロンプト保存処理
   const handlePromptSave = () => {
@@ -160,18 +193,19 @@ const EditPromptView: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static">
+      {/* AppBar */}
+      <AppBar position="static" sx={{ mb: 4 }}>
         <Toolbar>
           <Button
-            variant="outlined" // ボタンのスタイルをテキストベースに
+            variant="outlined"
             color="inherit"
-            startIcon={<ArrowBackIcon />} // 矢印アイコンを追加
+            startIcon={<ArrowBackIcon />}
             sx={{
-              textTransform: "none", // テキストをそのままの形で表示（全大文字を防ぐ）
-              borderColor: "#ffffff", // ボーダーカラーを白に設定
-              color: "#ffffff", // テキストカラーを白
+              textTransform: "none",
+              borderColor: "#ffffff",
+              color: "#ffffff",
               ":hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)", // ホバー時の背景色
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
               },
             }}
             onClick={() => navigate("/")}
@@ -183,23 +217,26 @@ const EditPromptView: React.FC = () => {
             sx={{
               flexGrow: 1,
               textAlign: "center",
-              whiteSpace: "nowrap", // テキストの折り返しを防止
-              overflow: "hidden", // 必要に応じてあふれたテキストを隠す
-              textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             プロンプト編集
           </Typography>
         </Toolbar>
       </AppBar>
+
+      {/* メインコンテンツ */}
       <Container maxWidth="md">
         <Box mt={4}>
           {/* 保存されているプロンプト */}
-          <Card>
+          <Card sx={{ mb: 4 }}>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
-                保存されているプロンプト
-              </Typography>
+              <Box display="flex" alignItems="center" mb={2}>
+                <SaveIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h5">保存されているプロンプト</Typography>
+              </Box>
               <FormControl fullWidth>
                 <InputLabel>プロンプト選択</InputLabel>
                 <Select
@@ -230,36 +267,45 @@ const EditPromptView: React.FC = () => {
           </Card>
 
           {/* プロンプト編集 */}
-          <Box mt={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  プロンプト編集
-                </Typography>
-                <TextField
-                  label="ボット名"
-                  value={botName}
-                  onChange={(e) => {
-                    setBotName(e.target.value);
-                    setIsPromptSaveEnabled(true);
-                  }}
-                  fullWidth
-                  sx={{ mt: 2 }}
-                />
-                <TextField
-                  label="プロンプト"
-                  multiline
-                  rows={4}
-                  value={prompt}
-                  onChange={(e) => {
-                    setPrompt(e.target.value);
-                    setIsPromptSaveEnabled(true);
-                  }}
-                  fullWidth
-                  sx={{ mt: 2 }}
-                />
-              </CardContent>
-              <CardActions>
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <EditIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h5">プロンプト編集</Typography>
+              </Box>
+              <TextField
+                label="ボット名"
+                value={botName}
+                onChange={(e) => {
+                  setBotName(e.target.value);
+                  setIsPromptSaveEnabled(true);
+                }}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+              <TextField
+                label="プロンプト"
+                multiline
+                rows={4}
+                value={prompt}
+                onChange={(e) => {
+                  setPrompt(e.target.value);
+                  setIsPromptSaveEnabled(true);
+                }}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            </CardContent>
+            <CardActions>
+              <Box display="flex" justifyContent="space-between" width="100%">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={handleOpenGeneratePrompt}
+                  startIcon={<AddIcon />}
+                >
+                  テンプレートから作成
+                </Button>
                 <Button
                   variant="contained"
                   color="primary"
@@ -268,146 +314,150 @@ const EditPromptView: React.FC = () => {
                 >
                   保存
                 </Button>
-              </CardActions>
-            </Card>
-          </Box>
+              </Box>
+            </CardActions>
+          </Card>
 
           {/* 設定 */}
-          <Box mt={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  設定
-                </Typography>
-                <FormControl fullWidth sx={{ mt: 2 }}>
-                  <InputLabel>モデル</InputLabel>
-                  <Select
-                    value={model}
-                    onChange={(e) => {
-                      setModel(e.target.value as AIModel);
-                      setIsSettingsSaveEnabled(true);
-                    }}
-                  >
-                    <MenuItem value={AIModel["gpt-4o"]}>GPT-4o</MenuItem>
-                    <MenuItem value={AIModel["gpt-4o-mini"]}>
-                      GPT-4o mini
-                    </MenuItem>
-                    <MenuItem value={AIModel["gpt-4"]}>GPT-4</MenuItem>
-                  </Select>
-                </FormControl>
-                <Box mt={2}>
-                  <Typography gutterBottom>創造性</Typography>
-                  <Slider
-                    value={creativity}
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    onChange={(e, value) => {
-                      setCreativity(value as number);
-                      setIsSettingsSaveEnabled(true);
-                    }}
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-                <Box mt={2}>
-                  <Typography gutterBottom>確実性</Typography>
-                  <Slider
-                    value={certainty}
-                    min={0}
-                    max={1}
-                    step={0.1}
-                    onChange={(e, value) => {
-                      setCertainty(value as number);
-                      setIsSettingsSaveEnabled(true);
-                    }}
-                    valueLabelDisplay="auto"
-                  />
-                </Box>
-              </CardContent>
-              <CardActions>
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <SettingsIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h5">設定</Typography>
+              </Box>
+              <FormControl fullWidth sx={{ mt: 2 }}>
+                <InputLabel>モデル</InputLabel>
+                <Select
+                  value={model}
+                  onChange={(e) => {
+                    setModel(e.target.value as AIModel);
+                    setIsSettingsSaveEnabled(true);
+                  }}
+                >
+                  <MenuItem value={AIModel["gpt-4o"]}>GPT-4o</MenuItem>
+                  <MenuItem value={AIModel["gpt-4o-mini"]}>
+                    GPT-4o mini
+                  </MenuItem>
+                  <MenuItem value={AIModel["gpt-4"]}>GPT-4</MenuItem>
+                </Select>
+              </FormControl>
+              <Box mt={2}>
+                <Typography gutterBottom>創造性</Typography>
+                <Slider
+                  value={creativity}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onChange={(e, value) => {
+                    setCreativity(value as number);
+                    setIsSettingsSaveEnabled(true);
+                  }}
+                  valueLabelDisplay="auto"
+                />
+              </Box>
+              <Box mt={2}>
+                <Typography gutterBottom>確実性</Typography>
+                <Slider
+                  value={certainty}
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  onChange={(e, value) => {
+                    setCertainty(value as number);
+                    setIsSettingsSaveEnabled(true);
+                  }}
+                  valueLabelDisplay="auto"
+                />
+              </Box>
+            </CardContent>
+            <CardActions>
+              <Button
+                variant="contained"
+                color="primary"
+                disabled={!isSettingsSaveEnabled}
+                onClick={handleSettingsSave}
+              >
+                保存
+              </Button>
+            </CardActions>
+          </Card>
+
+          {/* テストチャット */}
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <ChatIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h5">テストチャット</Typography>
+              </Box>
+              <Box
+                sx={{
+                  maxHeight: 300,
+                  overflowY: "auto",
+                  border: "1px solid #ccc",
+                  padding: 2,
+                }}
+              >
+                <List>
+                  {chatHistory.map((message, index) => (
+                    <React.Fragment key={index}>
+                      <ListItem>
+                        <ListItemAvatar>
+                          <Avatar>
+                            {message.role === "user" ? (
+                              <PersonIcon />
+                            ) : (
+                              <SmartToyIcon />
+                            )}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              color={
+                                message.role === "user"
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                            >
+                              {message.role === "user" ? "あなた" : botName}
+                            </Typography>
+                          }
+                          secondary={message.content}
+                        />
+                      </ListItem>
+                      <Divider />
+                    </React.Fragment>
+                  ))}
+                  {isSending && (
+                    <ListItem>
+                      <CircularProgress size={24} />
+                      <ListItemText primary="応答を生成中..." sx={{ ml: 2 }} />
+                    </ListItem>
+                  )}
+                </List>
+              </Box>
+              <Box mt={2} display="flex">
+                <TextField
+                  label="メッセージを入力"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  fullWidth
+                  multiline
+                  rows={2}
+                />
                 <Button
                   variant="contained"
                   color="primary"
-                  disabled={!isSettingsSaveEnabled}
-                  onClick={handleSettingsSave}
+                  onClick={handleSendMessage}
+                  disabled={isSending || !chatMessage.trim()}
+                  sx={{ ml: 2 }}
                 >
-                  保存
+                  送信
                 </Button>
-              </CardActions>
-            </Card>
-          </Box>
-
-          {/* テストチャット */}
-          <Box mt={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  テストチャット
-                </Typography>
-                <Box
-                  sx={{
-                    maxHeight: 300,
-                    overflowY: "auto",
-                    border: "1px solid #ccc",
-                    padding: 2,
-                  }}
-                >
-                  <List>
-                    {chatHistory.map((message, index) => (
-                      <React.Fragment key={index}>
-                        <ListItem>
-                          <ListItemText
-                            primary={
-                              <Typography
-                                variant="subtitle1"
-                                color={
-                                  message.role === "user"
-                                    ? "primary"
-                                    : "secondary"
-                                }
-                              >
-                                {message.role === "user" ? "あなた" : botName}
-                              </Typography>
-                            }
-                            secondary={message.content}
-                          />
-                        </ListItem>
-                        <Divider />
-                      </React.Fragment>
-                    ))}
-                    {isSending && (
-                      <ListItem>
-                        <CircularProgress size={24} />
-                        <ListItemText
-                          primary="応答を生成中..."
-                          sx={{ ml: 2 }}
-                        />
-                      </ListItem>
-                    )}
-                  </List>
-                </Box>
-                <Box mt={2} display="flex">
-                  <TextField
-                    label="メッセージを入力"
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    fullWidth
-                    multiline
-                    rows={2}
-                  />
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleSendMessage}
-                    disabled={isSending || !chatMessage.trim()}
-                    sx={{ ml: 2 }}
-                  >
-                    送信
-                  </Button>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
+              </Box>
+            </CardContent>
+          </Card>
         </Box>
       </Container>
     </ThemeProvider>

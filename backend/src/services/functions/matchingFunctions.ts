@@ -137,7 +137,6 @@ const createBattleRoom = async (player: PlayerData): Promise<string> => {
     maxTurn: 4,
     battleType: "Single",
     oneTurnTime: 60,
-    topic: "",
   };
 
   const newBattleData: BattleRoomData = {

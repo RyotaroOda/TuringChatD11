@@ -14,6 +14,7 @@ import { auth } from "../services/firebase_f.ts";
 import { AIModel, BotData, PlayerData, ProfileData } from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./BattleRoomView.tsx";
+import PromptGenerator from "../components/PromptGenerator.tsx";
 import {
   AppBar,
   Toolbar,
@@ -58,6 +59,8 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloseIcon from "@mui/icons-material/Close";
+import { Add as AddIcon } from "@mui/icons-material";
+import EditIcon from "@mui/icons-material/Edit";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -235,47 +238,6 @@ const HomeView: React.FC = () => {
   }, [battleRoomListened, battleId]);
   //#endregion
 
-  //#region 画面遷移処理
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      alert("ログアウトしました");
-      navigate(appPaths.login);
-    } catch (error) {
-      console.error("ログアウトエラー: ", error);
-    }
-  };
-
-  const handleLogin = () => {
-    navigate(appPaths.login);
-  };
-
-  const handleFeedback = () => {
-    navigate(appPaths.impression_edit);
-  };
-
-  const handleAnonymousLogin = async () => {
-    try {
-      await signInAnonymously(auth);
-      alert("ゲストでログインしました");
-      navigate(appPaths.HomeView);
-    } catch (error) {
-      console.error("ゲストログインエラー: ", error);
-    }
-  };
-
-  const handleProfileEditClick = () => {
-    navigate(appPaths.profile_edit, { state: profile });
-  };
-
-  const handlePromptEdit = () => {
-    navigate(appPaths.prompt_edit, { state: bots });
-  };
-
-  const handleHowToPlay = () => {
-    navigate(appPaths.how_to_play);
-  };
-
   //#region チュートリアルダイアログ
   const [openTutorial, setTutorialOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
@@ -379,8 +341,40 @@ const HomeView: React.FC = () => {
       <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
     </>,
   ];
+
   //#endregion
 
+  //#region プロンプト編集ダイアログ
+  const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
+
+  const handleOpenGeneratePrompt = () => {
+    setOpenGeneratePrompt(true);
+  };
+
+  const handleCloseGeneratePrompt = () => {
+    setOpenGeneratePrompt(false);
+  };
+
+  // プロンプトが完成したときの処理
+  const handleCompleteGeneratePrompt = (generatedPrompt) => {
+    setAiPrompt(aiPrompt + "\n" + generatedPrompt); // 完成したプロンプトを保存
+    console.log("プロンプトを更新:", aiPrompt); // 必要に応じてログ出力
+  };
+
+  //#endregion
+
+  //#region シングルプレイ
+  const handleSinglePlayChallenge = () => {
+    // シングルプレイのゲーム画面に遷移（仮のパス）
+    const props = {
+      difficulty: singlePlayDifficulty,
+    };
+    // navigate(appPaths.single_play_game, { state: props });
+  };
+
+  //#endregion
+
+  //#region プライベートルーム
   const handleCreateRoom = () => {
     // ルーム作成のロジックを実装
   };
@@ -392,15 +386,6 @@ const HomeView: React.FC = () => {
     }
     // ルームに入るロジックを実装
   };
-
-  const handleSinglePlayChallenge = () => {
-    // シングルプレイのゲーム画面に遷移（仮のパス）
-    const props = {
-      difficulty: singlePlayDifficulty,
-    };
-    // navigate(appPaths.single_play_game, { state: props });
-  };
-
   const handlePrivateRoom = () => {
     // プライベートルームの作成または参加画面に遷移（仮のパス）
     // navigate(appPaths.private_room);
@@ -455,6 +440,9 @@ const HomeView: React.FC = () => {
       alert("ルームIDを入力してください。");
     }
   };
+  //#endregion
+
+  //#region 画面遷移処理
 
   const toBattleRoomViewSegue = (battleId: string) => {
     setBattleRoomListened(false);
@@ -496,6 +484,46 @@ const HomeView: React.FC = () => {
         }
       }
     });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      alert("ログアウトしました");
+      navigate(appPaths.login);
+    } catch (error) {
+      console.error("ログアウトエラー: ", error);
+    }
+  };
+
+  const handleLogin = () => {
+    navigate(appPaths.login);
+  };
+
+  const handleFeedback = () => {
+    navigate(appPaths.impression_edit);
+  };
+
+  const handleAnonymousLogin = async () => {
+    try {
+      await signInAnonymously(auth);
+      alert("ゲストでログインしました");
+      navigate(appPaths.HomeView);
+    } catch (error) {
+      console.error("ゲストログインエラー: ", error);
+    }
+  };
+
+  const handleProfileEditClick = () => {
+    navigate(appPaths.profile_edit, { state: profile });
+  };
+
+  const handlePromptEdit = () => {
+    navigate(appPaths.prompt_edit, { state: bots });
+  };
+
+  const handleHowToPlay = () => {
+    navigate(appPaths.how_to_play);
   };
   //#endregion
 
@@ -568,6 +596,7 @@ const HomeView: React.FC = () => {
                   <Box textAlign="center" mb={mdSize}>
                     <Typography variant="h6" color="text.primary" gutterBottom>
                       <AccountCircleIcon
+                        color="primary"
                         fontSize="large"
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
@@ -625,6 +654,7 @@ const HomeView: React.FC = () => {
                         gutterBottom
                       >
                         <StarIcon
+                          color="primary"
                           fontSize="large"
                           sx={{ verticalAlign: "middle", mr: 1 }}
                         />
@@ -664,6 +694,7 @@ const HomeView: React.FC = () => {
                         color="text.primary"
                         gutterBottom
                       >
+                        <EditIcon color="primary" sx={{ mr: 1 }} />
                         プレイヤー名の変更
                       </Typography>
                       <TextField
@@ -712,6 +743,7 @@ const HomeView: React.FC = () => {
                   >
                     <Typography variant="h5" color="text.primary" gutterBottom>
                       <SportsEsportsIcon
+                        color="primary"
                         fontSize="large"
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
@@ -751,6 +783,7 @@ const HomeView: React.FC = () => {
                           gutterBottom
                         >
                           <PersonIcon
+                            color="secondary"
                             fontSize="large"
                             sx={{ verticalAlign: "middle", mr: 1 }}
                           />
@@ -846,6 +879,7 @@ const HomeView: React.FC = () => {
                           gutterBottom
                         >
                           <GroupIcon
+                            color="secondary"
                             fontSize="large"
                             sx={{ verticalAlign: "middle", mr: 1 }}
                           />
@@ -855,7 +889,7 @@ const HomeView: React.FC = () => {
                         {/* ランダムマッチ */}
                         <Typography
                           variant="subtitle1"
-                          color="text.secondary"
+                          color="text.primary"
                           gutterBottom
                           sx={{ mt: 2 }}
                         >
@@ -903,7 +937,7 @@ const HomeView: React.FC = () => {
                         {/* プライベートルーム */}
                         <Typography
                           variant="subtitle1"
-                          color="text.secondary"
+                          color="text.primary"
                           gutterBottom
                         >
                           プライベートルーム
@@ -957,18 +991,36 @@ const HomeView: React.FC = () => {
                     flex: 1,
                   }}
                 >
-                  <Typography variant="h5" color="text.primary" gutterBottom>
-                    <CodeIcon
-                      fontSize="large"
-                      sx={{ verticalAlign: "middle", mr: 1 }}
-                    />
-                    AIプロンプト
-                  </Typography>
+                  <Box
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography variant="h5" color="text.primary" gutterBottom>
+                      <CodeIcon
+                        color="primary"
+                        fontSize="large"
+                        sx={{ verticalAlign: "middle", mr: 1 }}
+                      />
+                      AIプロンプト
+                    </Typography>
+                    {user.isAnonymous ? (
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        onClick={handleOpenGeneratePrompt}
+                        startIcon={<AddIcon />} // 左側にアイコンを追加
+                      >
+                        テンプレートから作成
+                      </Button>
+                    ) : (
+                      ""
+                    )}
+                  </Box>
                   {user.isAnonymous ? (
                     <TextField
                       label="AIへの命令を入力してください。"
                       multiline
-                      rows={mdSize}
                       value={aiPrompt}
                       onChange={(e) => setAiPrompt(e.target.value)}
                       fullWidth
@@ -1094,6 +1146,27 @@ const HomeView: React.FC = () => {
                   </IconButton>
                 )}
               </Box>
+            </DialogActions>
+          </Dialog>
+
+          {/* プロンプト生成ツールのダイアログ */}
+          <Dialog
+            open={openGeneratePrompt}
+            onClose={handleCloseGeneratePrompt}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle>プロンプト生成ツール</DialogTitle>
+            <DialogContent>
+              <PromptGenerator
+                onClose={handleCloseGeneratePrompt}
+                onComplete={handleCompleteGeneratePrompt}
+              />
+            </DialogContent>
+            <DialogActions>
+              {/* <Button onClick={handleCloseGeneratePrompt} color="secondary">
+                閉じる
+              </Button> */}
             </DialogActions>
           </Dialog>
           {/* フッター */}
