@@ -149,7 +149,7 @@ export const generateBattleMessage = async (
 
       # 出力形式
       - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
-      - 先頭の[proponent]は主力に含めないでください。
+      - 先頭の[proponent]や[opponent]は出力に含めないでください。
       - 出力がそのまま相手プレイヤーに送信されます。
 
       # カスタムプロンプト

@@ -280,9 +280,11 @@ const BattleRoomView: React.FC = () => {
                         </FormLabel>
                         <RadioGroup
                           value={selectedIsHuman ? "human" : "ai"}
-                          onChange={(e) =>
-                            setSelectedIsHuman(e.target.value === "human")
-                          }
+                          onChange={(e) => {
+                            if (!isReady) {
+                              setSelectedIsHuman(e.target.value === "human");
+                            }
+                          }}
                         >
                           <FormControlLabel
                             value="human"

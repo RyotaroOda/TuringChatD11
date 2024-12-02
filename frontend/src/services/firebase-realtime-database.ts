@@ -222,8 +222,7 @@ export const onGeneratedTopic = (
   // リスナー関数を名前付きで定義
   const listener = (snapshot) => {
     const val = snapshot.val() as ChatData;
-    console.log("トピック更新:", val);
-    if (!val.messages) return;
+    if (!val || !val.messages) return;
     const messages = Object.values(val.messages);
     const newTopic = messages[0].message;
 
@@ -237,7 +236,7 @@ export const onGeneratedTopic = (
     }
   };
   // リスナーを登録
-  onValue(configRef, listener); //?
+  onValue(configRef, listener);
   if (listener && kill) off(configRef, "value", listener);
 
   // クリーンアップ用の関数を返す

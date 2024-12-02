@@ -195,9 +195,9 @@ const HomeView: React.FC = () => {
   };
 
   const cancelMatching = async () => {
-    setIsPushedMatching(false);
     setBattleRoomListened(false);
     setRoomId(null);
+    setTimeout(() => setIsPushedMatching(false), 1000); // 1秒後に再び有効化
     try {
       await cancelRequest();
     } catch (error) {
@@ -276,7 +276,7 @@ const HomeView: React.FC = () => {
     navigate(appPaths.how_to_play);
   };
 
-  //# region チュートリアルダイアログ
+  //#region チュートリアルダイアログ
   const [openTutorial, setTutorialOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
@@ -868,6 +868,7 @@ const HomeView: React.FC = () => {
                             onClick={cancelMatching}
                             fullWidth
                             sx={{ mt: 1 }}
+                            disabled={!battleRoomListened}
                           >
                             キャンセル
                           </Button>
@@ -878,6 +879,7 @@ const HomeView: React.FC = () => {
                             onClick={startMatch}
                             fullWidth
                             sx={{ mt: 1 }}
+                            disabled={isPushedMatching}
                           >
                             マッチング開始
                           </Button>
