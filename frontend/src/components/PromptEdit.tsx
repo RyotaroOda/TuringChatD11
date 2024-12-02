@@ -460,6 +460,27 @@ const EditPromptView: React.FC = () => {
           </Card>
         </Box>
       </Container>
+      {/* プロンプト生成ツールのダイアログ */}
+      <Dialog
+        open={openGeneratePrompt}
+        onClose={handleCloseGeneratePrompt}
+        fullWidth
+        maxWidth="md"
+      >
+        <DialogTitle>プロンプト生成ツール</DialogTitle>
+        <DialogContent>
+          <PromptGenerator
+            onClose={handleCloseGeneratePrompt}
+            onComplete={handleCompleteGeneratePrompt}
+            initialPrompt={prompt}
+          />
+        </DialogContent>
+        <DialogActions>
+          {/* <Button onClick={handleCloseGeneratePrompt} color="secondary">
+                閉じる
+              </Button> */}
+        </DialogActions>
+      </Dialog>
     </ThemeProvider>
   );
 };

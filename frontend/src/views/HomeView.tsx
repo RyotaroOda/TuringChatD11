@@ -357,7 +357,7 @@ const HomeView: React.FC = () => {
 
   // プロンプトが完成したときの処理
   const handleCompleteGeneratePrompt = (generatedPrompt) => {
-    setAiPrompt(aiPrompt + "\n" + generatedPrompt); // 完成したプロンプトを保存
+    setAiPrompt(generatedPrompt); // 完成したプロンプトを保存
     console.log("プロンプトを更新:", aiPrompt); // 必要に応じてログ出力
   };
 
@@ -783,7 +783,7 @@ const HomeView: React.FC = () => {
                           gutterBottom
                         >
                           <PersonIcon
-                            color="secondary"
+                            color="primary"
                             fontSize="large"
                             sx={{ verticalAlign: "middle", mr: 1 }}
                           />
@@ -879,7 +879,7 @@ const HomeView: React.FC = () => {
                           gutterBottom
                         >
                           <GroupIcon
-                            color="secondary"
+                            color="primary"
                             fontSize="large"
                             sx={{ verticalAlign: "middle", mr: 1 }}
                           />
@@ -1161,6 +1161,7 @@ const HomeView: React.FC = () => {
               <PromptGenerator
                 onClose={handleCloseGeneratePrompt}
                 onComplete={handleCompleteGeneratePrompt}
+                initialPrompt={aiPrompt}
               />
             </DialogContent>
             <DialogActions>
