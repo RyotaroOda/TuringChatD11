@@ -7,8 +7,6 @@ import {
   updateDoc,
   getDoc,
   addDoc,
-  runTransaction,
-  getDocs,
 } from "firebase/firestore";
 import {
   AIModel,

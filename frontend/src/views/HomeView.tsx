@@ -1,5 +1,5 @@
 // frontend/src/views/HomeView.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getBattleRoomData,
@@ -11,7 +11,13 @@ import {
 } from "../services/firebase-functions-client.ts";
 import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../services/firebase_f.ts";
-import { AIModel, BotData, PlayerData, ProfileData } from "../shared/types.ts";
+import {
+  AIModel,
+  BotData,
+  GPTMessage,
+  PlayerData,
+  ProfileData,
+} from "../shared/types.ts";
 import { getUserProfile } from "../services/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./BattleRoomView.tsx";
 import PromptGenerator from "../components/PromptGenerator.tsx";
@@ -42,6 +48,14 @@ import {
   StepLabel,
   Step,
   IconButton,
+  Avatar,
+  Drawer,
+  Fab,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Slide,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -61,6 +75,10 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloseIcon from "@mui/icons-material/Close";
 import { Add as AddIcon } from "@mui/icons-material";
 import EditIcon from "@mui/icons-material/Edit";
+import SendIcon from "@mui/icons-material/Send";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import { generateChat } from "../services/chatGPT_f.ts";
+import ChatIcon from "@mui/icons-material/Chat";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -440,6 +458,71 @@ const HomeView: React.FC = () => {
       alert("ルームIDを入力してください。");
     }
   };
+  //#endregion
+
+  //#region チャット
+  const [chatMessage, setChatMessage] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
+  const [isSending, setIsSending] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // チャットの最後にスクロールする処理
+  const scrollToBottom = () => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  // メッセージを送信する処理
+  const handleSendMessage = async () => {
+    if (chatMessage.trim() !== "") {
+      const userMessage: GPTMessage = {
+        role: "user",
+        content: chatMessage,
+      };
+      setChatHistory((prev) => [...prev, userMessage]);
+      setChatMessage("");
+      setIsSending(true);
+    }
+  };
+
+  // メッセージ送信とAIの応答を処理するエフェクト
+  useEffect(() => {
+    const sendChatMessage = async () => {
+      try {
+        const filteredMessages = chatHistory.filter(
+          (message) => message.role !== "system"
+        );
+        const responseContent = await generateChat(filteredMessages);
+        const aiMessage: GPTMessage = {
+          role: "assistant",
+          content: responseContent,
+        };
+        setChatHistory((prev) => [...prev, aiMessage]);
+      } catch (error) {
+        console.error("Error generating chat response: ", error);
+      } finally {
+        setIsSending(false);
+      }
+    };
+
+    if (isSending) {
+      sendChatMessage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSending]);
+
+  // チャット履歴が更新されたときに自動で下にスクロールするエフェクト
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  // ドロワーの開閉を制御する処理
+  const toggleDrawer = (open: boolean) => {
+    setIsDrawerOpen(open);
+  };
+
   //#endregion
 
   //#region 画面遷移処理
@@ -1077,7 +1160,6 @@ const HomeView: React.FC = () => {
           </Dialog>
 
           {/* チュートリアルダイアログ */}
-
           <Dialog
             open={openTutorial}
             onClose={handleTutorialClose}
@@ -1170,6 +1252,182 @@ const HomeView: React.FC = () => {
               </Button> */}
             </DialogActions>
           </Dialog>
+
+          {/* フローティングボタン */}
+          <Fab
+            color="primary"
+            aria-label="チャット"
+            sx={{ position: "fixed", bottom: 100, right: 16, zIndex: 1300 }}
+            onClick={() => toggleDrawer(true)}
+          >
+            <ChatIcon />
+          </Fab>
+          {/* Drawer for テストチャット */}
+          <Drawer
+            anchor="right"
+            open={isDrawerOpen}
+            onClose={() => toggleDrawer(false)}
+            transitionDuration={500} // アニメーションの時間を指定
+            sx={{
+              "& .MuiDrawer-paper": {
+                transition: "transform 0.5s ease-in-out", // 開閉時のスムーズなアニメーション
+              },
+            }}
+          >
+            <Slide
+              direction="left"
+              in={isDrawerOpen}
+              mountOnEnter
+              unmountOnExit
+            >
+              <Box
+                sx={{
+                  width: 450,
+                  p: 2,
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                }}
+                role="presentation"
+              >
+                {/* Header */}
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
+                  sx={{ borderBottom: "1px solid #ccc", pb: 1 }}
+                >
+                  <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+                    テストチャット
+                  </Typography>
+                  <IconButton onClick={() => toggleDrawer(false)}>
+                    <CloseIcon />
+                  </IconButton>
+                </Box>
+
+                {/* Chat History */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    overflowY: "auto",
+                    border: "1px solid #ccc",
+                    borderRadius: 2,
+                    padding: 2,
+                    backgroundColor: "#f9f9f9",
+                    "&::-webkit-scrollbar": {
+                      width: "8px",
+                    },
+                    "&::-webkit-scrollbar-track": {
+                      background: "#f0f0f0",
+                      borderRadius: "10px",
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                      background: "#c0c0c0",
+                      borderRadius: "10px",
+                    },
+                    "&::-webkit-scrollbar-thumb:hover": {
+                      background: "#a0a0a0",
+                    },
+                  }}
+                >
+                  <List>
+                    {chatHistory.map((message, index) => (
+                      <React.Fragment key={index}>
+                        <ListItem
+                          sx={{
+                            alignItems: "flex-start",
+                            backgroundColor:
+                              message.role === "user" ? "#e3f2fd" : "#f1f8e9",
+                            borderRadius: 2,
+                            mb: 1,
+                            boxShadow: 1,
+                          }}
+                        >
+                          <ListItemAvatar>
+                            <Avatar
+                              sx={{
+                                backgroundColor:
+                                  message.role === "user"
+                                    ? "#2196f3"
+                                    : "#8bc34a",
+                              }}
+                            >
+                              {message.role === "user" ? (
+                                <PersonIcon />
+                              ) : (
+                                <SmartToyIcon />
+                              )}
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Typography
+                                variant="subtitle1"
+                                sx={{
+                                  fontWeight: "bold",
+                                  color:
+                                    message.role === "user"
+                                      ? "#0d47a1"
+                                      : "#33691e",
+                                }}
+                              >
+                                {message.role === "user" ? "あなた" : "ボット"}
+                              </Typography>
+                            }
+                            secondary={message.content}
+                          />
+                        </ListItem>
+                      </React.Fragment>
+                    ))}
+                    {isSending && (
+                      <ListItem>
+                        <CircularProgress size={24} />
+                        <ListItemText
+                          primary="応答を生成中..."
+                          sx={{ ml: 2 }}
+                        />
+                      </ListItem>
+                    )}
+                    <div ref={chatEndRef} />
+                  </List>
+                </Box>
+
+                {/* Message Input Section */}
+                <Box display="flex" mt={2} alignItems="stretch">
+                  <TextField
+                    label="メッセージを入力"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    fullWidth
+                    multiline
+                    rows={2}
+                    sx={{
+                      backgroundColor: "#ffffff",
+                      borderRadius: 1,
+                      boxShadow: 1,
+                    }}
+                  />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSendMessage}
+                    disabled={isSending || !chatMessage.trim()}
+                    sx={{
+                      ml: 2,
+                      height: "auto", // ボタンの高さを入力フィールドに合わせる
+                      alignSelf: "center",
+                      py: 2, // 高さを入力フィールドとマッチさせるためにパディングを使用
+                    }}
+                    endIcon={<SendIcon />}
+                  >
+                    送信
+                  </Button>
+                </Box>
+              </Box>
+            </Slide>
+          </Drawer>
+
           {/* フッター */}
           <AppBar
             position="fixed"

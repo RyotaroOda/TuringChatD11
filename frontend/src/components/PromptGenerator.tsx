@@ -10,6 +10,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Card,
+  CardActions,
+  CardContent,
 } from "@mui/material";
 
 // 型定義
@@ -38,7 +41,10 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
     回答: "",
     難しさ: "",
   });
-  const [completed, setCompleted] = useState({});
+
+  const [isStepCompleted, setIsStepCompleted] = useState<boolean[]>(
+    Array(steps.length).fill(false)
+  );
 
   // 選択肢リスト
   const characterTraits = [
@@ -63,7 +69,6 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
 
   // 選択肢を文章に変換するロジック
   const convertToSentence = (key, value) => {
-    console.log(key, value);
     if (key === "キャラクター") {
       const trait = value.性格 || "未設定";
       const role = value.役割 || "未設定";
@@ -71,7 +76,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
       if (trait !== "未設定" && role !== "未設定") {
         return `あなたは${trait}${role}です。`;
       } else if (trait !== "未設定") {
-        return `あなたは${trait}な人です。`;
+        return `あなたは${trait}人です。`;
       } else if (role !== "未設定") {
         return `あなたは${role}です。`;
       } else {
@@ -80,12 +85,9 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
     }
     const sentences = {
       文字数: {
-        "短め（20～50文字）":
-          "文字数は短めに生成してください。（20～50文字程度）",
-        "中程度（50～100文字）":
-          "文字数は中程度に生成してください。（50～100文字程度）",
-        "長め（100文字以上）":
-          "文字数は長めに生成してください。（100文字以上）",
+        短め: "15文字以内の短めの文章を生成してください。",
+        中程度: "30文字程度の文章を生成してください。",
+        長め: "50文字以内の文章を生成してください。",
       },
       口調: {
         フォーマル: "口調はフォーマルにしてください。",
@@ -107,39 +109,29 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
     return sentences[key]?.[value] || `${key}: ${value}`;
   };
 
-  useEffect(() => {
-    if (values) {
-      console.log(values);
-    }
-  }, [values]);
-
   // ステップの進行を管理する関数
   const handleNext = () => {
     if (activeStep === steps.length - 1) {
-      // 最後のステップでは完成画面に遷移
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    } else {
-      // 通常の進行処理
-      const newCompleted = { ...completed };
-      if (values[steps[activeStep]] || values["キャラクター"]) {
-        newCompleted[activeStep] = true;
+      // 最後のステップの場合は完了処理を行う
+      if (onComplete) {
+        onComplete(prompt); // 完了時に親コンポーネントにプロンプトを渡す
       }
-      setCompleted(newCompleted);
+      onClose();
+    } else {
+      // それ以外の場合は次のステップに進む
+      if (selectedValues[steps[activeStep]] || values[steps[activeStep]]) {
+        setIsStepCompleted((prev) => {
+          const newCompleted = [...prev];
+          newCompleted[activeStep] = true;
+          return newCompleted;
+        });
+      }
       setActiveStep((prevActiveStep) => prevActiveStep + 1);
     }
   };
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => Math.max(prevActiveStep - 1, 0));
-  };
-
-  const handleSkip = () => {
-    if (activeStep === steps.length - 1) {
-      // 最後のステップでスキップされた場合も完成画面へ遷移
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    } else {
-      setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    }
   };
 
   // 入力値の変更を処理
@@ -218,7 +210,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               name="文字数-text"
               value={values["文字数"]}
               onChange={handleChange}
-              style={{ marginTop: "1em" }}
+              sx={{ marginTop: 2 }}
             />
           </FormControl>
         );
@@ -240,7 +232,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
                 ))}
               </Select>
             </FormControl>
-            <FormControl fullWidth style={{ marginTop: "1em" }}>
+            <FormControl fullWidth sx={{ marginTop: 2 }}>
               <InputLabel id="character-role-label">役割</InputLabel>
               <Select
                 labelId="character-role-label"
@@ -260,7 +252,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               name="キャラクター-text"
               value={values["キャラクター"]}
               onChange={handleChange}
-              style={{ marginTop: "1em" }}
+              sx={{ marginTop: 2 }}
               fullWidth
             />
           </>
@@ -284,7 +276,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               name="口調-text"
               value={values["口調"]}
               onChange={handleChange}
-              style={{ marginTop: "1em" }}
+              sx={{ marginTop: 2 }}
             />
           </FormControl>
         );
@@ -307,7 +299,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               name="回答-text"
               value={values["回答"]}
               onChange={handleChange}
-              style={{ marginTop: "1em" }}
+              sx={{ marginTop: 2 }}
             />
           </FormControl>
         );
@@ -330,7 +322,7 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               name="難しさ-text"
               value={values["難しさ"]}
               onChange={handleChange}
-              style={{ marginTop: "1em" }}
+              sx={{ marginTop: 2 }}
             />
           </FormControl>
         );
@@ -341,95 +333,39 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
 
   return (
     <div>
-      <Stepper activeStep={activeStep} alternativeLabel>
+      {/* Stepper */}
+      <Stepper
+        activeStep={activeStep}
+        alternativeLabel
+        sx={{ marginBottom: 4 }}
+      >
         {steps.map((label, index) => (
-          <Step key={label} completed={completed[index]}>
+          <Step key={label} completed={isStepCompleted[index]}>
             <StepLabel onClick={() => setActiveStep(index)}>{label}</StepLabel>
           </Step>
         ))}
       </Stepper>
-      <div style={{ margin: "2em 0" }}>
-        {activeStep < steps.length ? (
-          <>
-            {getStepContent(activeStep)}
-            <div
-              style={{
-                marginTop: "2em",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              <Button disabled={activeStep === 0} onClick={handleBack}>
-                戻る
-              </Button>
-              <div>
-                {values[steps[activeStep]] || values["キャラクター"] ? (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleNext}
-                  >
-                    次へ
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={handleSkip}
-                  >
-                    スキップ
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
-        ) : (
-          <div>
-            <Typography variant="h5">プロンプト完成！</Typography>
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              variant="outlined"
-              style={{ marginTop: "1em", whiteSpace: "pre-wrap" }}
-            />
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: "1em",
-              }}
-            >
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={() => {
-                  if (onComplete) {
-                    onComplete(prompt); // 完了時に親コンポーネントにpromptを渡す
-                  }
-                  onClose();
-                }}
-              >
-                終了
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-      <div>
-        <Typography variant="h6">編集中のプロンプト：</Typography>
-        <pre
-          style={{
-            backgroundColor: "#f0f0f0",
-            padding: "1em",
-            whiteSpace: "pre-wrap",
-          }}
-        >
-          {prompt}
-        </pre>
-      </div>
+
+      {/* Step Content Area */}
+      <Card sx={{ marginBottom: 4, boxShadow: 3 }}>
+        <CardContent>{getStepContent(activeStep)}</CardContent>
+        <CardActions sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Button disabled={activeStep === 0} onClick={handleBack}>
+            戻る
+          </Button>
+          <Button variant="contained" color="primary" onClick={handleNext}>
+            {activeStep === steps.length - 1 ? "完成！" : "次へ"}
+          </Button>
+        </CardActions>
+      </Card>
+
+      {/* Completed Prompt Display */}
+      <Card sx={{ marginBottom: 4, backgroundColor: "#f9f9f9", boxShadow: 1 }}>
+        <CardContent>
+          <Typography variant="h6">編集中のプロンプト</Typography>
+          <pre style={{ whiteSpace: "pre-wrap" }}>{prompt}</pre>
+        </CardContent>
+      </Card>
     </div>
   );
 }
