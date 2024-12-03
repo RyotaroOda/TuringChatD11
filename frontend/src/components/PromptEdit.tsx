@@ -170,6 +170,11 @@ const EditPromptView: React.FC = () => {
   };
 
   const handleCloseGeneratePrompt = () => {
+    const confirmClose = window.confirm(
+      "編集内容が保存されていません。閉じてもよろしいですか？"
+    );
+    if (!confirmClose) return;
+
     setOpenGeneratePrompt(false);
   };
 
@@ -298,7 +303,12 @@ const EditPromptView: React.FC = () => {
               </Select>
             </FormControl>
           </CardContent>
-          <CardActions>
+          <CardActions
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <Button
               variant="contained"
               color="secondary"
@@ -315,9 +325,25 @@ const EditPromptView: React.FC = () => {
         {/* プロンプト編集 */}
         <Card sx={{ mb: 4 }}>
           <CardContent>
-            <Box display="flex" alignItems="center" mb={2}>
-              <EditIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h5">プロンプト編集</Typography>
+            <Box
+              display="flex"
+              alignItems="center"
+              mb={2}
+              justifyContent="space-between"
+            >
+              <Typography variant="h5">
+                {" "}
+                <EditIcon color="primary" sx={{ mr: 1 }} />
+                プロンプト編集
+              </Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleOpenGeneratePrompt}
+                startIcon={<AddIcon />}
+              >
+                テンプレートから作成
+              </Button>
             </Box>
             <TextField
               label="ボット名"
@@ -342,64 +368,59 @@ const EditPromptView: React.FC = () => {
               sx={{ mt: 2 }}
             />
           </CardContent>
-          <CardActions>
-            <Box display="flex" justifyContent="space-between" width="100%">
-              <Button
-                variant="outlined"
-                color="primary"
-                onClick={handleOpenGeneratePrompt}
-                startIcon={<AddIcon />}
-              >
-                テンプレートから作成
-              </Button>
-
-              <Box sx={{ position: "relative" }}>
-                <Fade in={!isPromptSaving && !isPromptSaved}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    disabled={!isPromptSaveEnabled || isPromptSaving}
-                    onClick={handlePromptSave}
-                    sx={{
-                      transition: "all 0.3s ease",
-                    }}
-                  >
-                    保存
-                  </Button>
-                </Fade>
-                <Fade in={isPromptSaving}>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      display: isPromptSaving ? "flex" : "none",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CircularProgress size={24} color="inherit" />
-                  </Box>
-                </Fade>
-                <Fade in={isPromptSaved}>
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      display: isPromptSaved ? "flex" : "none",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <CheckIcon />
-                  </Box>
-                </Fade>
-              </Box>
+          <CardActions
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            {" "}
+            <Box sx={{ position: "relative" }}>
+              <Fade in={!isPromptSaving && !isPromptSaved}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={!isPromptSaveEnabled || isPromptSaving}
+                  onClick={handlePromptSave}
+                  sx={{
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  保存
+                </Button>
+              </Fade>
+              <Fade in={isPromptSaving}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    display: isPromptSaving ? "flex" : "none",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CircularProgress size={24} color="inherit" />
+                </Box>
+              </Fade>
+              <Fade in={isPromptSaved}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    display: isPromptSaved ? "flex" : "none",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CheckIcon />
+                </Box>
+              </Fade>
             </Box>
           </CardActions>
         </Card>
@@ -457,11 +478,9 @@ const EditPromptView: React.FC = () => {
           <CardActions
             sx={{
               display: "flex",
-              justifyContent: "flex-end", // 右寄せに配置
-              paddingRight: 2, // 右側に余白を追加
+              justifyContent: "center",
             }}
           >
-            {" "}
             <Box sx={{ position: "relative" }}>
               <Fade in={!isSettingsSaving && !isSettingsSaved}>
                 <Button
@@ -720,12 +739,12 @@ const EditPromptView: React.FC = () => {
           }}
         >
           <PromptGenerator
-            onClose={handleCloseGeneratePrompt}
+            onClose={() => setOpenGeneratePrompt(false)}
             onComplete={handleCompleteGeneratePrompt}
             initialPrompt={prompt}
           />
         </DialogContent>
-        <DialogActions
+        {/* <DialogActions
           sx={{
             justifyContent: "space-between",
             padding: "16px 24px",
@@ -757,7 +776,7 @@ const EditPromptView: React.FC = () => {
           >
             完了
           </Button>
-        </DialogActions>
+        </DialogActions> */}
       </Dialog>
     </ThemeProvider>
   );

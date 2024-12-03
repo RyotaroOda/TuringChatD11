@@ -79,6 +79,9 @@ import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import { generateChat } from "../services/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
+import Fade from "@mui/material/Fade";
+import CheckIcon from "@mui/icons-material/Check";
+import { set } from "firebase/database";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -366,10 +369,16 @@ const HomeView: React.FC = () => {
   const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
 
   const handleOpenGeneratePrompt = () => {
+    //? なぜかハンドル経由しないとうまくいかない
     setOpenGeneratePrompt(true);
   };
 
   const handleCloseGeneratePrompt = () => {
+    const confirmClose = window.confirm(
+      "編集内容が保存されていません。閉じてもよろしいですか？"
+    );
+    if (!confirmClose) return;
+
     setOpenGeneratePrompt(false);
   };
 
@@ -377,6 +386,7 @@ const HomeView: React.FC = () => {
   const handleCompleteGeneratePrompt = (generatedPrompt) => {
     setAiPrompt(generatedPrompt); // 完成したプロンプトを保存
     console.log("プロンプトを更新:", aiPrompt); // 必要に応じてログ出力
+    setOpenGeneratePrompt(false);
   };
 
   //#endregion
@@ -1237,20 +1247,83 @@ const HomeView: React.FC = () => {
             onClose={handleCloseGeneratePrompt}
             fullWidth
             maxWidth="md"
+            BackdropProps={{
+              sx: {
+                backgroundColor: "rgba(0, 0, 0, 0.7)", // より濃いバックドロップ
+                transition: "opacity 0.5s ease",
+              },
+            }}
+            TransitionComponent={Fade}
+            transitionDuration={500}
+            PaperProps={{
+              sx: {
+                borderRadius: 4,
+                backgroundColor: "#fafafa",
+              },
+            }}
           >
-            <DialogTitle>プロンプト生成ツール</DialogTitle>
-            <DialogContent>
+            <DialogTitle
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#2196f3",
+                color: "#ffffff",
+                borderTopLeftRadius: 12,
+                borderTopRightRadius: 12,
+                padding: "16px 24px",
+              }}
+            >
+              <SmartToyIcon sx={{ mr: 1 }} />
+              プロンプト生成ツール
+            </DialogTitle>
+
+            <DialogContent
+              dividers
+              sx={{
+                backgroundColor: "#ffffff",
+                padding: 3,
+                boxShadow: "inset 0 0 10px rgba(0, 0, 0, 0.1)",
+              }}
+            >
               <PromptGenerator
-                onClose={handleCloseGeneratePrompt}
+                onClose={() => setOpenGeneratePrompt(false)}
                 onComplete={handleCompleteGeneratePrompt}
-                initialPrompt={aiPrompt}
+                initialPrompt={aiPrompt === "未設定" ? "" : aiPrompt}
               />
             </DialogContent>
-            <DialogActions>
-              {/* <Button onClick={handleCloseGeneratePrompt} color="secondary">
+            {/* <DialogActions
+              sx={{
+                justifyContent: "space-between",
+                padding: "16px 24px",
+                backgroundColor: "#f0f0f0",
+              }}
+            >
+              <Button
+                onClick={handleCloseGeneratePrompt}
+                color="secondary"
+                variant="outlined"
+                startIcon={<CloseIcon />}
+                sx={{
+                  borderRadius: 2,
+                  padding: "8px 16px",
+                }}
+              >
                 閉じる
-              </Button> */}
-            </DialogActions>
+              </Button>
+
+              <Button
+                onClick={() => handleCompleteGeneratePrompt(prompt)}
+                color="primary"
+                variant="outlined"
+                startIcon={<CheckIcon />}
+                sx={{
+                  borderRadius: 2,
+                  padding: "8px 24px",
+                }}
+              >
+                完了
+              </Button>
+            </DialogActions> */}
           </Dialog>
 
           {/* フローティングボタン */}
