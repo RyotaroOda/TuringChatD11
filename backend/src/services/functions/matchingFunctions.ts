@@ -10,7 +10,6 @@ import {
 import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { Timestamp } from "firebase/firestore";
 
 //#region Utility Functions
 
@@ -58,29 +57,47 @@ export const removeFromWaitingList = async (playerId: string) => {
   console.log(`プレイヤー ${playerId} が待機リストから削除されました。`);
 };
 
-/**
- * 待機リストから次のプレイヤーを取得し、roomIdを返す
+/** 待機リストからランダムなプレイヤーを取得し、roomIdを返す
  * @returns ルームIDまたはnull
  */
-export const getNextRoomIdFromWaitingList = async (): Promise<
-  string | null
-> => {
+export const getNextRoomIdFromWaitingList = async (
+  player: PlayerData
+): Promise<string | null> => {
   let battleId: string | null = null;
 
   try {
-    const result = await waitingPlayersRef.transaction((waitingPlayers) => {
-      if (waitingPlayers) {
-        const opponentKey = Object.keys(waitingPlayers)[0];
-        const opponent = waitingPlayers[opponentKey];
-        battleId = opponent.battleId;
+    const result = await waitingPlayersRef.transaction(
+      async (waitingPlayers) => {
+        if (waitingPlayers) {
+          // 待機リストのキーを配列として取得
+          const playerKeys = Object.keys(waitingPlayers);
+          if (playerKeys.length > 0) {
+            // ランダムなキーを選択
+            const randomIndex = Math.floor(Math.random() * playerKeys.length);
+            const randomKey = playerKeys[randomIndex];
+            const opponent = waitingPlayers[randomKey];
+            battleId = opponent.battleId;
 
-        if (battleId) {
-          delete waitingPlayers[opponentKey];
-          return waitingPlayers;
+            if (battleId) {
+              const statusRef = db.ref(DATABASE_PATHS.status(battleId));
+              const statusSnapshot = await statusRef.get();
+              const status = statusSnapshot.val();
+
+              if (status === "waiting") {
+                await db.ref(DATABASE_PATHS.status(battleId)).set("matched");
+                // 選択したプレイヤーを待機リストから削除
+                delete waitingPlayers[randomKey];
+                return waitingPlayers;
+              } else {
+                delete waitingPlayers[randomKey];
+                return null;
+              }
+            }
+          }
         }
+        return waitingPlayers;
       }
-      return waitingPlayers;
-    });
+    );
 
     return result.committed ? battleId : null;
   } catch (error) {
@@ -118,8 +135,7 @@ const createRoom = async (player: PlayerData): Promise<string> => {
   return roomId;
 };
 
-/**
- * 新しいバトルルームを作成
+/** 新しいバトルルームを作成
  * @param player プレイヤーデータ
  * @param roomId ルームID
  * @returns 新しいバトルルームID
@@ -166,8 +182,7 @@ const createBattleRoom = async (player: PlayerData): Promise<string> => {
   return battleId;
 };
 
-/**
- * プレイヤーを既存のルームに参加させる
+/** プレイヤーを既存のルームに参加させる
  * @param roomId ルームID
  * @param player プレイヤーデータ
  * @returns 成功した場合はtrue
@@ -176,16 +191,14 @@ const joinRandomRoom = async (
   battleId: string,
   player: PlayerData
 ): Promise<boolean> => {
-  console.log(`joinRoom: ${battleId}, Player: ${player.name}`);
-
   try {
-    // await db.ref(DATABASE_PATHS.phase(roomId)).set("chat");
     await db.ref(DATABASE_PATHS.players(battleId)).child(player.id).set(player);
     await db
       .ref(DATABASE_PATHS.battlePlayers(battleId))
       .child(player.id)
       .set(player);
-    await db.ref(DATABASE_PATHS.status(battleId)).set("matched");
+    console.log(`joinRoom: ${battleId}, Player: ${player.name}`);
+
     return true;
   } catch (error) {
     console.error("ルームへの参加中に競合が発生しました:", error);
@@ -218,15 +231,11 @@ export const requestMatchFunction = onCall(
   async (request): Promise<MatchResult> => {
     const player = request.data as PlayerData;
 
-    const battleId = await getNextRoomIdFromWaitingList();
+    const battleId = await getNextRoomIdFromWaitingList(player);
 
     if (battleId && (await joinRandomRoom(battleId, player))) {
       console.log(`入室成功: roomId ${battleId}`);
       return { battleId, startBattle: true, message: "Match successful" };
-    }
-
-    if (battleId) {
-      await removeRoom(battleId);
     }
 
     const newBattleId = await createBattleRoom(player);
@@ -241,8 +250,7 @@ export const requestMatchFunction = onCall(
   }
 );
 
-/**
- * マッチングリクエストをキャンセルするクラウド関数
+/** マッチングリクエストをキャンセルするクラウド関数
  */
 export const cancelMatchFunction = onCall(async (request) => {
   const playerId = authCheck(request.auth?.uid ?? "");
@@ -260,8 +268,7 @@ export const cancelMatchFunction = onCall(async (request) => {
 
 //#endregion
 
-/**
- * テスト用のクラウド関数
+/** テスト用のクラウド関数
  */
 export const testFunction = onCall((request) => {
   return {
