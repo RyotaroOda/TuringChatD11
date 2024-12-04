@@ -81,7 +81,6 @@ import { generateChat } from "../services/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
-import { set } from "firebase/database";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -101,6 +100,7 @@ const HomeView: React.FC = () => {
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
   const [playerId, setPlayerId] = useState<string>("");
+  const [photoURL, setPhotoURL] = useState<string | null>(null);
   const [score, setScore] = useState<number>(0);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [bots, setBots] = useState<BotData | null>(null);
@@ -115,6 +115,15 @@ const HomeView: React.FC = () => {
 
   //#endregion
 
+  useEffect(() => {
+    // 初回訪問チェック
+    const hasSeenHowToPlay = localStorage.getItem("firstPlay");
+    if (!hasSeenHowToPlay) {
+      setOpenTutorial(true);
+      localStorage.setItem("firstPlay", "true");
+    }
+  }, []);
+
   //#region ログイン状態の確認とプロフィール取得
   useEffect(() => {
     if (user) {
@@ -124,6 +133,7 @@ const HomeView: React.FC = () => {
         setPlayerName("ゲスト");
       } else {
         setPlayerName(user.displayName || "");
+        setPhotoURL(user.photoURL || "");
         fetchUserProfile();
       }
     }
@@ -261,12 +271,12 @@ const HomeView: React.FC = () => {
   //#endregion
 
   //#region チュートリアルダイアログ
-  const [openTutorial, setTutorialOpen] = useState(false);
+  const [openTutorial, setOpenTutorial] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
-  const handleTutorialOpen = () => setTutorialOpen(true);
+  const handleTutorialOpen = () => setOpenTutorial(true);
   const handleTutorialClose = () => {
-    setTutorialOpen(false);
+    setOpenTutorial(false);
     setActiveStep(0); // Reset stepper when dialog is closed
   };
 
@@ -621,7 +631,7 @@ const HomeView: React.FC = () => {
   };
 
   const handleIconGenerator = () => {
-    navigate(appPaths.icon_generator, { state: profile });
+    // navigate(appPaths.icon_generator, { state: profile });
   };
   //#endregion
 
@@ -640,7 +650,7 @@ const HomeView: React.FC = () => {
                 variant="h6"
                 sx={{
                   flexGrow: 1,
-                  textAlign: "center",
+                  textAlign: "left",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -648,18 +658,18 @@ const HomeView: React.FC = () => {
               >
                 チューリングゲーム
               </Typography>
-              <Button
+              {/* <Button
                 startIcon={<InfoOutlinedIcon />}
                 variant="text"
                 color="inherit"
-                onClick={handleIconGenerator}
+                onClick={handleHowToPlay}
                 sx={{
                   textTransform: "none",
                   fontSize: "1rem",
                 }}
               >
                 ゲームの遊び方
-              </Button>
+              </Button> */}
               <Button
                 variant="outlined"
                 color="inherit"
@@ -691,17 +701,34 @@ const HomeView: React.FC = () => {
                     flex: 1,
                   }}
                 >
-                  <Box textAlign="center" mb={mdSize}>
-                    <Typography variant="h6" color="text.primary" gutterBottom>
-                      <AccountCircleIcon
-                        color="primary"
-                        fontSize="large"
-                        sx={{ verticalAlign: "middle", mr: 1 }}
-                      />
-                      こんにちは<br></br>
-                      {playerName}さん
+                  <Box
+                    textAlign="center"
+                    mb={mdSize}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    {/* プロフィール画像またはデフォルトアイコン */}
+                    {photoURL ? (
+                      <IconButton onClick={handleIconGenerator}>
+                        <Avatar
+                          src={photoURL}
+                          alt={user?.displayName || "Guest"}
+                          sx={{ width: 40, height: 40, mr: 2 }}
+                        />
+                      </IconButton>
+                    ) : (
+                      <IconButton onClick={handleIconGenerator}>
+                        <AccountCircleIcon
+                          sx={{ width: 40, height: 40, mr: 2, color: "gray" }}
+                        />
+                      </IconButton>
+                    )}
+                    <Typography variant="h6" color="text.primary">
+                      {playerName}
                     </Typography>
                   </Box>
+
                   {user.isAnonymous ? (
                     <Box mb={mdSize}>
                       <Button

@@ -235,12 +235,13 @@ export const generateTopic = async (battleId: string) => {
 };
 
 export const generateImage = async (prompt: string) => {
-  const apiUrl = process.env.REACT_APP_OPENAI_API_URL;
+  const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
+  // 環境変数の検証
   if (!apiUrl) {
     throw new Error(
-      "OPENAI_API_URL is not defined in the environment variables."
+      "CHATGPT_API_URL is not defined in the environment variables."
     );
   }
   if (!apiKey) {
@@ -248,6 +249,7 @@ export const generateImage = async (prompt: string) => {
       "OPENAI_API_KEY is not defined in the environment variables."
     );
   }
+  console.log("hs");
   const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
@@ -255,12 +257,13 @@ export const generateImage = async (prompt: string) => {
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: "dall-e-3",
+      model: "text-embedding-3-small",
       prompt,
       n: 1,
       size: "512x512",
     }),
   });
+  console.log(response);
   if (!response.ok) {
     const errorDetails = await response.text();
     console.error("OpenAI API Error Details:", errorDetails);
@@ -271,6 +274,7 @@ export const generateImage = async (prompt: string) => {
 
   const data = await response.json();
   const imageUrl = data.data[0].url;
+  console.log(imageUrl);
   return imageUrl;
   // try {
   //   const response = await openai.images.generate({

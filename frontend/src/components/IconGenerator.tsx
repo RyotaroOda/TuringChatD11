@@ -28,12 +28,9 @@ const IconGenerator: React.FC = () => {
 
   useEffect(() => {
     if (lastGenerate) {
-      console.log("lastGenerate", lastGenerate);
       const seconds = lastGenerate.seconds;
       const date = new Date(seconds * 1000);
-      console.log("date", date);
       const today = new Date();
-      console.log("today", today);
       if (
         today.getFullYear() === date.getFullYear() &&
         today.getMonth() === date.getMonth() &&
@@ -105,8 +102,18 @@ const IconGenerator: React.FC = () => {
       >
         画像生成
       </Button>
+
+      {lastGenerate && (
+        <p>
+          最終生成日時: {new Date(lastGenerate.seconds * 1000).toDateString()}
+        </p>
+      )}
       {isLoading && <CircularProgress style={{ marginTop: "20px" }} />}
-      {!canGenerate && <p>画面上の画像生成は1日1回までです。</p>}
+      {canGenerate ? (
+        <p>画像生成ができます。</p>
+      ) : (
+        <p>画面上の画像生成は1日1回までです。</p>
+      )}
       {error && (
         <Alert severity="error" style={{ marginTop: "20px" }}>
           {error}
