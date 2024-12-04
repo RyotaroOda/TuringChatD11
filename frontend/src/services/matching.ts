@@ -7,6 +7,7 @@ import {
   ChatData,
   MatchResult,
 } from "../shared/types.ts";
+import { Timestamp } from "firebase/firestore";
 
 export const matching = async (player): Promise<MatchResult> => {
   const user = auth.currentUser;
@@ -93,7 +94,6 @@ export const matching = async (player): Promise<MatchResult> => {
     maxTurn: 4,
     battleType: "Single",
     oneTurnTime: 60,
-    topic: "",
   };
 
   const newBattleData: BattleRoomData = {

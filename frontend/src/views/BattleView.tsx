@@ -42,6 +42,7 @@ import {
   FormControlLabel,
   Radio,
   CircularProgress,
+  Fade,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { appPaths } from "../App.tsx";
@@ -570,9 +571,22 @@ const BattleView: React.FC = () => {
                           },
                           transition:
                             "background-color 0.3s ease, color 0.3s ease",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
-                        {isGenerating ? "生成中..." : "メッセージ生成"}
+                        {isGenerating ? (
+                          <>
+                            <CircularProgress
+                              size={20}
+                              sx={{ marginRight: 1 }}
+                            />
+                            生成中...
+                          </>
+                        ) : (
+                          "メッセージ生成"
+                        )}
                       </Button>
                     </Box>
                     <Box

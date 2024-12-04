@@ -334,11 +334,13 @@ const ProfileEdit: React.FC = () => {
                     </Typography>
                     <Typography variant="body1">
                       登録日:{" "}
-                      {new Date(profile?.signUpDate || 0).toLocaleDateString()}
+                      {Timestamp.now()(
+                        profile?.signUpDate || 0
+                      ).toLocaleDateString()}
                     </Typography>
                     <Typography variant="body1">
                       最終ログイン:{" "}
-                      {new Date(
+                      {Timestamp.now()(
                         profile?.lastLoginDate || 0
                       ).toLocaleDateString()}
                     </Typography>

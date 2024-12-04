@@ -7,6 +7,7 @@ import {
   updateDoc,
   getDoc,
   addDoc,
+  Timestamp,
 } from "firebase/firestore";
 import {
   AIModel,
@@ -17,6 +18,7 @@ import {
 } from "../shared/types.ts";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { auth, firestore } from "./firebase_f.ts";
+import { update } from "firebase/database";
 
 //#region Authプロフィール
 
@@ -37,8 +39,7 @@ const updateAuthProfile = async (displayName: string, photoURL: string) => {
 
 //#region ProfileEdit
 
-/**
- * 使用しているプラットフォームを判定
+/** 使用しているプラットフォームを判定
  * @returns プラットフォーム名 (mobile, desktop, web)
  */
 const detectPlatform = () => {
@@ -52,8 +53,7 @@ const detectPlatform = () => {
   return "web";
 };
 
-/**
- * 新しいユーザープロフィールを作成
+/** 新しいユーザープロフィールを作成
  */
 export const createUserProfile = async () => {
   const user = auth.currentUser;
@@ -80,8 +80,9 @@ export const createUserProfile = async () => {
       data: botData,
     },
     questionnaire: null,
-    signUpDate: new Date(),
-    lastLoginDate: new Date(),
+    signUpDate: Timestamp.now(),
+    lastLoginDate: Timestamp.now(),
+    lastGeneratedImage: new Timestamp(Date.now() - 24 * 60 * 60, 0),
     age: null,
     gender: "no_answer",
     language: "Japanese",
@@ -98,8 +99,7 @@ export const createUserProfile = async () => {
   console.log("新規プロフィールが作成されました:", user.uid);
 };
 
-/**
- * ユーザープロフィールを更新
+/** ユーザープロフィールを更新
  * @param data 更新データ
  */
 export const updateUserProfile = async (data: Partial<ProfileData>) => {
@@ -111,7 +111,7 @@ export const updateUserProfile = async (data: Partial<ProfileData>) => {
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
     ...data,
-    lastLoginDate: Date.now(),
+    lastLoginDate: Timestamp.now(),
   });
 
   console.log("プロフィールが更新されました:", userId);
@@ -128,31 +128,101 @@ export const updateLastLogin = async () => {
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
-    lastLoginDate: Date.now(),
+    lastLoginDate: Timestamp.now(),
   });
 
   console.log("最終ログインが更新されました:", userId);
 };
 
-/**
- * ユーザープロフィールを取得
- * @returns プロフィールデータ
- */
-export const getUserProfile = async (): Promise<ProfileData> => {
+export const updateLastGeneratedImage = async () => {
   const userId = auth.currentUser?.uid;
-
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
   }
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
+  await updateDoc(profileRef, {
+    lastGeneratedImage: Date.now(),
+  });
+
+  console.log("最終ログインが更新されました:", userId);
+};
+
+/** ユーザープロフィールを取得
+ * @returns プロフィールデータ
+ */
+export const getUserProfile = async (): Promise<ProfileData> => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("ユーザーが見つかりません");
+  }
+  const userId = user.uid;
+
+  const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   const snapshot = await getDoc(profileRef);
+  console.log("プロフィールデータを取得:", snapshot);
+
+  // ProfileDataの初期値を定義
+  const botData: BotSetting[] = Array.from({ length: 6 }, (_, index) => ({
+    id: index,
+    prompt: `設定${index + 1}`,
+    model: AIModel["gpt-4"],
+    name: `${index + 1}`,
+    temperature: 1,
+    top_p: index < 3 ? 1 : 0,
+  }));
+
+  const initialProfileData: ProfileData = {
+    userId: userId,
+    name: user.displayName || "未設定",
+    rating: 0,
+    bots: {
+      defaultId: 1,
+      data: botData,
+    },
+
+    questionnaire: null,
+    signUpDate: Timestamp.now(),
+    lastLoginDate: Timestamp.now(),
+    lastGeneratedImage: new Timestamp(
+      Timestamp.now().seconds - 24 * 60 * 60,
+      0
+    ),
+    age: null,
+    gender: "no_answer",
+    language: "Japanese",
+    location: {
+      country: "japan",
+      city: null,
+    },
+    platform: detectPlatform(),
+    win: 0,
+    lose: 0,
+  };
 
   if (snapshot.exists()) {
-    const profileData = snapshot.data() as ProfileData;
-    console.log("プロフィールを取得しました:", profileData);
+    const profileData = snapshot.data() as Partial<ProfileData>;
+    console.log("取得したプロフィール:", profileData);
+
+    // 不足しているプロパティを補完
+    const completeProfileData: ProfileData = {
+      ...initialProfileData,
+      ...profileData,
+    };
+
+    // 不足があった場合のみ更新
+    const missingFields = Object.keys(initialProfileData).filter(
+      (key) => !(key in profileData)
+    );
+
+    if (missingFields.length > 0) {
+      console.log("欠けているフィールドを補完します:", missingFields);
+      updateUserProfile(completeProfileData);
+    }
+
     await updateLastLogin();
-    return profileData;
+    return completeProfileData;
   } else {
     throw new Error(`ユーザープロフィールが見つかりません: ${userId}`);
   }
@@ -198,7 +268,7 @@ export const addUserImpression = async (data: string) => {
   );
   const impressionData: Impression = {
     impression: data,
-    date: new Date(),
+    date: Timestamp.now(),
     user: auth.currentUser?.displayName || "未設定",
     userId: userId,
   };

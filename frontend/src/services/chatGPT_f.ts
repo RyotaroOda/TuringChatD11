@@ -8,6 +8,12 @@ import {
 } from "../shared/types.ts";
 import { addMessage } from "./firebase-realtime-database.ts";
 import { auth } from "./firebase_f.ts";
+// import OpenAI from "openai";
+
+// const openai = new OpenAI({
+//   apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+//   baseURL: process.env.REACT_APP_OPENAI_API_URL,
+// });
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -30,8 +36,7 @@ interface ChatGPTRequest {
   stop: null | string[];
 }
 
-/**
- * ChatGPT APIにリクエストを送信し、応答を取得
+/**ChatGPT APIにリクエストを送信し、応答を取得
  * @param prompt ChatGPTへのリクエスト内容
  * @returns 応答のテキスト
  * @throws APIのエラーやレスポンスの欠落
@@ -84,8 +89,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   throw new Error("No content found in ChatGPT response.");
 };
 
-/**
- * テストメッセージ生成用関数
+/** テストメッセージ生成用関数
  * @param messages 会話履歴
  * @returns ChatGPTの応答
  */
@@ -107,8 +111,7 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
   return answer;
 };
 
-/**
- * バトル用メッセージ生成関数
+/** バトル用メッセージ生成関数
  * @param log チャットの履歴ログ
  * @param instruction リアルタイム指示
  * @param bot Botの設定
@@ -180,13 +183,21 @@ export const generateBattleMessage = async (
   };
 
   console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
-  const answer = await generate(prompt);
-  console.log("Generated Battle Message:", answer);
+  const generated = await generate(prompt);
+  console.log("generated", generated);
+
+  //余計な文字列を削除
+  function removeSubstring(originalString, substring) {
+    return originalString.replace(new RegExp(substring, "g"), "");
+  }
+  const answer = removeSubstring(
+    removeSubstring(generated, "[proponent]"),
+    "[opponent]"
+  ).replace(/\[\]/g, ""); // 空の[]を削除;
   return answer;
 };
 
-/**
- * トピックを生成する関数
+/**トピックを生成する関数
  * @returns 生成されたトピック
  */
 export const generateTopic = async (battleId: string) => {
@@ -221,4 +232,59 @@ export const generateTopic = async (battleId: string) => {
     console.error("Failed to generate topic:", error);
     throw new Error("Failed to generate topic.");
   }
+};
+
+export const generateImage = async (prompt: string) => {
+  const apiUrl = process.env.REACT_APP_OPENAI_API_URL;
+  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+
+  if (!apiUrl) {
+    throw new Error(
+      "OPENAI_API_URL is not defined in the environment variables."
+    );
+  }
+  if (!apiKey) {
+    throw new Error(
+      "OPENAI_API_KEY is not defined in the environment variables."
+    );
+  }
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "dall-e-3",
+      prompt,
+      n: 1,
+      size: "512x512",
+    }),
+  });
+  if (!response.ok) {
+    const errorDetails = await response.text();
+    console.error("OpenAI API Error Details:", errorDetails);
+    throw new Error(
+      `Failed to fetch from OpenAI API: ${response.status} - ${errorDetails}`
+    );
+  }
+
+  const data = await response.json();
+  const imageUrl = data.data[0].url;
+  return imageUrl;
+  // try {
+  //   const response = await openai.images.generate({
+  //     model: "dall-e-3",
+  //     prompt: "a white siamese cat",
+  //     n: 1,
+  //     size: "512x512",
+  //   });
+
+  //   const imageUrl = response.data[0].url;
+
+  //   return imageUrl;
+  // } catch (error) {
+  //   console.error("Failed to generate image:", error);
+  //   throw new Error("Failed to generate image.");
+  // }
 };

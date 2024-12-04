@@ -127,6 +127,7 @@ const HomeView: React.FC = () => {
         fetchUserProfile();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchUserProfile = async () => {
@@ -618,6 +619,10 @@ const HomeView: React.FC = () => {
   const handleHowToPlay = () => {
     navigate(appPaths.how_to_play);
   };
+
+  const handleIconGenerator = () => {
+    navigate(appPaths.icon_generator, { state: profile });
+  };
   //#endregion
 
   const xsSize = 12;
@@ -647,7 +652,7 @@ const HomeView: React.FC = () => {
                 startIcon={<InfoOutlinedIcon />}
                 variant="text"
                 color="inherit"
-                onClick={handleHowToPlay}
+                onClick={handleIconGenerator}
                 sx={{
                   textTransform: "none",
                   fontSize: "1rem",
@@ -1121,6 +1126,14 @@ const HomeView: React.FC = () => {
                     />
                   ) : (
                     <>
+                      <Typography
+                        variant="body1"
+                        color="text.primary"
+                        sx={{ whiteSpace: "pre-wrap", mt: 2, mb: 2 }}
+                      >
+                        設定中のプロンプト：{bots?.data[bots.defaultId].name}
+                      </Typography>
+                      <Divider></Divider>
                       <Typography
                         variant="body1"
                         color="text.primary"

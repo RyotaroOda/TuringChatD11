@@ -22,6 +22,7 @@ import { ThemeProvider } from "@emotion/react";
 import { createTheme } from "@mui/material/styles";
 import RoomView from "./views/PrivateRoomView.tsx";
 import HowToPlay from "./components/HowToPlay.tsx";
+import IconGenerator from "./components/IconGenerator.tsx";
 
 export const variables = {
   experiment: true,
@@ -42,6 +43,7 @@ export const appPaths = {
   questionnaire_edit: "/questionnaire_edit",
   impression_edit: "/impression_edit",
   how_to_play: "/how_to_play",
+  icon_generator: "/icon_generator",
 };
 
 // カスタムテーマの作成
@@ -130,6 +132,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/icon_generator"
+              element={
+                <ProtectedRoute>
+                  <IconGenerator />
                 </ProtectedRoute>
               }
             />

@@ -47,6 +47,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { generateTopic } from "../services/chatGPT_f.ts";
 import { appPaths } from "../App.tsx";
+import { Timestamp } from "firebase/firestore";
 
 const theme = createTheme({
   typography: {
@@ -155,9 +156,12 @@ const BattleRoomView: React.FC = () => {
         });
         if (battleData.hostId === myId) {
           await generateTopic(battleId);
-          const data = {
-            status: "started",
-            timestamps: { start: Date.now() },
+          const data: Partial<BattleRoomData> = {
+            status: "started" as "started",
+            timestamps: {
+              start: new Date(),
+              end: new Date(),
+            },
           };
           await updateBattleRoom(battleId, data);
         }
@@ -204,7 +208,11 @@ const BattleRoomView: React.FC = () => {
           currentTurn: 0,
           activePlayerId: battleData.hostId,
           messages: [
-            { senderId: "system", message: topic, timestamp: Date.now() },
+            {
+              senderId: "system",
+              message: topic,
+              timestamp: Timestamp.now(),
+            },
           ],
         },
         status: battleData.status,

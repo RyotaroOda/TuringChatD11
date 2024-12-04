@@ -1,4 +1,7 @@
 //share/types.ts
+
+import { Timestamp } from "firebase/firestore";
+
 //#region RoomData
 export type RoomData = {
   roomId: string;
@@ -40,7 +43,7 @@ export type BattleRules = {
 export type Message = {
   senderId: string;
   message: string;
-  timestamp: number;
+  timestamp: Timestamp;
 };
 
 //バトルログ バトル中に参照する用
@@ -94,8 +97,9 @@ export type ProfileData = {
   userId: string;
   name: string;
 
-  signUpDate: Date;
-  lastLoginDate: Date;
+  signUpDate: Timestamp;
+  lastLoginDate: Timestamp;
+  lastGeneratedImage: Timestamp;
 
   rating: number;
   win: number;
@@ -149,7 +153,7 @@ export type QuestionnaireData = {
 //感想
 export type Impression = {
   impression: string;
-  date: Date;
+  date: Timestamp;
   user: string;
   userId: string;
 };

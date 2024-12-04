@@ -68,13 +68,15 @@ const EditPromptView: React.FC = () => {
   );
 
   const [botSettings, setBotSettings] = useState(bots.data);
-  const [prompt, setPrompt] = useState<string>(bots.data[0].prompt);
-  const [botName, setBotName] = useState<string>(bots.data[0].name);
-  const [model, setModel] = useState<AIModel>(bots.data[0].model);
+  const [prompt, setPrompt] = useState<string>(bots.data[defaultBotId].prompt);
+  const [botName, setBotName] = useState<string>(bots.data[defaultBotId].name);
+  const [model, setModel] = useState<AIModel>(bots.data[defaultBotId].model);
   const [creativity, setCreativity] = useState<number>(
-    bots.data[0].temperature
+    bots.data[defaultBotId].temperature
   );
-  const [certainty, setCertainty] = useState<number>(bots.data[0].top_p);
+  const [certainty, setCertainty] = useState<number>(
+    bots.data[defaultBotId].top_p
+  );
   const [isPromptSaveEnabled, setIsPromptSaveEnabled] =
     useState<boolean>(false);
   const [isSettingsSaveEnabled, setIsSettingsSaveEnabled] =
@@ -181,7 +183,7 @@ const EditPromptView: React.FC = () => {
   // プロンプトが完成したときの処理
   const handleCompleteGeneratePrompt = (generatedPrompt) => {
     setPrompt(generatedPrompt); // 完成したプロンプトを保存
-    console.log("プロンプトを更新:", prompt); // 必要に応じてログ出力
+    handlePromptSave(generatedPrompt);
   };
   //#endregion
 
@@ -192,7 +194,7 @@ const EditPromptView: React.FC = () => {
   const [isSettingsSaved, setIsSettingsSaved] = useState(false);
 
   // プロンプト保存処理
-  const handlePromptSave = async () => {
+  const handlePromptSave = async (prompt: string) => {
     setIsPromptSaving(true); // ロード中状態にする
     const updatedBotSettings = botSettings.map((bot) =>
       bot.id === selectedBotId ? { ...bot, name: botName, prompt: prompt } : bot
@@ -381,7 +383,7 @@ const EditPromptView: React.FC = () => {
                   variant="contained"
                   color="primary"
                   disabled={!isPromptSaveEnabled || isPromptSaving}
-                  onClick={handlePromptSave}
+                  onClick={() => handlePromptSave(prompt)}
                   sx={{
                     transition: "all 0.3s ease",
                   }}

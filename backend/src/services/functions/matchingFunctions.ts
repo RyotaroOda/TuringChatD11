@@ -10,6 +10,7 @@ import {
 import { DATABASE_PATHS } from "../../shared/database-paths";
 import { db } from "../firebase_b";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { Timestamp } from "firebase/firestore";
 
 //#region Utility Functions
 

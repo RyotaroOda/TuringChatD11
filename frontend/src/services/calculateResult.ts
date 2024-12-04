@@ -1,7 +1,7 @@
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { BattleResult, SubmitAnswer } from "../shared/types.ts";
 import { auth, db, firestore } from "./firebase_f.ts";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { ref, set, get, child, remove } from "firebase/database";
 
 /** バトル結果を計算
@@ -46,14 +46,17 @@ export const calculateResultFunction = async (battleId: string) => {
   };
 
   // バトル時間計算
-  const end = Date.now();
+  const end = new Date();
   const snapshot = await get(
     child(ref(db), DATABASE_PATHS.timestamps(battleId))
   );
-  const startTime = snapshot.val().start;
-  const timeData = { start: startTime, end: end };
+  const startTime = snapshot.val().start as Date;
+  const timeData = {
+    start: startTime,
+    end: new Date(),
+  };
 
-  const time = end - startTime;
+  const time = end.getTime() - startTime.getTime();
 
   // 結果を構築
   const result: BattleResult = {

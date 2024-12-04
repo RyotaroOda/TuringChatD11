@@ -13,6 +13,7 @@ import {
 } from "../shared/types.ts";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateResult } from "./firebase-functions-client.ts";
+import { Timestamp } from "firebase/firestore";
 
 //#region HomeView
 
@@ -254,7 +255,10 @@ export const onGeneratedTopic = (
  * @param battleId バトルID
  * @param data 更新するバトルログデータ
  * */
-export const updateBattleRoom = async (battleId: string, data: any) => {
+export const updateBattleRoom = async (
+  battleId: string,
+  data: Partial<BattleRoomData>
+) => {
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
@@ -325,7 +329,7 @@ export const addMessage = async (
   const messageData: Message = {
     senderId: activePlayerId ? user.uid : "system",
     message,
-    timestamp: Date.now(),
+    timestamp: Timestamp.now(),
   };
   await push(
     ref(db, `${DATABASE_PATHS.chatData(battleId)}/messages`),
