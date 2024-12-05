@@ -87,11 +87,12 @@ export const createUserProfile = async () => {
     language: "Japanese",
     location: {
       country: "japan",
-      city: null,
+      region: null,
     },
     platform: detectPlatform(),
     win: 0,
     lose: 0,
+    draw: 0,
   };
 
   await setDoc(profileRef, initialProfileData);
@@ -193,11 +194,12 @@ export const getUserProfile = async (): Promise<ProfileData> => {
     language: "Japanese",
     location: {
       country: "japan",
-      city: null,
+      region: null,
     },
     platform: detectPlatform(),
     win: 0,
     lose: 0,
+    draw: 0,
   };
 
   if (snapshot.exists()) {

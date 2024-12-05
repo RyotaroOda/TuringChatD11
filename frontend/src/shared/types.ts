@@ -104,6 +104,7 @@ export type ProfileData = {
   rating: number;
   win: number;
   lose: number;
+  draw: number;
 
   bots: BotData;
 
@@ -116,7 +117,7 @@ export type ProfileData = {
   language: string; // 言語（例: "en", "ja"）
   location: {
     country: string; // 国
-    city: string | null; // 都市（オプション）
+    region: string | null; // 地域（オプション）
   };
 
   platform: "mobile" | "web" | "desktop"; // 利用プラットフォーム

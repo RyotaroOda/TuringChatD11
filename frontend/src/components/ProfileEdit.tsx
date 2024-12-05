@@ -172,7 +172,7 @@ const ProfileEdit: React.FC = () => {
             location: {
               ...prev.location,
               country,
-              city: country === "日本" ? "" : prev.location.city,
+              city: country === "日本" ? "" : prev.location.region,
             },
           }
         : prev
@@ -403,7 +403,7 @@ const ProfileEdit: React.FC = () => {
                     <InputLabel>地域</InputLabel>
                     <Select
                       name="location.city"
-                      value={profile?.location.city || ""}
+                      value={profile?.location.region || ""}
                       onChange={handleChange}
                     >
                       {prefectureGroups.flatMap((group) => [
@@ -424,7 +424,7 @@ const ProfileEdit: React.FC = () => {
                   <TextField
                     label="地域"
                     name="location.city"
-                    value={profile?.location.city || ""}
+                    value={profile?.location.region || ""}
                     onChange={handleCityChange}
                     fullWidth
                   />
