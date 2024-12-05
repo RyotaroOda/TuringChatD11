@@ -97,9 +97,9 @@ export type ProfileData = {
   userId: string;
   name: string;
 
-  signUpDate: Timestamp;
-  lastLoginDate: Timestamp;
-  lastGeneratedImage: Timestamp;
+  signUpDate: string;
+  lastLoginDate: string;
+  lastGeneratedImage: string;
 
   rating: number;
   win: number;

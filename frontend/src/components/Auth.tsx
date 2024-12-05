@@ -1,4 +1,3 @@
-// frontend/src/components/Auth.tsx
 import React, { useState, useEffect } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -35,38 +34,8 @@ const Auth: React.FC = () => {
   const [username, setUsername] = useState("");
   const [isRegister, setIsRegister] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isEmailValid, setIsEmailValid] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  //#endregion
-
-  //#region メールアドレスの有効性確認
-  const checkEmailValidity = async (email: string) => {
-    if (!email) {
-      setIsEmailValid(false);
-      setErrorMessage(null);
-      return;
-    }
-    try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length > 0) {
-        setIsEmailValid(false);
-        setErrorMessage("登録済みのメールアドレスです。");
-      } else {
-        setIsEmailValid(true);
-        setErrorMessage(null);
-      }
-    } catch (error) {
-      setIsEmailValid(false);
-      setErrorMessage("メールアドレスが無効です。");
-    }
-  };
-
-  useEffect(() => {
-    if (isRegister) {
-      checkEmailValidity(email);
-    }
-  }, [email, isRegister]);
   //#endregion
 
   //#region 認証処理
@@ -87,6 +56,13 @@ const Auth: React.FC = () => {
     try {
       setIsLoading(true);
       if (isRegister) {
+        // サインアップ時はメールアドレスの有効性をチェック
+        const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+        if (signInMethods.length > 0) {
+          setErrorMessage("このメールアドレスは既に登録されています。");
+          return;
+        }
+
         // サインアップ処理
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -105,7 +81,7 @@ const Auth: React.FC = () => {
         navigate("/");
       }
     } catch (error: any) {
-      console.error("認証エラー:", error);
+      console.error("エラー:", error);
 
       // Firebaseのエラーメッセージに基づいてエラーを設定
       switch (error.code) {
@@ -187,12 +163,6 @@ const Auth: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              error={isRegister && !isEmailValid && email !== ""}
-              helperText={
-                isRegister && !isEmailValid && email !== ""
-                  ? "有効なメールアドレスを入力してください。"
-                  : ""
-              }
             />
             <TextField
               margin="normal"
@@ -208,7 +178,7 @@ const Auth: React.FC = () => {
               fullWidth
               variant="contained"
               color="primary"
-              disabled={isLoading || (isRegister && !isEmailValid)}
+              disabled={isLoading}
               sx={{ mt: 3, mb: 2 }}
             >
               {isLoading ? (

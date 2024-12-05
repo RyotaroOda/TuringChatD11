@@ -23,6 +23,9 @@ type Values = {
 function PromptGenerator({ onClose, onComplete, initialPrompt }) {
   const steps = ["文字数", "キャラクター", "口調"];
   const [activeStep, setActiveStep] = useState(0);
+  const [isStepCompleted, setIsStepCompleted] = useState<boolean[]>(
+    Array(steps.length).fill(false)
+  );
   const [prompt, setPrompt] = useState(initialPrompt);
   const [values, setValues] = useState<Values>({
     文字数: "",
@@ -41,10 +44,6 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
     回答: "",
     難しさ: "",
   });
-
-  const [isStepCompleted, setIsStepCompleted] = useState<boolean[]>(
-    Array(steps.length).fill(false)
-  );
 
   // 選択肢リスト
   const characterTraits = [
@@ -66,6 +65,17 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
     "ロボット",
     "宇宙人",
   ];
+  const tones = [
+    "元気いっぱいな",
+    "丁寧な",
+    "関西弁",
+    "ロボットっぽい",
+    "詩的な",
+  ];
+
+  const responses = ["直接回答を誘導", "選択肢を提供", "自由回答を促す"];
+
+  const difficulties = ["簡単", "考えさせる", "クリエイティブ"];
 
   // 選択肢を文章に変換するロジック
   const convertToSentence = (key, value) => {
@@ -83,26 +93,20 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
         return "キャラクター情報が未設定です。";
       }
     }
+    if (key === "口調") {
+      return `あなたは${value}口調で話します。`;
+    }
+    if (key === "回答") {
+      return `回答形式は${value}。`;
+    }
+    if (key === "難しさ") {
+      return `質問の難易度は${value}です。`;
+    }
     const sentences = {
       文字数: {
         短め: "15文字以内の短めの文章を生成してください。",
         中程度: "30文字程度の文章を生成してください。",
         長め: "50文字以内の文章を生成してください。",
-      },
-      口調: {
-        フォーマル: "口調はフォーマルにしてください。",
-        カジュアル: "口調はカジュアルにしてください。",
-        ユーモアあり: "口調はユーモアを交えたものにしてください。",
-      },
-      回答: {
-        直接回答を誘導: "回答は相手に直接回答を誘導する形式にしてください。",
-        選択肢を提供: "回答は相手に選択肢を提供してください。",
-        自由回答を促す: "回答は相手に自由回答を促す形式にしてください。",
-      },
-      難しさ: {
-        簡単: "相手への質問は簡単なものにしてください。",
-        考えさせる: "相手への質問は考えさせるものにしてください。",
-        クリエイティブ: "相手への質問はクリエイティブなものにしてください。",
       },
     };
 
@@ -259,9 +263,11 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               value={selectedValues["口調"]}
               onChange={handleChange}
             >
-              <MenuItem value="フォーマル">フォーマル</MenuItem>
-              <MenuItem value="カジュアル">カジュアル</MenuItem>
-              <MenuItem value="ユーモアあり">ユーモアあり</MenuItem>
+              {tones.map((tone) => (
+                <MenuItem key={tone} value={tone}>
+                  {tone}
+                </MenuItem>
+              ))}
             </Select>
             <TextField
               label="その他（直接入力）"
@@ -282,9 +288,11 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               value={selectedValues["回答"]}
               onChange={handleChange}
             >
-              <MenuItem value="直接回答を誘導">直接回答を誘導</MenuItem>
-              <MenuItem value="選択肢を提供">選択肢を提供</MenuItem>
-              <MenuItem value="自由回答を促す">自由回答を促す</MenuItem>
+              {responses.map((response) => (
+                <MenuItem key={response} value={response}>
+                  {response}
+                </MenuItem>
+              ))}
             </Select>
             <TextField
               label="その他（直接入力）"
@@ -305,9 +313,11 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               value={selectedValues["難しさ"]}
               onChange={handleChange}
             >
-              <MenuItem value="簡単">簡単</MenuItem>
-              <MenuItem value="考えさせる">考えさせる</MenuItem>
-              <MenuItem value="クリエイティブ">クリエイティブ</MenuItem>
+              {difficulties.map((difficulty) => (
+                <MenuItem key={difficulty} value={difficulty}>
+                  {difficulty}
+                </MenuItem>
+              ))}
             </Select>
             <TextField
               label="その他（直接入力）"

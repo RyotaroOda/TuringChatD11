@@ -124,13 +124,6 @@ const prefectureGroups = [
   },
 ];
 
-export const timestampToString = (timestamp: Timestamp): string => {
-  if (!timestamp.seconds) return "？";
-  const date = new Date(timestamp.seconds * 1000);
-  const formatTime = `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()} ${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
-  return formatTime;
-};
-
 const ProfileEdit: React.FC = () => {
   //#region init
   const [profile, setProfile] = useState<ProfileData>(useLocation().state);
@@ -457,10 +450,10 @@ const ProfileEdit: React.FC = () => {
                       敗北数: {profile?.lose || 0}
                     </Typography>
                     <Typography variant="body1">
-                      登録日: {timestampToString(profile.signUpDate)}
+                      登録日: {profile?.signUpDate || ""}
                     </Typography>
                     <Typography variant="body1">
-                      最終ログイン: {timestampToString(profile?.lastLoginDate)}
+                      最終ログイン: {profile?.lastLoginDate || ""}
                     </Typography>
                   </CardContent>
                 </Card>

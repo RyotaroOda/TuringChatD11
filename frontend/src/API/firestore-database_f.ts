@@ -19,25 +19,12 @@ import {
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { auth, firestore } from "./firebase_f.ts";
 
-//#region Authプロフィール
-
-/**
- * Firebase Auth プロフィールを更新
- * @param displayName 表示名
- * @param photoURL プロフィール画像URL
- */
-const updateAuthProfile = async (displayName: string, photoURL: string) => {
-  const user = auth.currentUser;
-  if (user) {
-    await updateProfile(user, { displayName, photoURL });
-    console.log("Authプロフィールが更新されました:", displayName, photoURL);
-  }
-};
-
-//#endregion
-
 //#region ProfileEdit
-
+const getYesterday = (): Date => {
+  const today = new Date(); // 現在の日付を取得
+  today.setDate(today.getDate() - 1); // 日付を1日減らす
+  return today; // 昨日の日付を返す
+};
 /** 使用しているプラットフォームを判定
  * @returns プラットフォーム名 (mobile, desktop, web)
  */
@@ -79,9 +66,9 @@ export const createUserProfile = async () => {
       data: botData,
     },
     questionnaire: null,
-    signUpDate: Timestamp.now(),
-    lastLoginDate: Timestamp.now(),
-    lastGeneratedImage: new Timestamp(Date.now() - 24 * 60 * 60, 0),
+    signUpDate: new Date().toLocaleDateString(),
+    lastLoginDate: new Date().toLocaleDateString(),
+    lastGeneratedImage: getYesterday().toLocaleDateString(),
     age: null,
     gender: "no_answer",
     language: "Japanese",
@@ -94,7 +81,6 @@ export const createUserProfile = async () => {
     lose: 0,
     draw: 0,
   };
-
   await setDoc(profileRef, initialProfileData);
   console.log("新規プロフィールが作成されました:", user.uid);
 };
@@ -111,7 +97,7 @@ export const updateUserProfile = async (data: Partial<ProfileData>) => {
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
     ...data,
-    lastLoginDate: Timestamp.now(),
+    lastLoginDate: new Date().toLocaleDateString(),
   });
 
   console.log("プロフィールが更新されました:", userId);
@@ -128,7 +114,7 @@ export const updateLastLogin = async () => {
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
-    lastLoginDate: Timestamp.now(),
+    lastLoginDate: new Date().toLocaleDateString(),
   });
 
   console.log("最終ログインが更新されました:", userId);
@@ -142,7 +128,7 @@ export const updateLastGeneratedImage = async () => {
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
-    lastGeneratedImage: Date.now(),
+    lastGeneratedImage: new Date().toLocaleDateString(),
   });
 
   console.log("最終ログインが更新されました:", userId);
@@ -161,7 +147,6 @@ export const getUserProfile = async (): Promise<ProfileData> => {
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   const snapshot = await getDoc(profileRef);
-  console.log("プロフィールデータを取得:", snapshot);
 
   // ProfileDataの初期値を定義
   const botData: BotSetting[] = Array.from({ length: 6 }, (_, index) => ({
@@ -183,12 +168,9 @@ export const getUserProfile = async (): Promise<ProfileData> => {
     },
 
     questionnaire: null,
-    signUpDate: Timestamp.now(),
-    lastLoginDate: Timestamp.now(),
-    lastGeneratedImage: new Timestamp(
-      Timestamp.now().seconds - 24 * 60 * 60,
-      0
-    ),
+    signUpDate: new Date().toLocaleDateString(),
+    lastLoginDate: new Date().toLocaleDateString(),
+    lastGeneratedImage: getYesterday().toLocaleDateString(),
     age: null,
     gender: "no_answer",
     language: "Japanese",
