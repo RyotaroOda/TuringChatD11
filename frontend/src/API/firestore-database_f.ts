@@ -18,7 +18,6 @@ import {
 } from "../shared/types.ts";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { auth, firestore } from "./firebase_f.ts";
-import { update } from "firebase/database";
 
 //#region Authプロフィール
 

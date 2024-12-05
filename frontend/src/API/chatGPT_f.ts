@@ -1,4 +1,5 @@
 // frontend/src/services/chatGPT_f.ts
+import { variables } from "../App.tsx";
 import {
   AIModel,
   BattleRules,
@@ -6,6 +7,7 @@ import {
   GPTMessage,
   Message,
 } from "../shared/types.ts";
+import { generateMessageBack } from "./firebase-functions-client.ts";
 import { addMessage } from "./firebase-realtime-database.ts";
 import { auth } from "./firebase_f.ts";
 // import OpenAI from "openai";
@@ -24,7 +26,7 @@ interface ChatGPTResponse {
   }>;
 }
 
-interface ChatGPTRequest {
+export interface ChatGPTRequest {
   model: AIModel;
   messages: GPTMessage[];
   max_tokens: number;
@@ -42,58 +44,64 @@ interface ChatGPTRequest {
  * @throws APIのエラーやレスポンスの欠落
  */
 const generate = async (prompt: ChatGPTRequest): Promise<string> => {
-  const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  if (variables.disableClientGeneration) {
+    return await generateMessageBack(prompt);
+  } else {
+    const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
-  // 環境変数の検証
-  if (!apiUrl) {
-    throw new Error(
-      "CHATGPT_API_URL is not defined in the environment variables."
-    );
-  }
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is not defined in the environment variables."
-    );
-  }
-
-  console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
-
-  // ChatGPT APIリクエストの送信
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(prompt),
-  });
-
-  if (!response.ok) {
-    const errorDetails = await response.text();
-    console.error("ChatGPT API Error Details:", errorDetails);
-    throw new Error(
-      `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
-    );
-  }
-
-  // レスポンスの解析
-  const dataResponse = (await response.json()) as ChatGPTResponse;
-  if (dataResponse.choices && dataResponse.choices.length > 0) {
-    const message = dataResponse.choices[0].message;
-    if (message?.content) {
-      return message.content.trim();
+    // 環境変数の検証
+    if (!apiUrl) {
+      throw new Error(
+        "CHATGPT_API_URL is not defined in the environment variables."
+      );
     }
-  }
+    if (!apiKey) {
+      throw new Error(
+        "OPENAI_API_KEY is not defined in the environment variables."
+      );
+    }
 
-  throw new Error("No content found in ChatGPT response.");
+    console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
+
+    // ChatGPT APIリクエストの送信
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(prompt),
+    });
+
+    if (!response.ok) {
+      const errorDetails = await response.text();
+      console.error("ChatGPT API Error Details:", errorDetails);
+      throw new Error(
+        `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
+      );
+    }
+
+    // レスポンスの解析
+    const dataResponse = (await response.json()) as ChatGPTResponse;
+    if (dataResponse.choices && dataResponse.choices.length > 0) {
+      const message = dataResponse.choices[0].message;
+      if (message?.content) {
+        return message.content.trim();
+      }
+    }
+
+    throw new Error("No content found in ChatGPT response.");
+  }
 };
 
 /** テストメッセージ生成用関数
  * @param messages 会話履歴
  * @returns ChatGPTの応答
  */
-export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
+export const generateTestMessage = async (
+  messages: GPTMessage[]
+): Promise<string> => {
   const prompt: ChatGPTRequest = {
     model: AIModel["gpt-4"],
     messages,
@@ -105,7 +113,6 @@ export const generateChat = async (messages: GPTMessage[]): Promise<string> => {
     presence_penalty: 0,
     stop: null,
   };
-
   const answer = await generate(prompt);
   console.log("Generated Chat Response:", answer);
   return answer;
@@ -125,7 +132,6 @@ export const generateBattleMessage = async (
   config: BattleRules
 ): Promise<string> => {
   const myId = auth.currentUser?.uid;
-  console.log("log", log);
   const chatLog: GPTMessage[] = log.map((message) => {
     return {
       role: "user",
@@ -234,7 +240,7 @@ export const generateTopic = async (battleId: string) => {
   }
 };
 
-export const generateImage = async (prompt: string) => {
+export const generateImageFront = async (prompt: string) => {
   const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 

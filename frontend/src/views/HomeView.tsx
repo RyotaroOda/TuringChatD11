@@ -4,13 +4,14 @@ import { useNavigate } from "react-router-dom";
 import {
   getBattleRoomData,
   onMatched,
-} from "../services/firebase-realtime-database.ts";
+} from "../API/firebase-realtime-database.ts";
 import {
   requestMatch,
   cancelRequest,
-} from "../services/firebase-functions-client.ts";
+  generateMessageBack,
+} from "../API/firebase-functions-client.ts";
 import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
-import { auth } from "../services/firebase_f.ts";
+import { auth } from "../API/firebase_f.ts";
 import {
   AIModel,
   BotData,
@@ -18,7 +19,7 @@ import {
   PlayerData,
   ProfileData,
 } from "../shared/types.ts";
-import { getUserProfile } from "../services/firestore-database_f.ts";
+import { getUserProfile } from "../API/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./BattleRoomView.tsx";
 import PromptGenerator from "../components/PromptGenerator.tsx";
 import {
@@ -77,7 +78,7 @@ import { Add as AddIcon } from "@mui/icons-material";
 import EditIcon from "@mui/icons-material/Edit";
 import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
-import { generateChat } from "../services/chatGPT_f.ts";
+import { generateTestMessage } from "../API/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
@@ -515,7 +516,7 @@ const HomeView: React.FC = () => {
         const filteredMessages = chatHistory.filter(
           (message) => message.role !== "system"
         );
-        const responseContent = await generateChat(filteredMessages);
+        const responseContent = await generateTestMessage(filteredMessages);
         const aiMessage: GPTMessage = {
           role: "assistant",
           content: responseContent,
@@ -718,7 +719,13 @@ const HomeView: React.FC = () => {
                         />
                       </IconButton>
                     ) : (
-                      <IconButton onClick={handleIconGenerator}>
+                      <IconButton
+                        onClick={() => {
+                          user.isAnonymous
+                            ? handleLogin()
+                            : handleIconGenerator();
+                        }}
+                      >
                         <AccountCircleIcon
                           sx={{ width: 40, height: 40, mr: 2, color: "gray" }}
                         />

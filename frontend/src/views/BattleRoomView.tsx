@@ -15,8 +15,8 @@ import {
   preparationComplete,
   updateBattleRoom,
   updatePrivateBattleData,
-} from "../services/firebase-realtime-database.ts";
-import { auth } from "../services/firebase_f.ts";
+} from "../API/firebase-realtime-database.ts";
+import { auth } from "../API/firebase_f.ts";
 import {
   AppBar,
   Toolbar,
@@ -45,7 +45,7 @@ import {
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { generateTopic } from "../services/chatGPT_f.ts";
+import { generateTopic } from "../API/chatGPT_f.ts";
 import { appPaths } from "../App.tsx";
 import { Timestamp } from "firebase/firestore";
 

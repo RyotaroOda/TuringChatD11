@@ -21,7 +21,7 @@ type Values = {
 };
 
 function PromptGenerator({ onClose, onComplete, initialPrompt }) {
-  const steps = ["文字数", "キャラクター", "口調", "回答", "難しさ"];
+  const steps = ["文字数", "キャラクター", "口調"];
   const [activeStep, setActiveStep] = useState(0);
   const [prompt, setPrompt] = useState(initialPrompt);
   const [values, setValues] = useState<Values>({
@@ -111,14 +111,10 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
 
   // ステップの進行を管理する関数
   const handleNext = () => {
-    if (activeStep === steps.length - 1) {
-      // 最後のステップの場合は完了処理を行う
-      if (onComplete) {
-        onComplete(prompt); // 完了時に親コンポーネントにプロンプトを渡す
-      }
-      onClose();
+    if (activeStep === steps.length) {
+      // プロンプト完成画面に移行
+      setActiveStep((prevActiveStep) => prevActiveStep + 1);
     } else {
-      // それ以外の場合は次のステップに進む
       if (selectedValues[steps[activeStep]] || values[steps[activeStep]]) {
         setIsStepCompleted((prev) => {
           const newCompleted = [...prev];
@@ -197,13 +193,9 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
               value={selectedValues["文字数"]}
               onChange={handleChange}
             >
-              <MenuItem value="短め（20～50文字）">短め（20～50文字）</MenuItem>
-              <MenuItem value="中程度（50～100文字）">
-                中程度（50～100文字）
-              </MenuItem>
-              <MenuItem value="長め（100文字以上）">
-                長め（100文字以上）
-              </MenuItem>
+              <MenuItem value="短め">短め</MenuItem>
+              <MenuItem value="中程度">中程度</MenuItem>
+              <MenuItem value="長め">長め</MenuItem>
             </Select>
             <TextField
               label="その他（直接入力）"
@@ -345,27 +337,74 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
           </Step>
         ))}
       </Stepper>
+      {activeStep < steps.length ? (
+        <>
+          {/* Step Content Area */}
+          <Card sx={{ marginBottom: 4, boxShadow: 3 }}>
+            <CardContent>{getStepContent(activeStep)}</CardContent>
+            <CardActions
+              sx={{ display: "flex", justifyContent: "space-between" }}
+            >
+              <Button disabled={activeStep === 0} onClick={handleBack}>
+                戻る
+              </Button>
+              <Button variant="contained" color="primary" onClick={handleNext}>
+                {activeStep === steps.length - 1 ? "完成！" : "次へ"}
+              </Button>
+            </CardActions>
+          </Card>
 
-      {/* Step Content Area */}
-      <Card sx={{ marginBottom: 4, boxShadow: 3 }}>
-        <CardContent>{getStepContent(activeStep)}</CardContent>
-        <CardActions sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Button disabled={activeStep === 0} onClick={handleBack}>
-            戻る
-          </Button>
-          <Button variant="contained" color="primary" onClick={handleNext}>
-            {activeStep === steps.length - 1 ? "完成！" : "次へ"}
-          </Button>
-        </CardActions>
-      </Card>
+          <Card
+            sx={{ marginBottom: 4, backgroundColor: "#f9f9f9", boxShadow: 1 }}
+          >
+            <CardContent>
+              <Typography variant="h6">編集中のプロンプト</Typography>
+              <pre style={{ whiteSpace: "pre-wrap" }}>{prompt}</pre>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        // {/* Completed Prompt Display */}
+        <div>
+          <Typography variant="h5">プロンプト完成！</Typography>
 
-      {/* Completed Prompt Display */}
-      <Card sx={{ marginBottom: 4, backgroundColor: "#f9f9f9", boxShadow: 1 }}>
-        <CardContent>
-          <Typography variant="h6">編集中のプロンプト</Typography>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{prompt}</pre>
-        </CardContent>
-      </Card>
+          <Card
+            sx={{
+              marginBottom: 4,
+              backgroundColor: "#f9f9f9",
+              boxShadow: 1,
+              marginTop: 2,
+            }}
+          >
+            <CardContent>
+              <Typography variant="h6">生成したプロンプト</Typography>
+              <TextField
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                fullWidth
+                multiline
+                rows={6}
+                variant="outlined"
+              />
+            </CardContent>
+            <CardActions sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  if (onComplete) {
+                    onComplete(prompt);
+                  }
+                  onClose();
+                }}
+              >
+                保存
+              </Button>
+            </CardActions>
+          </Card>
+          {/* Completed Prompt Display */}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 //frontend/src/components/ImpressionEdit.tsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { addUserImpression } from "../services/firestore-database_f.ts";
+import { addUserImpression } from "../API/firestore-database_f.ts";
 import {
   Box,
   Button,

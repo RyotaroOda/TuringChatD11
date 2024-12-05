@@ -28,6 +28,7 @@ export const variables = {
   experiment: true,
   backend: false,
   defaultPrompt: "未設定",
+  disableClientGeneration: false,
 };
 
 export const appPaths = {

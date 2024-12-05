@@ -1,8 +1,8 @@
-// backend/src/services/chatGPT_b.ts
+//backend/src/services/functions/generateFunctions.ts
+import * as functions from "firebase-functions";
+import { AIModel, GPTMessage } from "../../shared/types";
+import OpenAI from "openai";
 import * as dotenv from "dotenv";
-import { AIModel, GPTMessage } from "../shared/types";
-
-dotenv.config(); // 環境変数をロード
 
 // 型定義
 interface ChatGPTResponse {
@@ -23,6 +23,57 @@ interface ChatGPTRequest {
   n: number; // 返答の数
   stop: null; // 応答の終了条件を指定するストップトークン
 }
+
+const openai = new OpenAI({
+  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
+  baseURL: process.env.REACT_APP_OPENAI_API_URL,
+});
+dotenv.config(); // 環境変数をロード
+
+export const generateMessageFunction = functions.https.onCall(
+  async (request): Promise<string> => {
+    const playerId = request.auth?.uid;
+    if (!playerId) {
+      throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
+    }
+
+    const GPTRequest = request.data as ChatGPTRequest;
+    try {
+      const response = await openai.chat.completions.create(GPTRequest);
+      console.log(response.choices[0]);
+      return "";
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      throw new Error("Failed to generate image.");
+    }
+  }
+);
+
+export const generateImageFunction = functions.https.onCall(
+  async (request): Promise<string> => {
+    const playerId = request.auth?.uid;
+    if (!playerId) {
+      throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
+    }
+
+    const prompt = request.data as string;
+    try {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size: "512x512",
+      });
+
+      const imageUrl = response.data[0].url;
+      if (imageUrl) return imageUrl;
+      return "";
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      throw new Error("Failed to generate image.");
+    }
+  }
+);
 
 /**
  * ChatGPT APIにリクエストを送信し、応答を取得する関数
@@ -82,8 +133,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
   }
 };
 
-/**
- * トピックを生成する関数
+/** トピックを生成する関数
  * @returns 生成されたトピック
  */
 export const generateTopic = async (): Promise<string> => {

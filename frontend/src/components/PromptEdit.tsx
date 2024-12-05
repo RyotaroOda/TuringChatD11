@@ -36,7 +36,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AIModel, BotData, GPTMessage } from "../shared/types.ts";
-import { generateChat } from "../services/chatGPT_f.ts";
+import { generateTestMessage } from "../API/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
 import PersonIcon from "@mui/icons-material/Person";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
@@ -48,7 +48,7 @@ import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
-import { updateUserProfile } from "../services/firestore-database_f.ts";
+import { updateUserProfile } from "../API/firestore-database_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -133,7 +133,7 @@ const EditPromptView: React.FC = () => {
         const filteredMessages = chatHistory.filter(
           (message) => message.role !== "system"
         );
-        const responseContent = await generateChat(filteredMessages);
+        const responseContent = await generateTestMessage(filteredMessages);
         const aiMessage: GPTMessage = {
           role: "assistant",
           content: responseContent,

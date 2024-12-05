@@ -17,8 +17,8 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { appPaths } from "../App.tsx";
-import { updateRating } from "../services/firestore-database_f.ts";
-import { auth } from "../services/firebase_f.ts";
+import { updateRating } from "../API/firestore-database_f.ts";
+import { auth } from "../API/firebase_f.ts";
 
 const theme = createTheme({
   typography: {

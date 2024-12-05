@@ -1,12 +1,12 @@
 import { get, push, ref, runTransaction, set } from "firebase/database";
-import { DATABASE_PATHS } from "../shared/database-paths.ts";
-import { auth, db } from "./firebase_f.ts";
+import { DATABASE_PATHS } from "../../shared/database-paths.ts";
+import { auth, db } from "../firebase_f.ts";
 import {
   BattleRoomData,
   BattleRules,
   ChatData,
   MatchResult,
-} from "../shared/types.ts";
+} from "../../shared/types.ts";
 import { Timestamp } from "firebase/firestore";
 
 export const matching = async (player): Promise<MatchResult> => {

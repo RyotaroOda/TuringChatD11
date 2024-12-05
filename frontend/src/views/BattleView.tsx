@@ -9,7 +9,7 @@ import {
   getPrivateBattleData,
   getChatData,
   onUpdateChatData,
-} from "../services/firebase-realtime-database.ts";
+} from "../API/firebase-realtime-database.ts";
 import {
   PlayerData,
   SubmitAnswer,
@@ -20,9 +20,9 @@ import {
   Message,
 } from "../shared/types";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { auth } from "../services/firebase_f.ts";
+import { auth } from "../API/firebase_f.ts";
 import { ResultViewProps } from "./ResultView.tsx";
-import { generateBattleMessage } from "../services/chatGPT_f.ts";
+import { generateBattleMessage } from "../API/chatGPT_f.ts";
 import {
   AppBar,
   Toolbar,

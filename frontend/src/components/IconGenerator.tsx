@@ -7,9 +7,9 @@ import {
   Alert,
 } from "@mui/material";
 import { getAuth, updateProfile } from "firebase/auth";
-import { generateImage } from "../services/chatGPT_f.ts";
+import { generateImageFront } from "../API/chatGPT_f.ts";
 import { useLocation } from "react-router-dom";
-import { updateLastGeneratedImage } from "../services/firestore-database_f.ts";
+import { updateLastGeneratedImage } from "../API/firestore-database_f.ts";
 import { Timestamp } from "firebase/firestore";
 import { ProfileData } from "../shared/types.ts";
 
@@ -51,7 +51,7 @@ const IconGenerator: React.FC = () => {
     setIsLoading(true);
     setError("");
     try {
-      const image = await generateImage(prompt);
+      const image = await generateImageFront(prompt);
       if (!image) {
         setError("画像の生成に失敗しました。");
         return;
@@ -105,7 +105,11 @@ const IconGenerator: React.FC = () => {
 
       {lastGenerate && (
         <p>
-          最終生成日時: {new Date(lastGenerate.seconds * 1000).toDateString()}
+          最終生成日時:{" "}
+          {format(
+            new Date(lastGenerate.seconds * 1000).toDateString(),
+            "yyyy/MM/dd"
+          )}
         </p>
       )}
       {isLoading && <CircularProgress style={{ marginTop: "20px" }} />}

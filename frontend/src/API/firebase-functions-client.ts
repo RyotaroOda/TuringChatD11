@@ -3,11 +3,12 @@ import { httpsCallable } from "firebase/functions";
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
 import { ref, get, remove } from "firebase/database";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
-import { PlayerData, MatchResult } from "../shared/types.ts";
+import { PlayerData, MatchResult, GPTMessage } from "../shared/types.ts";
 import { variables } from "../App.tsx";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
-import { calculateResultFunction } from "./calculateResult.ts";
-import { matching } from "./matching.ts";
+import { calculateResultFunction } from "./frontFunctions/calculateResult.ts";
+import { matching } from "./frontFunctions/matching.ts";
+import { ChatGPTRequest } from "./chatGPT_f.ts";
 
 //#region HomeView
 
@@ -87,6 +88,7 @@ export const requestMatch = async (
  *
  * @throws 未ログインエラー
  */
+//Functions使わない
 export const cancelRequest = async () => {
   const user = auth.currentUser;
   if (!user) {
@@ -99,25 +101,6 @@ export const cancelRequest = async () => {
     await remove(ref(db, DATABASE_PATHS.battleRoom(snapshot.val()?.battleId)));
   }
   await remove(waitingRef);
-  // if (!variables.backend) {
-  //   const snapshot = await get(
-  //     ref(db, DATABASE_PATHS.waitingPlayers + "/" + userId)
-  //   );
-  //   if (snapshot.val()?.battleId) {
-  //     console.log("remove battle room", snapshot.val()?.battleId);
-  //     remove(ref(db, DATABASE_PATHS.room(snapshot.val()?.battleId)));
-  //   }
-  //   remove(ref(db, DATABASE_PATHS.waitingPlayers + "/" + userId));
-  // } else {
-  //   const cancelMatchFunction = httpsCallable(functions, "cancelMatchFunction");
-  //   try {
-  //     await cancelMatchFunction();
-  //     console.log("マッチングリクエストがキャンセルされました");
-  //   } catch (error) {
-  //     console.error("マッチングキャンセルエラー:", error);
-  //     throw new Error("マッチングキャンセル中にエラーが発生しました。");
-  //   }
-  // }
 };
 
 //#endregion
@@ -131,7 +114,6 @@ export const cancelRequest = async () => {
  * @throws 未ログインエラー
  */
 export const calculateResult = async (battleId: string) => {
-  console.log("バトル結果の計算を開始しますk:lasdvs:", battleId);
   const user = auth.currentUser;
   if (!user) {
     throw new Error("ログインしていないユーザーです。");
@@ -148,6 +130,35 @@ export const calculateResult = async (battleId: string) => {
       console.error("バトル結果計算エラー:", error);
     }
   }
+};
+
+export const generateMessageBack = async (
+  messages: ChatGPTRequest
+): Promise<string> => {
+  const func = httpsCallable(functions, "generateMessageFunction");
+  try {
+    const playerId = auth.currentUser?.uid;
+    const response = await func({ playerId, prompt });
+    const out = response.data as string;
+    return out;
+  } catch (error) {
+    console.error("Failed to generate message:", error);
+    throw new Error("Failed to generate message.");
+  }
+};
+
+export const generateImageBack = async (prompt: string): Promise<string> => {
+  const func = httpsCallable(functions, "generateImageFunction");
+  try {
+    const playerId = auth.currentUser?.uid;
+    const response = await func({ playerId, prompt });
+    const out = response.data as string;
+    return out;
+  } catch (error) {
+    console.error("Failed to generate image:", error);
+    throw new Error("Failed to generate image.");
+  }
+  //TODO: 保存
 };
 
 //#endregion
