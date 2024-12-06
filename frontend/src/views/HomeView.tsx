@@ -8,7 +8,6 @@ import {
 import {
   requestMatch,
   cancelRequest,
-  generateMessageBack,
 } from "../API/firebase-functions-client.ts";
 import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../API/firebase_f.ts";
@@ -632,7 +631,7 @@ const HomeView: React.FC = () => {
   };
 
   const handleIconGenerator = () => {
-    // navigate(appPaths.icon_generator, { state: profile });
+    navigate(appPaths.icon_generator, { state: profile });
   };
   //#endregion
 

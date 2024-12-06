@@ -25,23 +25,22 @@ interface ChatGPTRequest {
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-  baseURL: process.env.REACT_APP_OPENAI_API_URL,
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_API_URL,
 });
 dotenv.config(); // 環境変数をロード
 
 export const generateMessageFunction = functions.https.onCall(
   async (request): Promise<string> => {
-    const playerId = request.auth?.uid;
-    if (!playerId) {
-      throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
-    }
-
-    const GPTRequest = request.data as ChatGPTRequest;
+    const GPTRequest = request.data.messages as ChatGPTRequest;
     try {
       const response = await openai.chat.completions.create(GPTRequest);
-      console.log(response.choices[0]);
-      return "";
+      console.log(response.choices[0].message.content);
+      if (response.choices[0].message.content) {
+        return response.choices[0].message.content;
+      } else {
+        return "No content found in ChatGPT response.";
+      }
     } catch (error) {
       console.error("Failed to generate image:", error);
       throw new Error("Failed to generate image.");
@@ -51,11 +50,6 @@ export const generateMessageFunction = functions.https.onCall(
 
 export const generateImageFunction = functions.https.onCall(
   async (request): Promise<string> => {
-    const playerId = request.auth?.uid;
-    if (!playerId) {
-      throw new functions.https.HttpsError("unauthenticated", "認証が必要です");
-    }
-
     const prompt = request.data as string;
     try {
       const response = await openai.images.generate({

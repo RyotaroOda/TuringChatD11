@@ -6,3 +6,8 @@ export {
 export { calculateResultFunction } from "./services/functions/resultFunctions";
 
 export { testFunction } from "./services/functions/matchingFunctions";
+export {
+  generateMessageFunction,
+  generateImageFunction,
+  generateTopic,
+} from "./services/functions/generateFunctions";

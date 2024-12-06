@@ -28,7 +28,7 @@ export const variables = {
   experiment: true,
   backend: false,
   defaultPrompt: "未設定",
-  disableClientGeneration: false,
+  disableClientGeneration: true,
 };
 
 export const appPaths = {
@@ -37,6 +37,7 @@ export const appPaths = {
   BattleRoomView: (battleId: string) => `/battle/${battleId}`,
   BattleView: (battleId: string) => `/battle/${battleId}/battle`,
   ResultView: (battleId: string) => `/battle/${battleId}/result`,
+  SingleBattleView: "/single_battle",
   login: "/login",
   profile: "/profile",
   profile_edit: "/profile_edit",
@@ -141,6 +142,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <IconGenerator />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/single_battle"
+              element={
+                <ProtectedRoute>
+                  <BattleView />
                 </ProtectedRoute>
               }
             />

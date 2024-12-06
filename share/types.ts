@@ -99,7 +99,7 @@ export type ProfileData = {
 
   signUpDate: string;
   lastLoginDate: string;
-  lastGeneratedImage: string;
+  lastGeneratedImageDate: string;
 
   rating: number;
   win: number;
@@ -165,4 +165,9 @@ export type Impression = {
 export type GPTMessage = {
   role: "system" | "user" | "assistant";
   content: string;
+};
+
+export type JudgementResponse = {
+  correct: boolean;
+  reason: string;
 };

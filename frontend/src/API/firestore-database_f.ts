@@ -68,7 +68,7 @@ export const createUserProfile = async () => {
     questionnaire: null,
     signUpDate: new Date().toLocaleDateString(),
     lastLoginDate: new Date().toLocaleDateString(),
-    lastGeneratedImage: getYesterday().toLocaleDateString(),
+    lastGeneratedImageDate: getYesterday().toLocaleDateString(),
     age: null,
     gender: "no_answer",
     language: "Japanese",
@@ -120,7 +120,7 @@ export const updateLastLogin = async () => {
   console.log("最終ログインが更新されました:", userId);
 };
 
-export const updateLastGeneratedImage = async () => {
+export const updateLastGeneratedImageDate = async () => {
   const userId = auth.currentUser?.uid;
   if (!userId) {
     throw new Error("ユーザーIDが見つかりません");
@@ -128,7 +128,7 @@ export const updateLastGeneratedImage = async () => {
 
   const profileRef = doc(firestore, DATABASE_PATHS.route_profiles, userId);
   await updateDoc(profileRef, {
-    lastGeneratedImage: new Date().toLocaleDateString(),
+    lastGeneratedImageDate: new Date().toLocaleDateString(),
   });
 
   console.log("最終ログインが更新されました:", userId);
@@ -170,7 +170,7 @@ export const getUserProfile = async (): Promise<ProfileData> => {
     questionnaire: null,
     signUpDate: new Date().toLocaleDateString(),
     lastLoginDate: new Date().toLocaleDateString(),
-    lastGeneratedImage: getYesterday().toLocaleDateString(),
+    lastGeneratedImageDate: getYesterday().toLocaleDateString(),
     age: null,
     gender: "no_answer",
     language: "Japanese",

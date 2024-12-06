@@ -9,14 +9,13 @@ import {
 import { getAuth, updateProfile } from "firebase/auth";
 import { generateImageFront } from "../API/chatGPT_f.ts";
 import { useLocation } from "react-router-dom";
-import { updateLastGeneratedImage } from "../API/firestore-database_f.ts";
-import { Timestamp } from "firebase/firestore";
+import { updateLastGeneratedImageDate } from "../API/firestore-database_f.ts";
 import { ProfileData } from "../shared/types.ts";
 
 const IconGenerator: React.FC = () => {
   const profile: ProfileData = useLocation().state;
-  const [lastGenerate, setLastGenerate] = useState<Timestamp>(
-    profile.lastGeneratedImage
+  const [lastGenerate, setLastGenerate] = useState<string>(
+    profile.lastGeneratedImageDate
   );
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,20 +26,7 @@ const IconGenerator: React.FC = () => {
   const user = auth.currentUser;
 
   useEffect(() => {
-    if (lastGenerate) {
-      const seconds = lastGenerate.seconds;
-      const date = new Date(seconds * 1000);
-      const today = new Date();
-      if (
-        today.getFullYear() === date.getFullYear() &&
-        today.getMonth() === date.getMonth() &&
-        today.getDate() === date.getDate()
-      ) {
-        setCanGenerate(false);
-      } else {
-        setCanGenerate(true);
-      }
-    }
+    setCanGenerate(lastGenerate === new Date().toDateString());
   }, [lastGenerate]);
 
   const handleGenerateImage = async () => {
@@ -60,10 +46,10 @@ const IconGenerator: React.FC = () => {
 
       // 生成日時をFirestoreに保存
       if (user) {
-        updateLastGeneratedImage();
+        updateLastGeneratedImageDate();
         setCanGenerate(false);
       }
-      setLastGenerate(Timestamp.now());
+      setLastGenerate(new Date().toDateString());
     } catch (error) {
       setError("画像の生成中にエラーが発生しました。");
     } finally {
@@ -103,15 +89,7 @@ const IconGenerator: React.FC = () => {
         画像生成
       </Button>
 
-      {lastGenerate && (
-        <p>
-          最終生成日時:{" "}
-          {format(
-            new Date(lastGenerate.seconds * 1000).toDateString(),
-            "yyyy/MM/dd"
-          )}
-        </p>
-      )}
+      {lastGenerate && <p>最終生成日時: {lastGenerate}</p>}
       {isLoading && <CircularProgress style={{ marginTop: "20px" }} />}
       {canGenerate ? (
         <p>画像生成ができます。</p>

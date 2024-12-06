@@ -9,6 +9,7 @@ import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateResultFunction } from "./frontFunctions/calculateResult.ts";
 import { matching } from "./frontFunctions/matching.ts";
 import { ChatGPTRequest } from "./chatGPT_f.ts";
+import { Console } from "console";
 
 //#region HomeView
 
@@ -137,8 +138,7 @@ export const generateMessageBack = async (
 ): Promise<string> => {
   const func = httpsCallable(functions, "generateMessageFunction");
   try {
-    const playerId = auth.currentUser?.uid;
-    const response = await func({ playerId, prompt });
+    const response = await func({ messages });
     const out = response.data as string;
     return out;
   } catch (error) {
@@ -150,8 +150,7 @@ export const generateMessageBack = async (
 export const generateImageBack = async (prompt: string): Promise<string> => {
   const func = httpsCallable(functions, "generateImageFunction");
   try {
-    const playerId = auth.currentUser?.uid;
-    const response = await func({ playerId, prompt });
+    const response = await func({ prompt });
     const out = response.data as string;
     return out;
   } catch (error) {

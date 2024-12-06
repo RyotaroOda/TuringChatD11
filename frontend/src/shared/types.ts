@@ -99,7 +99,7 @@ export type ProfileData = {
 
   signUpDate: string;
   lastLoginDate: string;
-  lastGeneratedImage: string;
+  lastGeneratedImageDate: string;
 
   rating: number;
   win: number;

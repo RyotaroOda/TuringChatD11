@@ -298,3 +298,5 @@ export const generateImageFront = async (prompt: string) => {
   //   throw new Error("Failed to generate image.");
   // }
 };
+
+export const AIJudgement = async (prompt: string) => {};
