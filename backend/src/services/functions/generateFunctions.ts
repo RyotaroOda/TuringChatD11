@@ -50,13 +50,14 @@ export const generateMessageFunction = functions.https.onCall(
 
 export const generateImageFunction = functions.https.onCall(
   async (request): Promise<string> => {
-    const prompt = request.data as string;
+    const prompt =
+      request.data.prompt === "" ? "default prompt" : request.data.prompt;
     try {
       const response = await openai.images.generate({
         model: "dall-e-3",
         prompt: prompt,
         n: 1,
-        size: "512x512",
+        size: "1024x1024",
       });
 
       const imageUrl = response.data[0].url;

@@ -166,3 +166,8 @@ export type GPTMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
+
+export type JudgementResponse = {
+  correct: boolean;
+  reason: string;
+};

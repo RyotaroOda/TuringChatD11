@@ -1,4 +1,5 @@
 // frontend/src/services/chatGPT_f.ts
+import e from "cors";
 import { variables } from "../App.tsx";
 import {
   AIModel,
@@ -7,7 +8,10 @@ import {
   GPTMessage,
   Message,
 } from "../shared/types.ts";
-import { generateMessageBack } from "./firebase-functions-client.ts";
+import {
+  generateImageBack,
+  generateMessageBack,
+} from "./firebase-functions-client.ts";
 import { addMessage } from "./firebase-realtime-database.ts";
 import { auth } from "./firebase_f.ts";
 // import OpenAI from "openai";
@@ -241,62 +245,66 @@ export const generateTopic = async (battleId: string) => {
 };
 
 export const generateImageFront = async (prompt: string) => {
-  const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  if (variables.disableClientGeneration) {
+    return await generateImageBack(prompt);
+  } else {
+    const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
+    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
-  // 環境変数の検証
-  if (!apiUrl) {
-    throw new Error(
-      "CHATGPT_API_URL is not defined in the environment variables."
-    );
+    // 環境変数の検証
+    if (!apiUrl) {
+      throw new Error(
+        "CHATGPT_API_URL is not defined in the environment variables."
+      );
+    }
+    if (!apiKey) {
+      throw new Error(
+        "OPENAI_API_KEY is not defined in the environment variables."
+      );
+    }
+    console.log("hs");
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-embedding-3-small",
+        prompt,
+        n: 1,
+        size: "512x512",
+      }),
+    });
+    console.log(response);
+    if (!response.ok) {
+      const errorDetails = await response.text();
+      console.error("OpenAI API Error Details:", errorDetails);
+      throw new Error(
+        `Failed to fetch from OpenAI API: ${response.status} - ${errorDetails}`
+      );
+    }
+
+    const data = await response.json();
+    const imageUrl = data.data[0].url;
+    console.log(imageUrl);
+    return imageUrl;
+    // try {
+    //   const response = await openai.images.generate({
+    //     model: "dall-e-3",
+    //     prompt: "a white siamese cat",
+    //     n: 1,
+    //     size: "512x512",
+    //   });
+
+    //   const imageUrl = response.data[0].url;
+
+    //   return imageUrl;
+    // } catch (error) {
+    //   console.error("Failed to generate image:", error);
+    //   throw new Error("Failed to generate image.");
+    // }
   }
-  if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is not defined in the environment variables."
-    );
-  }
-  console.log("hs");
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "text-embedding-3-small",
-      prompt,
-      n: 1,
-      size: "512x512",
-    }),
-  });
-  console.log(response);
-  if (!response.ok) {
-    const errorDetails = await response.text();
-    console.error("OpenAI API Error Details:", errorDetails);
-    throw new Error(
-      `Failed to fetch from OpenAI API: ${response.status} - ${errorDetails}`
-    );
-  }
-
-  const data = await response.json();
-  const imageUrl = data.data[0].url;
-  console.log(imageUrl);
-  return imageUrl;
-  // try {
-  //   const response = await openai.images.generate({
-  //     model: "dall-e-3",
-  //     prompt: "a white siamese cat",
-  //     n: 1,
-  //     size: "512x512",
-  //   });
-
-  //   const imageUrl = response.data[0].url;
-
-  //   return imageUrl;
-  // } catch (error) {
-  //   console.error("Failed to generate image:", error);
-  //   throw new Error("Failed to generate image.");
-  // }
 };
 
 export const AIJudgement = async (prompt: string) => {};

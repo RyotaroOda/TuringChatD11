@@ -5,12 +5,22 @@ import {
   CircularProgress,
   Avatar,
   Alert,
+  Typography,
+  Box,
+  Container,
+  Paper,
+  Card,
+  CardContent,
+  Grid,
+  Stack,
 } from "@mui/material";
 import { getAuth, updateProfile } from "firebase/auth";
 import { generateImageFront } from "../API/chatGPT_f.ts";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { updateLastGeneratedImageDate } from "../API/firestore-database_f.ts";
 import { ProfileData } from "../shared/types.ts";
+import ImageIcon from "@mui/icons-material/Image"; // アイコン追加例
+import { appPaths } from "../App.tsx";
 
 const IconGenerator: React.FC = () => {
   const profile: ProfileData = useLocation().state;
@@ -24,9 +34,10 @@ const IconGenerator: React.FC = () => {
   const [canGenerate, setCanGenerate] = useState(true);
   const auth = getAuth();
   const user = auth.currentUser;
+  const navigate = useNavigate();
 
   useEffect(() => {
-    setCanGenerate(lastGenerate === new Date().toDateString());
+    setCanGenerate(lastGenerate !== new Date().toLocaleDateString());
   }, [lastGenerate]);
 
   const handleGenerateImage = async () => {
@@ -46,10 +57,10 @@ const IconGenerator: React.FC = () => {
 
       // 生成日時をFirestoreに保存
       if (user) {
-        updateLastGeneratedImageDate();
+        await updateLastGeneratedImageDate();
         setCanGenerate(false);
       }
-      setLastGenerate(new Date().toDateString());
+      setLastGenerate(new Date().toLocaleDateString());
     } catch (error) {
       setError("画像の生成中にエラーが発生しました。");
     } finally {
@@ -64,67 +75,145 @@ const IconGenerator: React.FC = () => {
           photoURL: generatedImage,
         });
         alert("プロフィール画像が更新されました。");
+        navigate(appPaths.HomeView);
       } catch (error) {
         setError("プロフィール画像の更新に失敗しました。");
       }
     }
   };
 
+  const handleKeepCurrent = () => {
+    // そのままにする場合、特別な処理は不要。
+    setGeneratedImage("");
+  };
+
   return (
-    <div style={{ textAlign: "center", padding: "20px" }}>
-      <h2>アイコン画像生成</h2>
-      <TextField
-        label="プロンプトを入力"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        fullWidth
-        margin="normal"
-      />
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleGenerateImage}
-        disabled={isLoading || !canGenerate}
+    <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <Box sx={{ mb: 4, textAlign: "center" }}>
+        <Typography variant="h4" component="h2" gutterBottom>
+          アイコン画像生成
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          あなたの好みに合わせたアイコン画像を生成します。
+          <br />
+          プロンプトを入力して「画像生成」ボタンを押してください。
+        </Typography>
+      </Box>
+
+      {/* 現在のアイコン表示 */}
+      <Card
+        sx={{
+          padding: 4,
+          borderRadius: 2,
+          boxShadow: 3,
+          mb: 4,
+          textAlign: "center",
+        }}
       >
-        画像生成
-      </Button>
-
-      {lastGenerate && <p>最終生成日時: {lastGenerate}</p>}
-      {isLoading && <CircularProgress style={{ marginTop: "20px" }} />}
-      {canGenerate ? (
-        <p>画像生成ができます。</p>
-      ) : (
-        <p>画面上の画像生成は1日1回までです。</p>
-      )}
-      {error && (
-        <Alert severity="error" style={{ marginTop: "20px" }}>
-          {error}
-        </Alert>
-      )}
-
-      {generatedImage && (
-        <div style={{ marginTop: "30px" }}>
-          <h3>生成された画像</h3>
+        <CardContent>
+          <Typography variant="h5" component="h3" gutterBottom>
+            現在のアイコン
+          </Typography>
           <Avatar
             src={user?.photoURL || ""}
             alt="現在のアイコン"
-            style={{ width: 100, height: 100, margin: "10px" }}
+            sx={{ width: 200, height: 200, margin: "auto" }}
           />
-          <Avatar
-            src={generatedImage}
-            alt="新しいアイコン"
-            style={{ width: 100, height: 100, margin: "10px" }}
-          />
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={handleSetAsProfilePicture}
-          >
-            この画像をアイコンに設定
-          </Button>
-        </div>
+        </CardContent>
+      </Card>
+
+      {generatedImage ? (
+        <Card
+          sx={{
+            padding: 4,
+            borderRadius: 2,
+            boxShadow: 3,
+            mb: 4,
+            textAlign: "center",
+          }}
+        >
+          <CardContent>
+            <Typography variant="h5" component="h3" gutterBottom>
+              新しく生成されたアイコン
+            </Typography>
+            <Avatar
+              src={generatedImage}
+              alt="新しいアイコン"
+              sx={{ width: 200, height: 200, margin: "auto", mb: 3 }}
+            />
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={handleSetAsProfilePicture}
+              >
+                新しいアイコンを設定
+              </Button>
+              <Button
+                variant="outlined"
+                color="inherit"
+                onClick={handleKeepCurrent}
+              >
+                そのまま
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      ) : (
+        <Paper sx={{ p: 4, mb: 4 }} elevation={3}>
+          <Stack spacing={3}>
+            <TextField
+              label="プロンプトを入力"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              fullWidth
+              variant="outlined"
+            />
+            <Box sx={{ textAlign: "center" }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleGenerateImage}
+                disabled={isLoading || !canGenerate || !prompt}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <ImageIcon />
+                  )
+                }
+                sx={{
+                  px: 4,
+                  py: 1.5,
+                  fontSize: "1rem",
+                  borderRadius: 2,
+                }}
+              >
+                {isLoading ? "生成中…" : "画像生成"}
+              </Button>
+            </Box>
+
+            {lastGenerate && (
+              <Typography variant="body2" color="text.secondary">
+                最終生成日時: {lastGenerate} (画像生成は1日1回まで)
+              </Typography>
+            )}
+
+            {canGenerate ? (
+              <Typography variant="body2" color="text.secondary">
+                画像生成が可能です。
+              </Typography>
+            ) : (
+              <Typography variant="body2" color="red">
+                今日はもう生成できません。
+              </Typography>
+            )}
+
+            {error && <Alert severity="error">{error}</Alert>}
+          </Stack>
+        </Paper>
       )}
-    </div>
+    </Container>
   );
 };
 
