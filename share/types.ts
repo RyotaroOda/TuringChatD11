@@ -14,6 +14,7 @@ export type RoomData = {
 export type PlayerData = {
   id: string;
   name: string;
+  iconURL: string;
   isReady: boolean;
   rating: number;
 };

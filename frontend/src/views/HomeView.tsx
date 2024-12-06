@@ -212,6 +212,7 @@ const HomeView: React.FC = () => {
       const player: PlayerData = {
         id: playerId,
         name: playerName,
+        iconURL: user?.photoURL || "",
         isReady: false,
         rating: score,
       };
@@ -1473,7 +1474,14 @@ const HomeView: React.FC = () => {
                               }}
                             >
                               {message.role === "user" ? (
-                                <PersonIcon />
+                                user.photoURL ? (
+                                  <Avatar
+                                    src={user.photoURL}
+                                    alt="User Avatar"
+                                  />
+                                ) : (
+                                  <PersonIcon />
+                                )
                               ) : (
                                 <SmartToyIcon />
                               )}

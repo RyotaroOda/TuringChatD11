@@ -43,9 +43,15 @@ import {
   Radio,
   CircularProgress,
   Fade,
+  Avatar,
+  ListItemAvatar,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { appPaths } from "../App.tsx";
+import SmartToyIcon from "@mui/icons-material/SmartToy";
+import SendIcon from "@mui/icons-material/Send";
+import PersonIcon from "@mui/icons-material/Person";
+import { set } from "firebase/database";
 
 const theme = createTheme({
   typography: {
@@ -95,10 +101,12 @@ const BattleView: React.FC = () => {
 
   const myId = auth.currentUser?.uid || "";
   const [myName, setMyName] = useState<string>("");
+  const [myData, setMyData] = useState<PlayerData | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [opponentData, setOpponentData] = useState<PlayerData | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
   const [isTimeout, setIsTimeout] = useState<boolean>(false);
+  const user = auth.currentUser;
   //#endregion
 
   //#region loading
@@ -171,6 +179,7 @@ const BattleView: React.FC = () => {
       const myData: PlayerData = isHost
         ? battleData.players[playersKey[0]]
         : battleData.players[playersKey[1]];
+      setMyData(myData);
       const opponentData: PlayerData = Object.values(battleData.players).find(
         (player) => player.id !== myId
       )!;
@@ -444,45 +453,109 @@ const BattleView: React.FC = () => {
             sx={{ maxHeight: 300, overflowY: "auto", p: 2, mb: 2 }}
           >
             <List>
-              {/* chatLog が配列である場合のみ map を実行 */}
               {Array.isArray(messages) ? (
-                messages.map((msg, index) => (
-                  <ListItem
-                    key={index}
-                    sx={{
-                      justifyContent:
-                        msg.senderId === myId ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        maxWidth: "70%",
-                        bgcolor:
-                          msg.senderId === "system"
-                            ? "gray"
-                            : msg.senderId === myId
-                              ? "primary.main"
-                              : "secondary.main",
-                        color: "#fff",
-                        borderRadius: 2,
-                        p: 1,
-                      }}
-                    >
-                      <ListItemText
-                        primary={msg.message}
-                        secondary={
-                          msg.senderId === "system"
-                            ? "システム"
-                            : msg.senderId === myId
-                              ? myName
-                              : playerNames?.[msg.senderId] || "Unknown Player"
-                        }
-                      />
-                    </Box>
-                  </ListItem>
-                ))
+                messages.map((msg, index) => {
+                  // 送信者別のロール的な扱い
+                  let role;
+                  if (msg.senderId === "system") {
+                    role = "system";
+                  } else if (msg.senderId === myId) {
+                    role = "user";
+                  } else {
+                    role = "player";
+                  }
+
+                  // 背景色、アバター色、テキスト色などをroleに合わせて決定
+                  const backgroundColor =
+                    role === "user"
+                      ? "#e3f2fd"
+                      : role === "system"
+                        ? "#f1f8e9"
+                        : "#fff8e1";
+                  const avatarBgColor =
+                    role === "user"
+                      ? "#2196f3"
+                      : role === "system"
+                        ? "#8bc34a"
+                        : "#ffca28";
+                  const primaryTextColor =
+                    role === "user"
+                      ? "#0d47a1"
+                      : role === "system"
+                        ? "#33691e"
+                        : "#ff6f00";
+
+                  // primary表示名
+                  let displayName;
+                  if (role === "system") {
+                    displayName = "システム";
+                  } else if (role === "user") {
+                    displayName = myName || "あなた";
+                  } else {
+                    displayName =
+                      playerNames?.[msg.senderId] || "Unknown Player";
+                  }
+
+                  // アバターアイコン
+                  let avatarIcon;
+                  if (role === "system") {
+                    avatarIcon = <SmartToyIcon />;
+                  } else if (role === "user") {
+                    // ユーザーのアイコン（user.photoURLがある場合はそれを使用）
+                    if ((displayName = myName)) {
+                      avatarIcon = myData?.iconURL ? (
+                        <Avatar src={myData?.iconURL} alt="User Avatar" />
+                      ) : (
+                        <PersonIcon />
+                      );
+                    } else {
+                      // 相手プレイヤーのアイコン
+                      avatarIcon = opponentData?.iconURL ? (
+                        <Avatar src={myData?.iconURL} alt="User Avatar" />
+                      ) : (
+                        <PersonIcon />
+                      );
+                    }
+                  } else {
+                    // 他はとりあえずPersonIcon
+                    avatarIcon = <PersonIcon />;
+                  }
+
+                  return (
+                    <React.Fragment key={index}>
+                      <ListItem
+                        sx={{
+                          alignItems: "flex-start",
+                          backgroundColor: backgroundColor,
+                          borderRadius: 2,
+                          mb: 1,
+                          boxShadow: 1,
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar sx={{ backgroundColor: avatarBgColor }}>
+                            {avatarIcon}
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography
+                              variant="subtitle1"
+                              sx={{
+                                fontWeight: "bold",
+                                color: primaryTextColor,
+                              }}
+                            >
+                              {displayName}
+                            </Typography>
+                          }
+                          secondary={msg.message}
+                        />
+                      </ListItem>
+                    </React.Fragment>
+                  );
+                })
               ) : (
-                // 配列でない場合のフォールバック
                 <ListItem>
                   <ListItemText primary="チャットログがありません。" />
                 </ListItem>

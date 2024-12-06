@@ -42,12 +42,15 @@ import {
   ListItemIcon,
   CircularProgress,
   Divider,
+  ListItemAvatar,
+  Avatar,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { generateTopic } from "../API/chatGPT_f.ts";
 import { appPaths } from "../App.tsx";
 import { Timestamp } from "firebase/firestore";
+import PersonIcon from "@mui/icons-material/Person";
 
 const theme = createTheme({
   typography: {
@@ -404,21 +407,39 @@ const BattleRoomView: React.FC = () => {
                         プレイヤー一覧
                       </Typography>
                       <List>
-                        {players.map((player) => (
-                          <ListItem key={player.id}>
-                            {player.isReady && (
-                              <ListItemIcon>
-                                <CheckCircleIcon color="primary" />
-                              </ListItemIcon>
-                            )}
-                            <ListItemText
-                              primary={player.name}
-                              secondary={
-                                player.isReady ? "準備完了！" : "準備中..."
-                              }
+                        {players.map((player) => {
+                          const avatarIcon = player.iconURL ? (
+                            <Avatar
+                              src={player.iconURL}
+                              alt={`${player.name}'s Avatar`}
                             />
-                          </ListItem>
-                        ))}
+                          ) : (
+                            <Avatar>
+                              <PersonIcon />
+                            </Avatar>
+                          );
+
+                          return (
+                            <ListItem key={player.id}>
+                              {/* プレイヤーのアイコン表示 */}
+                              <ListItemAvatar>{avatarIcon}</ListItemAvatar>
+
+                              {/* プレイヤーが準備完了の場合はアイコン表示 */}
+                              {player.isReady && (
+                                <ListItemIcon>
+                                  <CheckCircleIcon color="primary" />
+                                </ListItemIcon>
+                              )}
+
+                              <ListItemText
+                                primary={player.name}
+                                secondary={
+                                  player.isReady ? "準備完了！" : "準備中..."
+                                }
+                              />
+                            </ListItem>
+                          );
+                        })}
                       </List>
                     </CardContent>
                   </Card>

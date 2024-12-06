@@ -49,6 +49,7 @@ import SendIcon from "@mui/icons-material/Send";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
 import { updateUserProfile } from "../API/firestore-database_f.ts";
+import { auth } from "../API/firebase_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -81,6 +82,7 @@ const EditPromptView: React.FC = () => {
     useState<boolean>(false);
   const [isSettingsSaveEnabled, setIsSettingsSaveEnabled] =
     useState<boolean>(false);
+  const user = auth.currentUser;
 
   // ボット選択変更時の処理
   const handleBotSelection = (event: SelectChangeEvent<number>) => {
@@ -627,7 +629,11 @@ const EditPromptView: React.FC = () => {
                           }}
                         >
                           {message.role === "user" ? (
-                            <PersonIcon />
+                            user && user.photoURL ? (
+                              <Avatar src={user.photoURL} alt="User Avatar" />
+                            ) : (
+                              <PersonIcon />
+                            )
                           ) : (
                             <SmartToyIcon />
                           )}
