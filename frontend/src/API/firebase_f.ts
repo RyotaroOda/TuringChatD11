@@ -3,6 +3,7 @@ import { getDatabase } from "firebase/database";
 import { getAuth, signInAnonymously } from "firebase/auth";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 // フロントエンド用にREACT_APP_プレフィックスをつけた環境変数を使う
 const firebaseConfig = {
@@ -23,6 +24,9 @@ export const firestore = getFirestore(app);
 
 // Realtime Databaseインスタンスを作成
 export const db = getDatabase(app);
+
+// Firebase Storageのインスタンスを作成
+export const storage = getStorage(app);
 
 // Firebase Authenticationのインスタンスを作成
 export const auth = getAuth(app);

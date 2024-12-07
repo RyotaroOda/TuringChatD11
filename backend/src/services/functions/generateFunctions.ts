@@ -48,27 +48,27 @@ export const generateMessageFunction = functions.https.onCall(
   }
 );
 
-export const generateImageFunction = functions.https.onCall(
-  async (request): Promise<string> => {
-    const prompt =
-      request.data.prompt === "" ? "default prompt" : request.data.prompt;
-    try {
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: prompt,
-        n: 1,
-        size: "1024x1024",
-      });
-
-      const imageUrl = response.data[0].url;
-      if (imageUrl) return imageUrl;
-      return "";
-    } catch (error) {
-      console.error("Failed to generate image:", error);
-      throw new Error("Failed to generate image.");
-    }
+export const generateImageFunction = functions.https.onCall(async (request) => {
+  const prompt =
+    request.data.prompt === "" ? "default prompt" : request.data.prompt;
+  try {
+    const response = await openai.images.generate({
+      model: "dall-e-2",
+      prompt: prompt,
+      response_format: "b64_json",
+      n: 1,
+      size: "256x256",
+    });
+    console.log("response", response.data);
+    const imageUrl = response.data[0].b64_json;
+    console.log("Generated image URL:", imageUrl);
+    if (imageUrl) return imageUrl;
+    return "";
+  } catch (error) {
+    console.error("Failed to generate image:", error);
+    throw new Error("Failed to generate image.");
   }
-);
+});
 
 /**
  * ChatGPT APIにリクエストを送信し、応答を取得する関数

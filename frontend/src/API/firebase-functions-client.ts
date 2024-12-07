@@ -135,11 +135,11 @@ export const calculateResult = async (battleId: string) => {
 
 export const generateMessageBack = async (
   messages: ChatGPTRequest
-): Promise<string> => {
+): Promise<Base64URLString> => {
   const func = httpsCallable(functions, "generateMessageFunction");
   try {
     const response = await func({ messages });
-    const out = response.data as string;
+    const out = response.data as Base64URLString;
     return out;
   } catch (error) {
     console.error("Failed to generate message:", error);
@@ -147,17 +147,18 @@ export const generateMessageBack = async (
   }
 };
 
-export const generateImageBack = async (prompt: string): Promise<string> => {
+export const generateImageBack = async (
+  prompt: string
+): Promise<Base64URLString> => {
   const func = httpsCallable(functions, "generateImageFunction");
   try {
     const response = await func({ prompt });
-    const out = response.data as string;
+    const out = response.data as Base64URLString;
     return out;
   } catch (error) {
     console.error("Failed to generate image:", error);
     throw new Error("Failed to generate image.");
   }
-  //TODO: 保存
 };
 
 //#endregion

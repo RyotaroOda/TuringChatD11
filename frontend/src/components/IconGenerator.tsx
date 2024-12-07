@@ -11,16 +11,16 @@ import {
   Paper,
   Card,
   CardContent,
-  Grid,
   Stack,
 } from "@mui/material";
-import { getAuth, updateProfile } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { generateImageFront } from "../API/chatGPT_f.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 import { updateLastGeneratedImageDate } from "../API/firestore-database_f.ts";
 import { ProfileData } from "../shared/types.ts";
-import ImageIcon from "@mui/icons-material/Image"; // アイコン追加例
+import ImageIcon from "@mui/icons-material/Image";
 import { appPaths } from "../App.tsx";
+import { uploadIcon } from "../API/firebase-storage_f.ts";
 
 const IconGenerator: React.FC = () => {
   const profile: ProfileData = useLocation().state;
@@ -48,19 +48,25 @@ const IconGenerator: React.FC = () => {
     setIsLoading(true);
     setError("");
     try {
+      // ここで取得するimageは既にbase64Stringになっている想定
       const image = await generateImageFront(prompt);
       if (!image) {
         setError("画像の生成に失敗しました。");
         return;
       }
-      setGeneratedImage(image);
 
-      // 生成日時をFirestoreに保存
+      // そのままセット（imageがdataURL形式"data:image/png;base64,..."などであればそのままimgのsrcに指定可能）
+      console.log("Generated image:", image);
+      const dataUrl = `data:image/png;base64,${image}`;
+
+      setGeneratedImage(dataUrl);
+
       if (user) {
-        await updateLastGeneratedImageDate();
+        // Firestoreに生成日時を保存したりする処理があればここで実行
+        // await updateLastGeneratedImageDate();
         setCanGenerate(false);
       }
-      setLastGenerate(new Date().toLocaleDateString());
+      // setLastGenerate(new Date().toLocaleDateString());
     } catch (error) {
       setError("画像の生成中にエラーが発生しました。");
     } finally {
@@ -71,9 +77,7 @@ const IconGenerator: React.FC = () => {
   const handleSetAsProfilePicture = async () => {
     if (user && generatedImage) {
       try {
-        await updateProfile(user, {
-          photoURL: generatedImage,
-        });
+        await uploadIcon(generatedImage);
         alert("プロフィール画像が更新されました。");
         navigate(appPaths.HomeView);
       } catch (error) {
@@ -83,8 +87,9 @@ const IconGenerator: React.FC = () => {
   };
 
   const handleKeepCurrent = () => {
-    // そのままにする場合、特別な処理は不要。
+    // そのままの場合は特に処理なし
     setGeneratedImage("");
+    navigate(appPaths.HomeView);
   };
 
   return (
@@ -100,7 +105,6 @@ const IconGenerator: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* 現在のアイコン表示 */}
       <Card
         sx={{
           padding: 4,
