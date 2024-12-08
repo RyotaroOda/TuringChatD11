@@ -307,4 +307,24 @@ export const generateImageFront = async (prompt: string) => {
   }
 };
 
+export const generateSingleMessage = async (
+  bot: BotSetting,
+  messages: GPTMessage[],
+  level: number
+) => {
+  const request: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: messages,
+    max_tokens: 100,
+    temperature: 1.0,
+    top_p: 0.9,
+    n: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    stop: null,
+  };
+
+  const response = await generate(request);
+  return response;
+};
 export const AIJudgement = async (prompt: string) => {};

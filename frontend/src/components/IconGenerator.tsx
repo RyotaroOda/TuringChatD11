@@ -16,11 +16,11 @@ import {
 import { getAuth } from "firebase/auth";
 import { generateImageFront } from "../API/chatGPT_f.ts";
 import { useLocation, useNavigate } from "react-router-dom";
-import { updateLastGeneratedImageDate } from "../API/firestore-database_f.ts";
 import { ProfileData } from "../shared/types.ts";
 import ImageIcon from "@mui/icons-material/Image";
 import { appPaths } from "../App.tsx";
 import { uploadIcon } from "../API/firebase-storage_f.ts";
+import { updateLastGeneratedImageDate } from "../API/firestore-database_f.ts";
 
 const IconGenerator: React.FC = () => {
   const profile: ProfileData = useLocation().state;
@@ -48,25 +48,23 @@ const IconGenerator: React.FC = () => {
     setIsLoading(true);
     setError("");
     try {
-      // ここで取得するimageは既にbase64Stringになっている想定
+      // base64String
       const image = await generateImageFront(prompt);
       if (!image) {
         setError("画像の生成に失敗しました。");
         return;
       }
 
-      // そのままセット（imageがdataURL形式"data:image/png;base64,..."などであればそのままimgのsrcに指定可能）
-      console.log("Generated image:", image);
       const dataUrl = `data:image/png;base64,${image}`;
 
       setGeneratedImage(dataUrl);
 
       if (user) {
         // Firestoreに生成日時を保存したりする処理があればここで実行
-        // await updateLastGeneratedImageDate();
+        await updateLastGeneratedImageDate();
         setCanGenerate(false);
       }
-      // setLastGenerate(new Date().toLocaleDateString());
+      setLastGenerate(new Date().toLocaleDateString());
     } catch (error) {
       setError("画像の生成中にエラーが発生しました。");
     } finally {

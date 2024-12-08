@@ -67,9 +67,7 @@ const BattleRoomView: React.FC = () => {
   //#region init
   const location = useLocation();
   const { battleData, botData } = location.state as OnlineRoomViewProps;
-  const [battleRules, setBattleRules] = useState<BattleRules>(
-    battleData.battleRule
-  );
+  const battleRules = battleData.battleRule;
   const battleId = battleData.battleId;
   const myId = auth.currentUser?.uid ?? "";
 
@@ -82,7 +80,7 @@ const BattleRoomView: React.FC = () => {
     Object.values(battleData.players)
   );
   const navigate = useNavigate();
-  const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(true);
+  const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(false);
   const [selectedBotId, setSelectedBotId] = useState<number>(botData.defaultId);
   const [selectedBot, setSelectedBot] = useState<BotSetting | null>(null);
 
@@ -298,14 +296,14 @@ const BattleRoomView: React.FC = () => {
                           }}
                         >
                           <FormControlLabel
-                            value="human"
-                            control={<Radio />}
-                            label="自分でプレイする"
-                          />
-                          <FormControlLabel
                             value="ai"
                             control={<Radio />}
                             label="AIがプレイする"
+                          />
+                          <FormControlLabel
+                            value="human"
+                            control={<Radio />}
+                            label="自分でプレイする"
                           />
                         </RadioGroup>
                       </FormControl>

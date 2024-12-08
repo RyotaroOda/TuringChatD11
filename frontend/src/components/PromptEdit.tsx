@@ -559,7 +559,7 @@ const EditPromptView: React.FC = () => {
         <Slide direction="left" in={isDrawerOpen} mountOnEnter unmountOnExit>
           <Box
             sx={{
-              width: 450,
+              width: 400,
               p: 2,
               display: "flex",
               flexDirection: "column",

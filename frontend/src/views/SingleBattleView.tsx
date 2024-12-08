@@ -17,8 +17,8 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BotSetting } from "../shared/types";
-import { generateBattleMessage, generateAIJudgment } from "../API/chatGPT_f.ts";
+import { BotSetting, GPTMessage } from "../shared/types";
+import { generateSingleMessage, generateAIJudgment } from "../API/chatGPT_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -32,11 +32,6 @@ interface SingleBattleViewProps {
   isHuman: boolean;
 }
 
-interface Message {
-  sender: "player" | "ai";
-  message: string;
-}
-
 const SingleBattleView: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,7 +39,7 @@ const SingleBattleView: React.FC = () => {
   const [bot, setBot] = useState<BotSetting | null>(null);
   const [level, setLevel] = useState<number>(1);
   const [isHuman, setIsHuman] = useState<boolean>(true);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<GPTMessage[]>([]);
   const [currentTurn, setCurrentTurn] = useState<number>(0);
   const [maxTurns, setMaxTurns] = useState<number>(5); // n回のチャット
   const [sendMessage, setSendMessage] = useState<string>("");
@@ -97,12 +92,7 @@ const SingleBattleView: React.FC = () => {
     } else {
       // プレイヤーのボットがメッセージを生成
       setIsGenerating(true);
-      const playerBotMessage = await generateBattleMessage(
-        messages,
-        "",
-        bot,
-        { maxTurn: maxTurns } // BattleRuleに相当する設定
-      );
+      const playerBotMessage = await generateSingleMessage(messages, bot);
       setIsGenerating(false);
 
       setMessages((prevMessages) => [

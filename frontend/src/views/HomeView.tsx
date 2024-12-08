@@ -56,11 +56,14 @@ import {
   ListItemAvatar,
   ListItemText,
   Slide,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import { appPaths, variables } from "../App.tsx";
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import CopyrightIcon from "@mui/icons-material/Copyright";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import StarIcon from "@mui/icons-material/Star";
@@ -96,6 +99,7 @@ const HomeView: React.FC = () => {
 
   // State variables
   const [aiPrompt, setAiPrompt] = useState<string>(variables.defaultPrompt);
+  const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(false);
   const [battleId, setBattleId] = useState<string>("");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [playerName, setPlayerName] = useState<string>("");
@@ -139,6 +143,11 @@ const HomeView: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  useEffect(() => {
+    if (newName !== playerName) {
+    }
+  }, [newName]);
 
   const fetchUserProfile = async () => {
     try {
@@ -842,6 +851,7 @@ const HomeView: React.FC = () => {
                         fullWidth
                         sx={{ mt: 2 }}
                         onClick={handleNameChangeClick}
+                        disabled={newName === playerName}
                       >
                         名前変更
                       </Button>
@@ -921,29 +931,55 @@ const HomeView: React.FC = () => {
                           />
                           ひとりであそぶ
                         </Typography>
-                        {!user.isAnonymous && bots && (
-                          <FormControl fullWidth sx={{ mt: 2 }}>
-                            <InputLabel id="prompt-select-label">
-                              使用するプロンプト
-                            </InputLabel>
-                            <Select
-                              labelId="prompt-select-label"
-                              value={
-                                selectedPromptId !== null
-                                  ? selectedPromptId
-                                  : bots.defaultId
-                              }
-                              label="使用するプロンプト"
-                              onChange={handlePromptChange}
+                        <Box mt={2}>
+                          <FormControl component="fieldset">
+                            <FormLabel component="legend">
+                              プレイモードを選択
+                            </FormLabel>
+                            <RadioGroup
+                              value={selectedIsHuman ? "human" : "ai"}
+                              onChange={(e) => {
+                                setSelectedIsHuman(e.target.value === "human");
+                              }}
                             >
-                              {bots.data.map((bot) => (
-                                <MenuItem key={bot.id} value={bot.id}>
-                                  {bot.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
+                              <FormControlLabel
+                                value="ai"
+                                control={<Radio />}
+                                label="AIがプレイする"
+                              />
+                              <FormControlLabel
+                                value="human"
+                                control={<Radio />}
+                                label="自分でプレイする"
+                              />
+                            </RadioGroup>
                           </FormControl>
-                        )}
+                        </Box>
+                        {selectedIsHuman === false &&
+                          !user.isAnonymous &&
+                          bots && (
+                            <FormControl fullWidth sx={{ mt: 2 }}>
+                              <InputLabel id="prompt-select-label">
+                                使用するプロンプト
+                              </InputLabel>
+                              <Select
+                                labelId="prompt-select-label"
+                                value={
+                                  selectedPromptId !== null
+                                    ? selectedPromptId
+                                    : bots.defaultId
+                                }
+                                label="使用するプロンプト"
+                                onChange={handlePromptChange}
+                              >
+                                {bots.data.map((bot) => (
+                                  <MenuItem key={bot.id} value={bot.id}>
+                                    {bot.name}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          )}
                         <ButtonGroup fullWidth sx={{ mt: 3 }}>
                           <Button
                             onClick={() => setSinglePlayDifficulty("初級")}
@@ -1402,7 +1438,7 @@ const HomeView: React.FC = () => {
             >
               <Box
                 sx={{
-                  width: 450,
+                  width: 400,
                   p: 2,
                   display: "flex",
                   flexDirection: "column",

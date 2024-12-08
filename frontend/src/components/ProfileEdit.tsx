@@ -137,7 +137,25 @@ const ProfileEdit: React.FC = () => {
       | SelectChangeEvent
   ) => {
     const { name, value } = event.target;
-    setProfile((prev) => (prev ? { ...prev, [name as string]: value } : prev));
+
+    setProfile((prev) => {
+      if (!prev) return prev;
+
+      // location.xxx の場合、locationオブジェクト内の更新に対応
+      if (name.startsWith("location.")) {
+        const field = name.split(".")[1]; // location.country => country, location.region => region
+        return {
+          ...prev,
+          location: {
+            ...prev.location,
+            [field]: value,
+          },
+        };
+      } else {
+        // それ以外はトップレベル
+        return { ...prev, [name]: value };
+      }
+    });
   };
 
   useEffect(() => {
@@ -165,7 +183,7 @@ const ProfileEdit: React.FC = () => {
             location: {
               ...prev.location,
               country,
-              city: country === "日本" ? "" : prev.location.region,
+              region: country === "日本" ? "" : prev.location.region,
             },
           }
         : prev
@@ -395,7 +413,7 @@ const ProfileEdit: React.FC = () => {
                   <FormControl fullWidth>
                     <InputLabel>地域</InputLabel>
                     <Select
-                      name="location.city"
+                      name="location.region"
                       value={profile?.location.region || ""}
                       onChange={handleChange}
                     >
@@ -416,9 +434,9 @@ const ProfileEdit: React.FC = () => {
                 <Grid item xs={12}>
                   <TextField
                     label="地域"
-                    name="location.city"
+                    name="location.region"
                     value={profile?.location.region || ""}
-                    onChange={handleCityChange}
+                    onChange={handleChange}
                     fullWidth
                   />
                 </Grid>
