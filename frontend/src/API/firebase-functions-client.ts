@@ -3,13 +3,12 @@ import { httpsCallable } from "firebase/functions";
 import { db } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
 import { ref, get, remove } from "firebase/database";
 import { auth, functions } from "./firebase_f.ts"; // Firebase初期化ファイルをインポート
-import { PlayerData, MatchResult, GPTMessage } from "../shared/types.ts";
+import { PlayerData, MatchResult } from "../shared/types.ts";
 import { variables } from "../App.tsx";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { calculateResultFunction } from "./frontFunctions/calculateResult.ts";
 import { matching } from "./frontFunctions/matching.ts";
 import { ChatGPTRequest } from "./chatGPT_f.ts";
-import { Console } from "console";
 
 //#region HomeView
 
@@ -135,11 +134,11 @@ export const calculateResult = async (battleId: string) => {
 
 export const generateMessageBack = async (
   messages: ChatGPTRequest
-): Promise<Base64URLString> => {
+): Promise<string> => {
   const func = httpsCallable(functions, "generateMessageFunction");
   try {
     const response = await func({ messages });
-    const out = response.data as Base64URLString;
+    const out = response.data as string;
     return out;
   } catch (error) {
     console.error("Failed to generate message:", error);

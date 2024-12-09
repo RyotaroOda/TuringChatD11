@@ -18,7 +18,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BotSetting, GPTMessage } from "../shared/types";
-import { generateSingleMessage, generateAIJudgment } from "../API/chatGPT_f.ts";
+import { generateSingleMessage, AIJudgement } from "../API/chatGPT_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -84,54 +84,63 @@ const SingleBattleView: React.FC = () => {
       setMessages((prevMessages) => [
         ...prevMessages,
         {
-          sender: "player",
-          message: sendMessage,
+          role: "user",
+          content: sendMessage,
         },
       ]);
       setSendMessage("");
     } else {
       // プレイヤーのボットがメッセージを生成
       setIsGenerating(true);
-      const playerBotMessage = await generateSingleMessage(messages, bot);
+      if (bot) {
+        if (bot) {
+          const playerBotMessage = await generateSingleMessage(
+            bot,
+            messages,
+            level
+          );
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              role: "user",
+              content: playerBotMessage,
+            },
+          ]);
+        }
+      }
       setIsGenerating(false);
-
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          sender: "player",
-          message: playerBotMessage,
-        },
-      ]);
     }
 
     setCurrentTurn((prevTurn) => prevTurn + 1);
 
     if (currentTurn + 1 >= maxTurns * 2) {
-      await makeAIJudgment();
-      return;
+      if (bot) {
+        const aiResponse = await generateSingleMessage(bot, messages, level);
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          {
+            role: "assistant",
+            content: aiResponse,
+          },
+        ]);
+      }
     }
-
-    await generateAIResponse();
   };
 
   const generateAIResponse = async () => {
     setIsGenerating(true);
-    const aiResponse = await generateBattleMessage(
-      messages,
-      "",
-      null,
-      { maxTurn: maxTurns },
-      level
-    );
-    setIsGenerating(false);
+    if (bot) {
+      const aiResponse = await generateSingleMessage(bot, messages, level);
+      setIsGenerating(false);
 
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        sender: "ai",
-        message: aiResponse,
-      },
-    ]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          role: "assistant",
+          content: aiResponse,
+        },
+      ]);
+    }
 
     setCurrentTurn((prevTurn) => prevTurn + 1);
 
@@ -143,7 +152,7 @@ const SingleBattleView: React.FC = () => {
 
   const makeAIJudgment = async () => {
     setIsGenerating(true);
-    const judgment = await generateAIJudgment(messages, level);
+    const judgment = await AIJudgement(messages, level);
     setIsGenerating(false);
     setJudgmentMade(true);
 
@@ -188,22 +197,22 @@ const SingleBattleView: React.FC = () => {
                   key={index}
                   sx={{
                     justifyContent:
-                      msg.sender === "player" ? "flex-end" : "flex-start",
+                      msg.role === "user" ? "flex-end" : "flex-start",
                   }}
                 >
                   <Box
                     sx={{
                       maxWidth: "70%",
                       bgcolor:
-                        msg.sender === "player" ? "primary.main" : "grey.300",
-                      color: msg.sender === "player" ? "white" : "black",
+                        msg.role === "user" ? "primary.main" : "grey.300",
+                      color: msg.role === "user" ? "white" : "black",
                       borderRadius: 2,
                       p: 1,
                     }}
                   >
                     <ListItemText
-                      primary={msg.message}
-                      secondary={msg.sender === "player" ? "あなた" : "AI"}
+                      primary={msg.content}
+                      secondary={msg.role === "user" ? "あなた" : "AI"}
                     />
                   </Box>
                 </ListItem>

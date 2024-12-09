@@ -14,12 +14,6 @@ import {
 } from "./firebase-functions-client.ts";
 import { addMessage } from "./firebase-realtime-database.ts";
 import { auth } from "./firebase_f.ts";
-// import OpenAI from "openai";
-
-// const openai = new OpenAI({
-//   apiKey: process.env.REACT_APP_OPENAI_API_KEY,
-//   baseURL: process.env.REACT_APP_OPENAI_API_URL,
-// });
 
 interface ChatGPTResponse {
   choices: Array<{
@@ -327,4 +321,4 @@ export const generateSingleMessage = async (
   const response = await generate(request);
   return response;
 };
-export const AIJudgement = async (prompt: string) => {};
+export const AIJudgement = async (prompt: string, level: number) => {};

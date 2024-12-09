@@ -31,7 +31,7 @@
     "build:back": "npm --prefix ./backend run build",
     "build:front": "npm --prefix ./frontend run build",
     "test": "react-scripts test",
-    "install:all": "npm install && npm --prefix && npm --prefix ./frontend install && npm --prefix ./backend install",
+    "install:all": "npm install && npm --prefix ./frontend install && npm --prefix ./backend install",
     "clean": "rm -rf node_modules package-lock.json && npm cache verify",
     "clean:all": "npm run clean && npm --prefix ./frontend run clean && npm --prefix ./backend run clean",
     "deploy": "npm run build && firebase deploy --only functions,hosting",
