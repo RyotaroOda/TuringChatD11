@@ -19,13 +19,15 @@ export const generateMessageFunction = onCall(
   async (request): Promise<string> => {
     const GPTRequest = request.data.messages as ChatGPTRequest;
     try {
-      const response = await openai.chat.completions.create(GPTRequest);
-      console.log(response.choices[0].message.content);
-      if (response.choices[0].message.content) {
-        return response.choices[0].message.content;
-      } else {
-        return "No content found in ChatGPT response.";
-      }
+      // const response = await openai.chat.completions.create(GPTRequest);
+      // console.log(response.choices[0].message.content);
+      // if (response.choices[0].message.content) {
+      //   return response.choices[0].message.content;
+      // } else {
+      //   return "No content found in ChatGPT response.";
+      // }
+      const data = await generate(GPTRequest);
+      return data;
     } catch (error) {
       console.error("Failed to generate image:", error);
       throw new Error("Failed to generate image.");
@@ -49,10 +51,110 @@ export const generateImageFunction = onCall(
       // const imageUrl = response.data[0].b64_json;
       // console.log("success to generate image");
       // if (imageUrl) return imageUrl;
-      return "";
+      const image = await generateImage(prompt);
+      return image;
     } catch (error) {
       console.error("Failed to generate image:", error);
       throw new Error("Failed to generate image.");
     }
   }
 );
+
+//#region fetch
+
+interface ChatGPTResponse {
+  choices: Array<{
+    message: {
+      role: string;
+      content: string;
+    };
+  }>;
+}
+
+const generate = async (prompt: ChatGPTRequest): Promise<string> => {
+  try {
+    const apiUrl = "https://api.openai.com/v1/chat/completions";
+    const apiKey = process.env.OPENAI_API_KEY;
+    // 環境変数のチェック
+    if (!apiUrl) {
+      throw new Error(
+        "CHATGPT_API_URL is not defined in the environment variables."
+      );
+    }
+    if (!apiKey) {
+      throw new Error(
+        "OPENAI_API_KEY is not defined in the environment variables."
+      );
+    }
+    console.log("Sending to ChatGPT...");
+
+    // ChatGPT APIにリクエストを送信
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(prompt),
+    });
+
+    // エラーハンドリング
+    if (!response.ok) {
+      const errorDetails = await response.text(); // ←ここはawaitで確実にテキスト取得
+      console.error("ChatGPT API Error details:", errorDetails);
+      throw new Error(
+        `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
+      );
+    }
+
+    // レスポンスをJSONにパース
+    const responseData = (await response.json()) as ChatGPTResponse;
+
+    // ChatGPTのレスポンスからメッセージを取得
+    return responseData.choices[0].message.content;
+  } catch (error) {
+    console.error("Failed to generate message:", error);
+    throw new Error("Failed to generate message.");
+  }
+};
+
+interface ImageResponse {
+  created: number;
+  data: Array<{
+    b64_json: string;
+  }>;
+}
+
+const generateImage = async (prompt: string): Promise<string> => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not defined in environment variables.");
+  }
+
+  const requestBody = {
+    prompt: prompt,
+    n: 1,
+    size: "256x256",
+    response_format: "b64_json",
+  };
+
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("OpenAI Image API error:", errorText);
+    throw new Error(`Image generation failed: ${response.statusText}`);
+  }
+
+  const responseData = (await response.json()) as ImageResponse;
+  const b64Image = responseData.data[0].b64_json;
+  return b64Image;
+};
+//#endregion
