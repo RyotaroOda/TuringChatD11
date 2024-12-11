@@ -26,10 +26,12 @@ const theme = createTheme({
   },
 });
 
-interface SingleBattleViewProps {
-  bot: BotSetting | null;
-  level: number;
+export type Difficulty = "初級" | "中級" | "上級";
+
+export interface SingleBattleViewProps {
+  difficulty: Difficulty;
   isHuman: boolean;
+  bot: BotSetting | null;
 }
 
 const SingleBattleView: React.FC = () => {
@@ -37,7 +39,7 @@ const SingleBattleView: React.FC = () => {
   const navigate = useNavigate();
 
   const [bot, setBot] = useState<BotSetting | null>(null);
-  const [level, setLevel] = useState<number>(1);
+  const [difficulty, setDifficulty] = useState<Difficulty>("初級");
   const [isHuman, setIsHuman] = useState<boolean>(true);
   const [messages, setMessages] = useState<GPTMessage[]>([]);
   const [currentTurn, setCurrentTurn] = useState<number>(0);
@@ -46,12 +48,14 @@ const SingleBattleView: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [result, setResult] = useState<string>("");
   const [judgmentMade, setJudgmentMade] = useState<boolean>(false);
+  const [judgmentReason, setJudgmentReason] = useState<string>("");
 
   useEffect(() => {
     if (location.state) {
-      const { bot, level, isHuman } = location.state as SingleBattleViewProps;
+      const { bot, difficulty, isHuman } =
+        location.state as SingleBattleViewProps;
       setBot(bot);
-      setLevel(level);
+      setDifficulty(difficulty);
       setIsHuman(isHuman);
     } else {
       console.error("No state passed to SingleBattleView");
@@ -59,21 +63,25 @@ const SingleBattleView: React.FC = () => {
   }, [location.state]);
 
   useEffect(() => {
-    switch (level) {
-      case 1:
-        setMaxTurns(5);
-        break;
-      case 2:
-        setMaxTurns(10);
-        break;
-      case 3:
-        setMaxTurns(15);
-        break;
-      default:
-        setMaxTurns(5);
-        break;
+    if (difficulty) {
+      switch (difficulty) {
+        case "初級":
+          setMaxTurns(5);
+          break;
+        case "中級":
+          setMaxTurns(10);
+          break;
+        case "上級":
+          setMaxTurns(15);
+          break;
+        default:
+          setMaxTurns(5);
+          break;
+      }
+    } else {
+      setMaxTurns(5);
     }
-  }, [level]);
+  }, [difficulty]);
 
   const handleSendMessage = async () => {
     if (isGenerating) return;
@@ -97,7 +105,7 @@ const SingleBattleView: React.FC = () => {
           const playerBotMessage = await generateSingleMessage(
             bot,
             messages,
-            level
+            difficulty
           );
           setMessages((prevMessages) => [
             ...prevMessages,
@@ -115,7 +123,11 @@ const SingleBattleView: React.FC = () => {
 
     if (currentTurn + 1 >= maxTurns * 2) {
       if (bot) {
-        const aiResponse = await generateSingleMessage(bot, messages, level);
+        const aiResponse = await generateSingleMessage(
+          bot,
+          messages,
+          difficulty
+        );
         setMessages((prevMessages) => [
           ...prevMessages,
           {
@@ -130,7 +142,7 @@ const SingleBattleView: React.FC = () => {
   const generateAIResponse = async () => {
     setIsGenerating(true);
     if (bot) {
-      const aiResponse = await generateSingleMessage(bot, messages, level);
+      const aiResponse = await generateSingleMessage(bot, messages, difficulty);
       setIsGenerating(false);
 
       setMessages((prevMessages) => [
@@ -152,12 +164,14 @@ const SingleBattleView: React.FC = () => {
 
   const makeAIJudgment = async () => {
     setIsGenerating(true);
-    const judgment = await AIJudgement(messages, level);
+    const judgment = await AIJudgement(messages, difficulty);
     setIsGenerating(false);
     setJudgmentMade(true);
 
-    const aiThinksHuman = judgment === "human";
+    const aiThinksHuman = judgment?.isHuman;
     const actualIsHuman = isHuman;
+
+    setJudgmentReason(judgment?.reason || "");
 
     const isAIWin =
       (aiThinksHuman && !actualIsHuman) || (!aiThinksHuman && actualIsHuman);
@@ -166,7 +180,7 @@ const SingleBattleView: React.FC = () => {
     setResult(battleResult);
 
     console.log(battleResult);
-    console.log("props", { bot, level, isHuman });
+    console.log("props", { bot, level: difficulty, isHuman });
   };
 
   return (

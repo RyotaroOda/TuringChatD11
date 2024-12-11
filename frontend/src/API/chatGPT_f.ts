@@ -1,5 +1,4 @@
 // frontend/src/services/chatGPT_f.ts
-import e from "cors";
 import { variables } from "../App.tsx";
 import {
   AIModel,
@@ -8,6 +7,7 @@ import {
   GPTMessage,
   Message,
 } from "../shared/types.ts";
+import { Difficulty } from "../views/SingleBattleView.tsx";
 import {
   generateImageBack,
   generateMessageBack,
@@ -41,7 +41,7 @@ export interface ChatGPTRequest {
  * @returns 応答のテキスト
  * @throws APIのエラーやレスポンスの欠落
  */
-const generate = async (prompt: ChatGPTRequest): Promise<string> => {
+const generate = async (prompt: ChatGPTRequest): Promise<any> => {
   if (variables.disableClientGeneration) {
     return await generateMessageBack(prompt);
   } else {
@@ -85,7 +85,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
     if (dataResponse.choices && dataResponse.choices.length > 0) {
       const message = dataResponse.choices[0].message;
       if (message?.content) {
-        return message.content.trim();
+        return message.content;
       }
     }
 
@@ -304,7 +304,7 @@ export const generateImageFront = async (prompt: string) => {
 export const generateSingleMessage = async (
   bot: BotSetting,
   messages: GPTMessage[],
-  level: number
+  difficulty: Difficulty
 ) => {
   const request: ChatGPTRequest = {
     model: AIModel["gpt-4"],
@@ -321,4 +321,48 @@ export const generateSingleMessage = async (
   const response = await generate(request);
   return response;
 };
-export const AIJudgement = async (prompt: string, level: number) => {};
+
+interface ApiResponse {
+  isHuman: boolean;
+  reason: string;
+}
+export const AIJudgement = async (
+  messages: GPTMessage[],
+  difficulty: Difficulty
+) => {
+  const prompt = `あなたはチャットゲームの審判として参加しています。\n
+  以下は、プレイヤーとCPUプレイヤーとのメッセージログです。プレイヤーが人間かAIかを判断してください。その際、言語パターン、文法構造、独自性などを考慮してください。\n
+  {${messages.map((message) => message.content).join("\n")}}\n
+
+  結果を以下のJSON形式で出力してください:
+  {
+    "isHuman": boolean,
+    "reason": string
+  }\n
+    "reason" には、判断に至った具体的な理由を簡潔に説明してください。
+
+`;
+  const request: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: [
+      {
+        role: "system",
+        content: prompt,
+      },
+    ],
+    max_tokens: 100,
+    temperature: 0.7,
+    top_p: 0.9,
+    n: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    stop: null,
+  };
+  try {
+    const response: ApiResponse = await generate(request);
+    console.log("API Response:", response);
+    return response;
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error);
+  }
+};

@@ -7,8 +7,8 @@ import {
   ChatData,
   MatchResult,
 } from "../../shared/types.ts";
-import { Timestamp } from "firebase/firestore";
 
+// マッチング処理
 export const matching = async (player): Promise<MatchResult> => {
   const user = auth.currentUser;
   if (!user) {
@@ -59,6 +59,9 @@ export const matching = async (player): Promise<MatchResult> => {
             const playerCount = Object.keys(currentData).length;
             if (playerCount >= 2) {
               console.log("バトルルームが満員です。");
+              return; // トランザクションを中止
+            } else if (currentData[userId]) {
+              console.log("同じプレイヤーIDが既に存在します。");
               return; // トランザクションを中止
             } else {
               currentData[userId] = player;

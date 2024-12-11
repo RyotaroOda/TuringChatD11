@@ -23,6 +23,7 @@ import { createTheme } from "@mui/material/styles";
 import RoomView from "./views/PrivateRoomView.tsx";
 import HowToPlay from "./components/HowToPlay.tsx";
 import IconGenerator from "./components/IconGenerator.tsx";
+import SingleBattleView from "./views/SingleBattleView.tsx";
 
 export const variables = {
   experiment: true,
@@ -149,7 +150,7 @@ function App() {
               path="/single_battle"
               element={
                 <ProtectedRoute>
-                  <BattleView />
+                  <SingleBattleView />
                 </ProtectedRoute>
               }
             />

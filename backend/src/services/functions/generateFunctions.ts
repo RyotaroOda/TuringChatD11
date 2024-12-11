@@ -15,25 +15,23 @@ interface ChatGPTRequest {
 }
 
 // ChatGPTのメッセージ生成関数
-export const generateMessageFunction = onCall(
-  async (request): Promise<string> => {
-    const GPTRequest = request.data.messages as ChatGPTRequest;
-    try {
-      // const response = await openai.chat.completions.create(GPTRequest);
-      // console.log(response.choices[0].message.content);
-      // if (response.choices[0].message.content) {
-      //   return response.choices[0].message.content;
-      // } else {
-      //   return "No content found in ChatGPT response.";
-      // }
-      const data = await generate(GPTRequest);
-      return data;
-    } catch (error) {
-      console.error("Failed to generate image:", error);
-      throw new Error("Failed to generate image.");
-    }
+export const generateMessageFunction = onCall(async (request) => {
+  const GPTRequest = request.data.messages as ChatGPTRequest;
+  try {
+    // const response = await openai.chat.completions.create(GPTRequest);
+    // console.log(response.choices[0].message.content);
+    // if (response.choices[0].message.content) {
+    //   return response.choices[0].message.content;
+    // } else {
+    //   return "No content found in ChatGPT response.";
+    // }
+    const data = await generate(GPTRequest);
+    return data;
+  } catch (error) {
+    console.error("Failed to generate image:", error);
+    throw new Error("Failed to generate image.");
   }
-);
+});
 
 // DALL-Eの画像生成関数
 export const generateImageFunction = onCall(

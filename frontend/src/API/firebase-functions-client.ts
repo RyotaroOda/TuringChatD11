@@ -31,7 +31,7 @@ export const requestMatch = async (
       functions,
       "requestMatchFunction"
     );
-    const TIMEOUT_DURATION = 60000; // 60秒タイムアウト
+    const TIMEOUT_DURATION = 6000; // 6秒タイムアウト
     let attempt = 0;
 
     while (attempt < retryCount) {
@@ -132,9 +132,7 @@ export const calculateResult = async (battleId: string) => {
   }
 };
 
-export const generateMessageBack = async (
-  messages: ChatGPTRequest
-): Promise<string> => {
+export const generateMessageBack = async (messages: ChatGPTRequest) => {
   const func = httpsCallable(functions, "generateMessageFunction");
   try {
     const response = await func({ messages });

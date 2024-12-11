@@ -84,6 +84,7 @@ import { generateTestMessage } from "../API/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
+import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -110,17 +111,17 @@ const HomeView: React.FC = () => {
   const [bots, setBots] = useState<BotData | null>(null);
   const [newName, setNewName] = useState<string>("");
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
+  const [matchingTimer, setMatchingTimer] = useState<number>(-1);
   const [battleRoomListened, setBattleRoomListened] = useState<boolean>(false);
   const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
-  const [singlePlayDifficulty, setSinglePlayDifficulty] = useState<
-    "初級" | "中級" | "上級"
-  >("初級");
+  const [singlePlayDifficulty, setSinglePlayDifficulty] =
+    useState<Difficulty>("初級");
   const [openJoinRoomDialog, setOpenJoinRoomDialog] = useState(false);
 
   //#endregion
 
+  // 初回訪問チェック
   useEffect(() => {
-    // 初回訪問チェック
     const hasSeenHowToPlay = localStorage.getItem("firstPlay");
     if (!hasSeenHowToPlay) {
       setOpenTutorial(true);
@@ -239,8 +240,25 @@ const HomeView: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (battleRoomListened) {
+      setMatchingTimer(10);
+    }
+  }, [battleRoomListened]);
+
+  useEffect(() => {
+    if (matchingTimer > 0) {
+      const timerId = setTimeout(() => {
+        setMatchingTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timerId);
+    }
+  }, [matchingTimer]);
+
+  // マッチングをキャンセルする処理
   const cancelMatching = async () => {
     setBattleRoomListened(false);
+    setMatchingTimer(-1);
     setRoomId(null);
     setTimeout(() => setIsPushedMatching(false), 1000); // 1秒後に再び有効化
     try {
@@ -250,6 +268,7 @@ const HomeView: React.FC = () => {
     }
   };
 
+  // マッチング成立時の処理
   useEffect(() => {
     if (battleRoomListened && battleId !== "") {
       const unsubscribe = onMatched(battleId, (isMatched) => {
@@ -264,6 +283,7 @@ const HomeView: React.FC = () => {
       };
     }
 
+    // ページ遷移時にマッチングをキャンセル
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
       if (battleRoomListened) {
         await cancelMatching();
@@ -415,10 +435,12 @@ const HomeView: React.FC = () => {
   //#region シングルプレイ
   const handleSinglePlayChallenge = () => {
     // シングルプレイのゲーム画面に遷移（仮のパス）
-    const props = {
+    const props: SingleBattleViewProps = {
       difficulty: singlePlayDifficulty,
+      isHuman: selectedIsHuman,
+      bot: bots ? bots.data[bots.defaultId] : null,
     };
-    // navigate(appPaths.single_play_game, { state: props });
+    navigate(appPaths.SingleBattleView, { state: props });
   };
 
   //#endregion
@@ -562,7 +584,10 @@ const HomeView: React.FC = () => {
     setBattleRoomListened(false);
     getBattleRoomData(battleId).then((battleData) => {
       console.log("roomData: ", battleData);
-      if (battleData.status === "matched") {
+      if (
+        battleData.status === "matched" &&
+        battleData.players[0] !== battleData.players[1]
+      ) {
         if (user && user.isAnonymous) {
           // ゲストユーザーの場合はデフォルトのAIを使用
           const props: OnlineRoomViewProps = {
@@ -595,6 +620,8 @@ const HomeView: React.FC = () => {
         } else {
           console.error("ルームに入室できませんでした。");
           cancelMatching();
+          alert("ルームに入室できませんでした。");
+          navigate(appPaths.HomeView);
         }
       }
     });
@@ -1018,7 +1045,6 @@ const HomeView: React.FC = () => {
                           fullWidth
                           sx={{ mt: 3 }}
                           onClick={handleSinglePlayChallenge}
-                          disabled
                         >
                           挑戦する
                         </Button>
@@ -1092,11 +1118,35 @@ const HomeView: React.FC = () => {
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
+                            flexDirection={xsSize === 12 ? "column" : "row"}
                           >
-                            <CircularProgress size={24} />
-                            <Typography variant="body1" sx={{ ml: 2 }}>
-                              マッチング中...
-                            </Typography>
+                            <Box
+                              mt={2}
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                            >
+                              <Typography variant="body1" sx={{ ml: 0 }}>
+                                マッチング中...
+                              </Typography>
+                              <CircularProgress size={24} sx={{ ml: 2 }} />
+                            </Box>
+                            {matchingTimer === 0 && (
+                              <Box
+                                mt={2}
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ ml: 2 }}
+                                >
+                                  一定時間待ってもマッチングできない時は一度キャンセルして再度マッチングを試してください。
+                                </Typography>
+                              </Box>
+                            )}
                           </Box>
                         )}
 
