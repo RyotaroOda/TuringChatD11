@@ -18,7 +18,11 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BotSetting, GPTMessage } from "../shared/types";
-import { generateSingleMessage, AIJudgement } from "../API/chatGPT_f.ts";
+import {
+  generateSingleMessage,
+  AIJudgement,
+  generateSingleTopic,
+} from "../API/chatGPT_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -46,9 +50,11 @@ const SingleBattleView: React.FC = () => {
   const [maxTurns, setMaxTurns] = useState<number>(5); // n回のチャット
   const [sendMessage, setSendMessage] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isAIGenerating, setIsAIGenerating] = useState<boolean>(false);
   const [result, setResult] = useState<string>("");
   const [judgmentMade, setJudgmentMade] = useState<boolean>(false);
   const [judgmentReason, setJudgmentReason] = useState<string>("");
+  const [generatedAnswer, setGeneratedAnswer] = useState<string>("");
 
   useEffect(() => {
     if (location.state) {
@@ -57,8 +63,20 @@ const SingleBattleView: React.FC = () => {
       setBot(bot);
       setDifficulty(difficulty);
       setIsHuman(isHuman);
-    } else {
-      console.error("No state passed to SingleBattleView");
+      const initializeMessages = async () => {
+        setIsAIGenerating(true);
+        const topic = await generateSingleTopic();
+        if (messages.length === 0) {
+          setMessages([
+            {
+              role: "system",
+              content: topic,
+            },
+          ]);
+        }
+        setIsAIGenerating(false);
+      };
+      if (!isAIGenerating) initializeMessages();
     }
   }, [location.state]);
 
@@ -118,7 +136,6 @@ const SingleBattleView: React.FC = () => {
       }
       setIsGenerating(false);
     }
-
     setCurrentTurn((prevTurn) => prevTurn + 1);
 
     if (currentTurn + 1 >= maxTurns * 2) {
@@ -139,26 +156,26 @@ const SingleBattleView: React.FC = () => {
     }
   };
 
-  const generateAIResponse = async () => {
+  // AIによるメッセージ生成
+  const generateMessage = async () => {
     setIsGenerating(true);
     if (bot) {
-      const aiResponse = await generateSingleMessage(bot, messages, difficulty);
+      const response = await generateSingleMessage(bot, messages, difficulty);
+      setGeneratedAnswer(response);
       setIsGenerating(false);
 
       setMessages((prevMessages) => [
         ...prevMessages,
         {
           role: "assistant",
-          content: aiResponse,
+          content: response,
         },
       ]);
     }
-
     setCurrentTurn((prevTurn) => prevTurn + 1);
 
-    if (currentTurn + 1 >= maxTurns * 2) {
+    if (currentTurn + 1 >= maxTurns) {
       await makeAIJudgment();
-      return;
     }
   };
 
@@ -218,7 +235,11 @@ const SingleBattleView: React.FC = () => {
                     sx={{
                       maxWidth: "70%",
                       bgcolor:
-                        msg.role === "user" ? "primary.main" : "grey.300",
+                        msg.role === "user"
+                          ? "primary.main"
+                          : msg.role === "assistant"
+                            ? "secondary.main"
+                            : "grey.300",
                       color: msg.role === "user" ? "white" : "black",
                       borderRadius: 2,
                       p: 1,
@@ -226,16 +247,117 @@ const SingleBattleView: React.FC = () => {
                   >
                     <ListItemText
                       primary={msg.content}
-                      secondary={msg.role === "user" ? "あなた" : "AI"}
+                      secondary={
+                        msg.role === "user"
+                          ? "あなた"
+                          : msg.role === "assistant"
+                            ? "CPU"
+                            : "システム"
+                      }
                     />
                   </Box>
                 </ListItem>
               ))}
+              {isAIGenerating && (
+                <ListItem
+                  sx={{
+                    justifyContent: "flex-start",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      maxWidth: "70%",
+                      bgcolor: "grey.300",
+                      color: "black",
+                      borderRadius: 2,
+                      p: 1,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <CircularProgress
+                      size={20}
+                      sx={{ marginRight: 1, color: "grey.500" }}
+                    />
+                    <Typography variant="body2">生成中...</Typography>
+                  </Box>
+                </ListItem>
+              )}
             </List>
           </Paper>
 
-          {/* メッセージ入力 */}
-          {!judgmentMade && (
+          {/* isHuman === false の場合、生成ボタンと生成された回答を表示 */}
+          {!isHuman && (
+            <div>
+              <Box mb={2}>
+                <Button
+                  variant="contained"
+                  onClick={generateMessage}
+                  disabled={isGenerating}
+                  fullWidth
+                  sx={{
+                    backgroundColor: isGenerating ? "grey.300" : "primary.main",
+                    color: isGenerating ? "grey.500" : "white",
+                    "&:hover": {
+                      backgroundColor: isGenerating
+                        ? "grey.300"
+                        : "primary.dark",
+                    },
+                  }}
+                >
+                  {isGenerating ? (
+                    <>
+                      <CircularProgress size={20} sx={{ marginRight: 1 }} />
+                      生成中...
+                    </>
+                  ) : (
+                    "メッセージ生成"
+                  )}
+                </Button>
+              </Box>
+              {generatedAnswer && (
+                <Box
+                  mt={2}
+                  p={2}
+                  sx={{
+                    backgroundColor: "info.main",
+                    color: "white",
+                    borderRadius: 2,
+                    boxShadow: 3,
+                  }}
+                >
+                  <Typography variant="h6" gutterBottom>
+                    生成された回答:
+                  </Typography>
+                  <Typography variant="body1">{generatedAnswer}</Typography>
+                </Box>
+              )}
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSendMessage}
+                disabled={!generatedAnswer.trim()}
+                fullWidth
+                sx={{
+                  mt: 2,
+                  backgroundColor: generatedAnswer.trim()
+                    ? "primary.main"
+                    : "grey.300",
+                  color: generatedAnswer.trim() ? "white" : "grey.500",
+                  "&:hover": {
+                    backgroundColor: generatedAnswer.trim()
+                      ? "primary.dark"
+                      : "grey.300",
+                  },
+                }}
+              >
+                送信
+              </Button>
+            </div>
+          )}
+
+          {/* その他のメッセージ入力エリア */}
+          {isHuman && !judgmentMade && (
             <>
               <TextField
                 label="メッセージを入力"
@@ -243,10 +365,7 @@ const SingleBattleView: React.FC = () => {
                 onChange={(e) => setSendMessage(e.target.value)}
                 fullWidth
                 disabled={isGenerating}
-                sx={{
-                  backgroundColor: "white",
-                  mb: 2,
-                }}
+                sx={{ backgroundColor: "white", mb: 2 }}
               />
               <Button
                 variant="contained"
@@ -264,9 +383,7 @@ const SingleBattleView: React.FC = () => {
               </Button>
               <Typography variant="body1" sx={{ mt: 2 }}>
                 残りターン数:{" "}
-                {maxTurns * 2 - currentTurn > 0
-                  ? maxTurns * 2 - currentTurn
-                  : 0}
+                {maxTurns - currentTurn > 0 ? maxTurns - currentTurn : 0}
               </Typography>
             </>
           )}

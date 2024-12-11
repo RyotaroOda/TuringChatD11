@@ -502,23 +502,18 @@ const BattleView: React.FC = () => {
                     avatarIcon = <SmartToyIcon />;
                   } else if (role === "user") {
                     // ユーザーのアイコン（user.photoURLがある場合はそれを使用）
-                    if ((displayName = myName)) {
-                      avatarIcon = myData?.iconURL ? (
-                        <Avatar src={myData?.iconURL} alt="User Avatar" />
-                      ) : (
-                        <PersonIcon />
-                      );
-                    } else {
-                      // 相手プレイヤーのアイコン
-                      avatarIcon = opponentData?.iconURL ? (
-                        <Avatar src={myData?.iconURL} alt="User Avatar" />
-                      ) : (
-                        <PersonIcon />
-                      );
-                    }
-                  } else {
+                    avatarIcon = myData?.iconURL ? (
+                      <Avatar src={myData?.iconURL} alt="User Avatar" />
+                    ) : (
+                      <PersonIcon />
+                    );
+                  } else if (role === "player") {
                     // 他はとりあえずPersonIcon
-                    avatarIcon = <PersonIcon />;
+                    avatarIcon = opponentData?.iconURL ? (
+                      <Avatar src={opponentData?.iconURL} alt="User Avatar" />
+                    ) : (
+                      <PersonIcon />
+                    );
                   }
 
                   return (

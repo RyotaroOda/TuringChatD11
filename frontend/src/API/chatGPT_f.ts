@@ -366,3 +366,36 @@ export const AIJudgement = async (
     console.error("Error calling OpenAI API:", error);
   }
 };
+
+export const generateSingleTopic = async (): Promise<string> => {
+  // GPT-4に送信するシステムメッセージ
+  const message: GPTMessage[] = [
+    {
+      role: "system",
+      content: `ランダムに会話の話題を設定して、チャットの最初のメッセージを生成してください。
+      メッセージは具体的で20〜30文字で返信できる疑問形にして下さい。
+      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
+    },
+  ];
+
+  const prompt: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: message,
+    max_tokens: 100,
+    temperature: 1.0, // 高めのランダム性を設定
+    top_p: 0.9, // 多様性を考慮したトークン選択
+    n: 1,
+    stop: null,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+  };
+
+  try {
+    const topic = await generate(prompt);
+    console.log("Generated topic:", topic);
+    return topic;
+  } catch (error) {
+    console.error("Failed to generate topic:", error);
+    throw new Error("Failed to generate topic.");
+  }
+};

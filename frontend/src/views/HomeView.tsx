@@ -586,7 +586,8 @@ const HomeView: React.FC = () => {
       console.log("roomData: ", battleData);
       if (
         battleData.status === "matched" &&
-        battleData.players[0] !== battleData.players[1]
+        battleData.players[Object.keys(battleData.players)[0]] !==
+          battleData.players[Object.keys(battleData.players)[1]]
       ) {
         if (user && user.isAnonymous) {
           // ゲストユーザーの場合はデフォルトのAIを使用
@@ -618,11 +619,16 @@ const HomeView: React.FC = () => {
           };
           navigate(appPaths.BattleRoomView(battleId), { state: props });
         } else {
-          console.error("ルームに入室できませんでした。");
+          console.error("ルームに入室できませんでした。1");
           cancelMatching();
           alert("ルームに入室できませんでした。");
           navigate(appPaths.HomeView);
         }
+      } else {
+        console.error("ルームに入室できませんでした2。");
+        cancelMatching();
+        alert("ルームに入室できませんでした。");
+        navigate(appPaths.HomeView);
       }
     });
   };
