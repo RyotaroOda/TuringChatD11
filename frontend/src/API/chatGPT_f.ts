@@ -101,9 +101,9 @@ export const generateTestMessage = async (
   messages: GPTMessage[]
 ): Promise<string> => {
   const prompt: ChatGPTRequest = {
-    model: AIModel["gpt-4"],
+    model: AIModel["gpt-4-turbo"],
     messages,
-    max_tokens: 100,
+    max_tokens: variables.maxToken,
     temperature: 1.0, // 高ランダム性
     top_p: 0.9,
     n: 1,
@@ -178,7 +178,7 @@ export const generateBattleMessage = async (
   const prompt: ChatGPTRequest = {
     model: AIModel[bot.model],
     messages: [systemMessage, ...chatLog],
-    max_tokens: 100,
+    max_tokens: variables.maxToken,
     temperature: bot.temperature,
     top_p: bot.top_p,
     n: 1,
@@ -221,7 +221,7 @@ export const generateTopic = async (battleId: string) => {
   const prompt: ChatGPTRequest = {
     model: AIModel["gpt-4"],
     messages: message,
-    max_tokens: 100,
+    max_tokens: variables.maxToken,
     temperature: 1.0, // 高めのランダム性を設定
     top_p: 0.9, // 多様性を考慮したトークン選択
     n: 1,
@@ -307,6 +307,7 @@ export const generateSingleMessage = async (
   bot: BotSetting,
   messages: GPTMessage[]
 ) => {
+  console.log("jinad");
   const prompt: GPTMessage = {
     role: "system",
     content: `あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
@@ -330,7 +331,7 @@ export const generateSingleMessage = async (
   const request: ChatGPTRequest = {
     model: AIModel["gpt-4"],
     messages: [prompt, ...messages],
-    max_tokens: 100,
+    max_tokens: variables.maxToken,
     temperature: 1.0,
     top_p: 0.9,
     n: 1,
@@ -363,15 +364,21 @@ export const AIJudgement = async (
     "reason" には、判断に至った具体的な理由を簡潔に説明してください。
 
 `;
+  const model: AIModel =
+    difficulty === "初級"
+      ? AIModel["gpt-3.5-turbo"]
+      : difficulty === "上級"
+        ? AIModel["gpt-4"]
+        : AIModel["gpt-4-turbo"];
   const request: ChatGPTRequest = {
-    model: AIModel["gpt-4"],
+    model: model,
     messages: [
       {
         role: "system",
         content: prompt,
       },
     ],
-    max_tokens: 100,
+    max_tokens: 1000, // JSONが壊れないように
     temperature: 0.7,
     top_p: 0.9,
     n: 1,
@@ -404,7 +411,7 @@ export const generateSingleTopic = async (): Promise<string> => {
   const prompt: ChatGPTRequest = {
     model: AIModel["gpt-4"],
     messages: message,
-    max_tokens: 100,
+    max_tokens: variables.maxToken,
     temperature: 1.0, // 高めのランダム性を設定
     top_p: 0.9, // 多様性を考慮したトークン選択
     n: 1,

@@ -37,6 +37,11 @@ import Avatar from "@mui/material/Avatar";
 import { auth } from "../API/firebase_f.ts";
 import SendIcon from "@mui/icons-material/Send";
 import CreateIcon from "@mui/icons-material/Create";
+import ForumIcon from "@mui/icons-material/Forum";
+import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
+import SchoolIcon from "@mui/icons-material/School";
+import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
+import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 
 export type Difficulty = "初級" | "中級" | "上級";
 
@@ -75,7 +80,7 @@ theme = responsiveFontSizes(theme);
 export interface SingleBattleViewProps {
   difficulty: Difficulty;
   isHuman: boolean;
-  bot: BotSetting | null;
+  bot: BotSetting;
 }
 
 const SingleBattleView: React.FC = () => {
@@ -100,6 +105,9 @@ const SingleBattleView: React.FC = () => {
   const [showingResult, setShowingResult] = useState(false);
   const [showGeneratedAnswer, setShowGeneratedAnswer] = useState(true);
 
+  const [topic, setTopic] = useState<string>("");
+  const [topicLoading, setTopicLoading] = useState<boolean>(false);
+
   useEffect(() => {
     if (location.state) {
       const { bot, difficulty, isHuman } =
@@ -107,20 +115,13 @@ const SingleBattleView: React.FC = () => {
       setBot(bot);
       setDifficulty(difficulty);
       setIsHuman(isHuman);
-      const initializeMessages = async () => {
-        setIsAIGenerating(true);
-        const topic = await generateSingleTopic();
-        if (messages.length === 0) {
-          setMessages([
-            {
-              role: "system",
-              content: topic,
-            },
-          ]);
-        }
-        setIsAIGenerating(false);
+      const initializeTopic = async () => {
+        setTopicLoading(true);
+        const newTopic = await generateSingleTopic();
+        setTopic(newTopic);
+        setTopicLoading(false);
       };
-      if (!isAIGenerating) initializeMessages();
+      initializeTopic();
     }
   }, [location.state]);
 
@@ -242,40 +243,42 @@ const SingleBattleView: React.FC = () => {
   };
 
   const renderMessages = () => {
-    return messages.map((msg, index) => {
-      let role;
-      if (msg.role === "system") {
-        role = "system";
-      } else if (msg.role === "user") {
-        role = "user";
-      } else {
-        role = "assistant";
-      }
+    const filtered = messages.filter((msg) => msg.role !== "system");
+    if (filtered.length === 0) {
+      // メッセージがない場合、フレンドリーなメッセージとアイコンを表示
+      return (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          sx={{ py: 5 }}
+        >
+          <ChatBubbleOutlineIcon
+            sx={{ fontSize: 40, color: "#9e9e9e", mb: 2 }}
+          />
+          <Typography
+            variant="body1"
+            sx={{ color: "#757575", textAlign: "center" }}
+          >
+            まだメッセージはありません。
+            <br />
+            下の入力欄からチャットを開始しましょう！
+          </Typography>
+        </Box>
+      );
+    }
 
+    return filtered.map((msg, index) => {
+      const role = msg.role === "user" ? "user" : "assistant";
       const backgroundColor =
-        role === "user"
-          ? "rgba(33, 150, 243, 0.1)"
-          : role === "system"
-            ? "rgba(139, 195, 74, 0.1)"
-            : "rgba(255, 202, 40, 0.1)";
-      const avatarBgColor =
-        role === "user" ? "#2196f3" : role === "system" ? "#8bc34a" : "#ffca28";
-      const primaryTextColor =
-        role === "user" ? "#0d47a1" : role === "system" ? "#33691e" : "#ff6f00";
-
-      let displayName;
-      if (role === "system") {
-        displayName = "システム";
-      } else if (role === "user") {
-        displayName = "あなた";
-      } else {
-        displayName = "CPU";
-      }
+        role === "user" ? "rgba(33, 150, 243, 0.1)" : "rgba(255, 202, 40, 0.1)";
+      const avatarBgColor = role === "user" ? "#2196f3" : "#ffca28";
+      const primaryTextColor = role === "user" ? "#0d47a1" : "#ff6f00";
+      const displayName = role === "user" ? "あなた" : "CPU（相手）";
 
       let avatarIcon;
-      if (role === "system") {
-        avatarIcon = <SmartToyIcon />;
-      } else if (role === "user") {
+      if (role === "user") {
         avatarIcon =
           user && user.photoURL ? (
             <Avatar alt="User Avatar" src={user.photoURL} />
@@ -342,6 +345,8 @@ const SingleBattleView: React.FC = () => {
     color: "#fff",
   };
 
+  const turnsLeft = Math.max(maxTurn - currentTurn, 0);
+
   return (
     <ThemeProvider theme={theme}>
       <AppBar position="static">
@@ -358,7 +363,75 @@ const SingleBattleView: React.FC = () => {
         </Toolbar>
       </AppBar>
       <Container maxWidth="md" sx={{ py: 4 }}>
-        <Box>
+        {/* 難易度、トピック、残りターン数表示カード */}
+        {!judgmentMade && !isJudging && (
+          <Card
+            sx={{
+              mb: 2,
+              p: 2,
+              backgroundColor: "#e3f2fd",
+              borderRadius: 2,
+              border: "1px solid #90caf9",
+            }}
+          >
+            <CardContent>
+              {/* 難易度 */}
+              <Box display="flex" alignItems="center" mb={1}>
+                <SchoolIcon sx={{ mr: 1, color: "#1976d2" }} />
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  難易度: {difficulty}
+                </Typography>
+              </Box>
+
+              {/* トピック */}
+              <Box display="flex" alignItems="center" mb={1} sx={{ mt: 2 }}>
+                <LightbulbOutlinedIcon sx={{ mr: 1, color: "#1976d2" }} />
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  {topicLoading ? (
+                    <>
+                      トピック生成中...
+                      <CircularProgress
+                        size={20}
+                        sx={{ marginRight: 1, color: "#fff" }}
+                      />
+                    </>
+                  ) : (
+                    topic
+                  )}
+                </Typography>
+              </Box>
+
+              {/* 残りターン数 */}
+              <Box display="flex" alignItems="center" sx={{ mt: 2 }}>
+                <HourglassEmptyIcon sx={{ mr: 1, color: "#1976d2" }} />
+                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                  残りターン数: {turnsLeft}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        <Box sx={{ mb: 2 }}>
+          {/* チャットログタイトルとアイコンをカード状に */}
+          <Paper
+            elevation={1}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              p: 1,
+              mb: 1,
+              backgroundColor: "#f0f4c3",
+              borderRadius: 2,
+              border: "1px solid #dce775",
+            }}
+          >
+            <ForumIcon sx={{ mr: 1, color: "#7cb342" }} />
+            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+              チャットログ
+            </Typography>
+          </Paper>
+
           {/* チャットログ */}
           <Paper
             elevation={3}
@@ -366,17 +439,34 @@ const SingleBattleView: React.FC = () => {
               maxHeight: 400,
               overflowY: "auto",
               p: 2,
-              mb: 2,
               backgroundColor: "#fafafa",
+              borderRadius: 2,
+              border: "1px solid #e0e0e0",
             }}
           >
-            <List sx={{ pb: 0 }}>
+            <List sx={{ pb: 0, minHeight: 200 }}>
               {Array.isArray(messages) ? (
                 renderMessages()
               ) : (
-                <ListItem>
-                  <ListItemText primary="チャットログがありません。" />
-                </ListItem>
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                  justifyContent="center"
+                  sx={{ py: 5 }}
+                >
+                  <ChatBubbleOutlineIcon
+                    sx={{ fontSize: 40, color: "#9e9e9e", mb: 2 }}
+                  />
+                  <Typography
+                    variant="body1"
+                    sx={{ color: "#757575", textAlign: "center" }}
+                  >
+                    まだメッセージはありません。
+                    <br />
+                    下の入力欄からチャットを開始しましょう！
+                  </Typography>
+                </Box>
               )}
               {isAIGenerating && (
                 <ListItem>
@@ -386,195 +476,170 @@ const SingleBattleView: React.FC = () => {
               <div ref={chatEndRef} />
             </List>
           </Paper>
-
-          {/* 判定前表示 */}
-          {!judgmentMade && !isJudging && (
-            <Typography
-              variant="body1"
-              sx={{ mb: 2, textAlign: "right", color: "text.secondary" }}
-            >
-              残りターン数: {Math.max(maxTurn - currentTurn, 0)}
-            </Typography>
-          )}
-
-          {/* isHuman === false の場合、生成ボタンと生成された回答表示 */}
-          {!judgmentMade && !isJudging && !isHuman && (
-            <Box mb={2}>
-              <Button
-                variant="contained"
-                onClick={generateMessage}
-                disabled={isGenerating || isAIGenerating}
-                startIcon={<CreateIcon />}
-                fullWidth
-                sx={buttonStyle}
-              >
-                {isGenerating ? (
-                  <>
-                    <CircularProgress
-                      size={20}
-                      sx={{ marginRight: 1, color: "#fff" }}
-                    />
-                    メッセージ生成中...
-                  </>
-                ) : (
-                  "メッセージ生成"
-                )}
-              </Button>
-
-              <Fade in={showGeneratedAnswer}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    mb: 2,
-                    backgroundColor: "#e1f5fe",
-                    borderRadius: 2,
-                    border: "1px solid #81d4fa",
-                  }}
-                >
-                  <CardContent>
-                    <Box display="flex" alignItems="center" mb={1}>
-                      <SmartToyIcon sx={{ mr: 1, color: "#0277bd" }} />
-                      <Typography
-                        variant="h6"
-                        sx={{ fontWeight: "bold", color: "#0277bd" }}
-                      >
-                        生成された回答
-                      </Typography>
-                    </Box>
-                    <Box
-                      sx={{
-                        backgroundColor: "white",
-                        p: 2,
-                        borderRadius: 1,
-                        boxShadow: 1,
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{ whiteSpace: "pre-wrap" }}
-                      >
-                        {sendMessage}
-                      </Typography>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Fade>
-
-              <Button
-                variant="contained"
-                onClick={handleSendMessage}
-                disabled={!sendMessage.trim() || isGenerating}
-                fullWidth
-                startIcon={<SendIcon />}
-                sx={buttonStyle}
-              >
-                {false ? (
-                  <CircularProgress size={24} sx={{ color: "#fff" }} />
-                ) : (
-                  "送信"
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {/* 人間が操作する場合の入力欄 */}
-          {isHuman && !judgmentMade && !isJudging && (
-            <Box>
-              <TextField
-                label="メッセージを入力"
-                value={sendMessage}
-                onChange={(e) => setSendMessage(e.target.value)}
-                fullWidth
-                disabled={isGenerating}
-                sx={{ backgroundColor: "white", mb: 2 }}
-              />
-              <Button
-                variant="contained"
-                onClick={handleSendMessage}
-                disabled={isGenerating || sendMessage.trim() === ""}
-                fullWidth
-                startIcon={<SendIcon />}
-                sx={buttonStyle}
-              >
-                {isGenerating ? (
-                  <CircularProgress size={24} sx={{ color: "#fff" }} />
-                ) : (
-                  "送信"
-                )}
-              </Button>
-            </Box>
-          )}
-
-          {/* 判定中 */}
-          {isJudging && !judgmentMade && (
-            <Box
-              mt={4}
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-            >
-              <CircularProgress size={40} />
-              <Typography variant="h6" sx={{ mt: 2 }}>
-                判定中...
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ mt: 1, color: "text.secondary" }}
-              >
-                しばらくお待ちください
-              </Typography>
-            </Box>
-          )}
-
-          {/* 判定結果表示 */}
-          {judgmentMade && showingResult && (
-            <Fade in={showingResult}>
-              <Box mt={4} display="flex" justifyContent="center">
-                <Card
-                  sx={{
-                    maxWidth: 400,
-                    width: "100%",
-                    textAlign: "center",
-                    p: 2,
-                    backgroundColor: resultBgColor,
-                    color: resultTextColor,
-                    borderRadius: 2,
-                  }}
-                >
-                  <CardContent>
-                    <Typography
-                      variant="h4"
-                      gutterBottom
-                      sx={{ fontWeight: "bold" }}
-                    >
-                      {result} {resultEmoji}
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ mt: 2, mb: 4, whiteSpace: "pre-wrap" }}
-                    >
-                      判定理由: {judgmentReason}
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      onClick={() => navigate("/")}
-                      sx={{
-                        backgroundColor: "#ffffff",
-                        color: "#333",
-                        fontWeight: "bold",
-                        "&:hover": {
-                          backgroundColor: "#f0f0f0",
-                        },
-                      }}
-                    >
-                      ホームに戻る
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Box>
-            </Fade>
-          )}
         </Box>
+
+        {/* isHuman === false の場合、生成ボタンと生成された回答表示 */}
+        {!judgmentMade && !isJudging && !isHuman && (
+          <Box mb={2}>
+            <Button
+              variant="contained"
+              onClick={generateMessage}
+              disabled={isGenerating || isAIGenerating || topicLoading}
+              startIcon={<CreateIcon />}
+              fullWidth
+              sx={buttonStyle}
+            >
+              {isGenerating ? (
+                <>
+                  <CircularProgress
+                    size={20}
+                    sx={{ marginRight: 1, color: "#fff" }}
+                  />
+                  メッセージ生成中...
+                </>
+              ) : (
+                "メッセージ生成"
+              )}
+            </Button>
+
+            <Fade in={showGeneratedAnswer && !topicLoading}>
+              <Card
+                elevation={2}
+                sx={{
+                  mb: 2,
+                  backgroundColor: "#e1f5fe",
+                  borderRadius: 2,
+                  border: "1px solid #81d4fa",
+                }}
+              >
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={1}>
+                    <SmartToyIcon sx={{ mr: 1, color: "#0277bd" }} />
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: "bold", color: "#0277bd" }}
+                    >
+                      生成された回答
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      backgroundColor: "white",
+                      p: 2,
+                      borderRadius: 1,
+                      boxShadow: 1,
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                      {sendMessage}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Fade>
+
+            <Button
+              variant="contained"
+              onClick={handleSendMessage}
+              disabled={!sendMessage.trim() || isGenerating || topicLoading}
+              fullWidth
+              startIcon={<SendIcon />}
+              sx={buttonStyle}
+            >
+              送信
+            </Button>
+          </Box>
+        )}
+
+        {/* 人間が操作する場合の入力欄 */}
+        {isHuman && !judgmentMade && !isJudging && !topicLoading && (
+          <Box>
+            <TextField
+              label="メッセージを入力"
+              value={sendMessage}
+              onChange={(e) => setSendMessage(e.target.value)}
+              fullWidth
+              disabled={isGenerating}
+              sx={{ backgroundColor: "white", mb: 2 }}
+            />
+            <Button
+              variant="contained"
+              onClick={handleSendMessage}
+              disabled={isGenerating || sendMessage.trim() === ""}
+              fullWidth
+              startIcon={<SendIcon />}
+              sx={buttonStyle}
+            >
+              {isGenerating ? (
+                <CircularProgress size={24} sx={{ color: "#fff" }} />
+              ) : (
+                "送信"
+              )}
+            </Button>
+          </Box>
+        )}
+
+        {/* 判定中 */}
+        {isJudging && !judgmentMade && (
+          <Box mt={4} display="flex" flexDirection="column" alignItems="center">
+            <CircularProgress size={40} />
+            <Typography variant="h6" sx={{ mt: 2 }}>
+              判定中...
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+              しばらくお待ちください
+            </Typography>
+          </Box>
+        )}
+
+        {/* 判定結果表示 */}
+        {judgmentMade && showingResult && (
+          <Fade in={showingResult}>
+            <Box mt={4} display="flex" justifyContent="center">
+              <Card
+                sx={{
+                  maxWidth: 400,
+                  width: "100%",
+                  textAlign: "center",
+                  p: 2,
+                  backgroundColor: resultBgColor,
+                  color: resultTextColor,
+                  borderRadius: 2,
+                }}
+              >
+                <CardContent>
+                  <Typography
+                    variant="h4"
+                    gutterBottom
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    {result} {resultEmoji}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ mt: 2, mb: 4, whiteSpace: "pre-wrap" }}
+                  >
+                    判定理由: {judgmentReason}
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate("/")}
+                    sx={{
+                      backgroundColor: "#ffffff",
+                      color: "#333",
+                      fontWeight: "bold",
+                      "&:hover": {
+                        backgroundColor: "#f0f0f0",
+                      },
+                    }}
+                  >
+                    ホームに戻る
+                  </Button>
+                </CardContent>
+              </Card>
+            </Box>
+          </Fade>
+        )}
       </Container>
     </ThemeProvider>
   );

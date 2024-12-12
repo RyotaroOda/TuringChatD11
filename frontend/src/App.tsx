@@ -29,8 +29,9 @@ export const variables = {
   experiment: true,
   backend: false,
   defaultPrompt: "未設定",
-  disableClientGeneration: true,
-  targetAge: "小学校高学年",
+  disableClientGeneration: true, // - フロントエンドでの画像生成を無効化
+  targetAge: "小学校高学年", // - 対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
+  maxToken: 300,
 };
 
 //

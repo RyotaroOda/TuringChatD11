@@ -60,6 +60,7 @@ import {
   RadioGroup,
   FormControlLabel,
   Radio,
+  Tooltip,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -439,7 +440,16 @@ const HomeView: React.FC = () => {
     const props: SingleBattleViewProps = {
       difficulty: singlePlayDifficulty,
       isHuman: selectedIsHuman,
-      bot: bots ? bots.data[bots.defaultId] : null,
+      bot: bots
+        ? bots.data[bots.defaultId]
+        : {
+            id: 0,
+            name: "default",
+            prompt: aiPrompt,
+            model: AIModel["gpt-4"],
+            temperature: 0,
+            top_p: 0,
+          },
     };
     navigate(appPaths.SingleBattleView, { state: props });
   };
@@ -889,6 +899,15 @@ const HomeView: React.FC = () => {
                       >
                         名前変更
                       </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        onClick={handleProfileEditClick}
+                        sx={{ mt: 2 }}
+                      >
+                        プロフィール編集
+                      </Button>
                     </Box>
                   )}
                 </Card>
@@ -976,16 +995,20 @@ const HomeView: React.FC = () => {
                                 setSelectedIsHuman(e.target.value === "human");
                               }}
                             >
-                              <FormControlLabel
-                                value="ai"
-                                control={<Radio />}
-                                label="AIがプレイする"
-                              />
-                              <FormControlLabel
-                                value="human"
-                                control={<Radio />}
-                                label="自分でプレイする"
-                              />
+                              <Tooltip title="AIがメッセージを生成してゲームを進めます。">
+                                <FormControlLabel
+                                  value="ai"
+                                  control={<Radio />}
+                                  label="AIがプレイする"
+                                />
+                              </Tooltip>
+                              <Tooltip title="あなた自身がAIのふりをしてゲームを進めます。">
+                                <FormControlLabel
+                                  value="human"
+                                  control={<Radio />}
+                                  label="自分でプレイする"
+                                />
+                              </Tooltip>
                             </RadioGroup>
                           </FormControl>
                         </Box>
