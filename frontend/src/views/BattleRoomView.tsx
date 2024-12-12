@@ -4,7 +4,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   BotData,
   PlayerData,
-  BattleRules,
   BattleRoomData,
   BotSetting,
 } from "../shared/types.ts";

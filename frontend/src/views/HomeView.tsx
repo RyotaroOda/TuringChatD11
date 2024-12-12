@@ -85,6 +85,7 @@ import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
 import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 // カスタムフォントの適用
 const theme = createTheme({
@@ -1233,7 +1234,7 @@ const HomeView: React.FC = () => {
                         variant="outlined"
                         color="primary"
                         onClick={handleOpenGeneratePrompt}
-                        startIcon={<AddIcon />} // 左側にアイコンを追加
+                        startIcon={<AutoAwesomeIcon />} // 左側にアイコンを追加
                       >
                         テンプレートから作成
                       </Button>

@@ -135,7 +135,7 @@ const generateImage = async (prompt: string): Promise<string> => {
     size: "256x256",
     response_format: "b64_json",
   };
-
+  console.log("request", requestBody);
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {

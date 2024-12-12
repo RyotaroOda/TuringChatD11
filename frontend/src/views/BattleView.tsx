@@ -42,7 +42,6 @@ import {
   FormControlLabel,
   Radio,
   CircularProgress,
-  Fade,
   Avatar,
   ListItemAvatar,
 } from "@mui/material";
@@ -51,7 +50,7 @@ import { appPaths } from "../App.tsx";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import SendIcon from "@mui/icons-material/Send";
 import PersonIcon from "@mui/icons-material/Person";
-import { set } from "firebase/database";
+import CreateIcon from "@mui/icons-material/Create";
 
 const theme = createTheme({
   typography: {
@@ -653,7 +652,10 @@ const BattleView: React.FC = () => {
                             生成中...
                           </>
                         ) : (
-                          "メッセージ生成"
+                          <>
+                            <CreateIcon />
+                            メッセージ生成
+                          </>
                         )}
                       </Button>
                     </Box>
@@ -719,7 +721,10 @@ const BattleView: React.FC = () => {
                   {loading ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    "送信"
+                    <>
+                      <SendIcon />
+                      送信
+                    </>
                   )}
                 </Button>
               </Box>
@@ -805,7 +810,14 @@ const BattleView: React.FC = () => {
                     answer.message.trim() === ""
                   }
                 >
-                  {isSubmitted ? "送信完了" : "送信"}
+                  {isSubmitted ? (
+                    "送信完了"
+                  ) : (
+                    <>
+                      <SendIcon />
+                      送信
+                    </>
+                  )}
                 </Button>
               </Box>
             </Box>

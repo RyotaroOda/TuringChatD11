@@ -28,7 +28,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Slide,
   SelectChangeEvent,
   CardActions,
@@ -50,6 +49,7 @@ import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
 import { updateUserProfile } from "../API/firestore-database_f.ts";
 import { auth } from "../API/firebase_f.ts";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 
 const theme = createTheme({
   typography: {
@@ -344,7 +344,7 @@ const EditPromptView: React.FC = () => {
                 variant="outlined"
                 color="primary"
                 onClick={handleOpenGeneratePrompt}
-                startIcon={<AddIcon />}
+                startIcon={<AutoAwesomeIcon />}
               >
                 テンプレートから作成
               </Button>

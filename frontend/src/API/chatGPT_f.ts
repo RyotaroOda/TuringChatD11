@@ -303,12 +303,29 @@ export const generateImageFront = async (prompt: string) => {
 
 export const generateSingleMessage = async (
   bot: BotSetting,
-  messages: GPTMessage[],
-  difficulty: Difficulty
+  messages: GPTMessage[]
 ) => {
+  const prompt: GPTMessage = {
+    role: "system",
+    content: `あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
+    あなたはプレイヤーになりきって、新たに相手に送信するメッセージを生成してください。
+    
+    # 出力形式
+    - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
+    - 出力がそのまま相手プレイヤーに送信されます。
+
+    # カスタムプロンプト
+    - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
+      ${bot.prompt}
+
+    # メッセージログ
+    - 以下に今までのゲームのチャットログを送信します。
+    `,
+  };
+
   const request: ChatGPTRequest = {
     model: AIModel["gpt-4"],
-    messages: messages,
+    messages: [prompt, ...messages],
     max_tokens: 100,
     temperature: 1.0,
     top_p: 0.9,
@@ -322,10 +339,6 @@ export const generateSingleMessage = async (
   return response;
 };
 
-interface ApiResponse {
-  isHuman: boolean;
-  reason: string;
-}
 export const AIJudgement = async (
   messages: GPTMessage[],
   difficulty: Difficulty
@@ -359,7 +372,7 @@ export const AIJudgement = async (
     stop: null,
   };
   try {
-    const response: ApiResponse = await generate(request);
+    const response = await generate(request);
     console.log("API Response:", response);
     return response;
   } catch (error) {
