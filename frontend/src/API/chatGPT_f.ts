@@ -125,22 +125,25 @@ export const generateTestMessage = async (
  */
 export const generateBattleMessage = async (
   log: Message[],
+  topic: string,
   instruction: string,
   bot: BotSetting,
   config: BattleRules
 ): Promise<string> => {
   const myId = auth.currentUser?.uid;
-  const chatLog: GPTMessage[] = log.map((message) => {
-    return {
-      role: "user",
-      content:
-        (message.senderId === "system"
-          ? "[system]"
-          : message.senderId === myId
-            ? "[proponent]"
-            : "[opponent]") + message.message,
-    };
-  });
+  const chatLog: GPTMessage[] = log.length
+    ? log
+        .filter((message) => message.message) // Filter out messages with empty content
+        .map((message) => ({
+          role: "user",
+          content:
+            (message.senderId === "system"
+              ? "[system]"
+              : message.senderId === myId
+                ? "[proponent]"
+                : "[opponent]") + message.message,
+        }))
+    : []; // Return an empty array if log is empty
 
   // システムメッセージの作成
   const systemMessage: GPTMessage = {
@@ -172,6 +175,8 @@ export const generateBattleMessage = async (
       - 以下に今までのゲームのチャットログを送信します。
       - ゲーム開始時のトークテーマはAIで自動生成され、メッセージの先頭に[system]と表示されます。
       - プレイヤー(自分)は[proponent], 相手プレイヤーは[opponent]とメッセージの先頭に表示されます。
+
+      トピック：${topic}
     `,
   };
 
@@ -305,9 +310,9 @@ export const generateImageFront = async (prompt: string) => {
 
 export const generateSingleMessage = async (
   bot: BotSetting,
-  messages: GPTMessage[]
+  messages: GPTMessage[],
+  topic: string
 ) => {
-  console.log("jinad");
   const prompt: GPTMessage = {
     role: "system",
     content: `あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
@@ -324,6 +329,7 @@ export const generateSingleMessage = async (
       ${bot.prompt}
 
     # メッセージログ
+    トピック: ${topic}
     - 以下に今までのゲームのチャットログを送信します。
     `,
   };
@@ -346,6 +352,7 @@ export const generateSingleMessage = async (
 
 export const AIJudgement = async (
   messages: GPTMessage[],
+  topic: string,
   difficulty: Difficulty
 ) => {
   const prompt = `あなたはチャットゲームの審判として参加しています。\n
@@ -354,6 +361,7 @@ export const AIJudgement = async (
   理由は「あなたの正体はXXです。」から始めて、具体的な理由を日本語で簡潔に説明してください。\n
   対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。\n
 
+  トピック: ${topic}\n
   {${messages.map((message) => message.content).join("\n")}}\n
 
   結果を以下のJSON形式で出力してください:

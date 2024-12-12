@@ -162,9 +162,17 @@ const SingleBattleView: React.FC = () => {
 
     if (currentTurn + 1 === maxTurn) {
       makeAIJudgment();
+      setCurrentTurn((prevTurn) => prevTurn + 1);
     } else {
-      if (bot) {
-        setIsAIGenerating(true);
+      setCurrentTurn((prevTurn) => prevTurn + 1);
+      setIsAIGenerating(true); //AIの返信を生成
+    }
+  };
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const fetchAIResponse = async () => {
+      if (isAIGenerating) {
         const aiResponse = await generateTestMessage(messages);
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -174,27 +182,19 @@ const SingleBattleView: React.FC = () => {
           },
         ]);
         setIsAIGenerating(false);
-      }
-      if (currentTurn + 2 === maxTurn) {
-        makeAIJudgment();
-      } else {
-        if (!isHuman) {
-          generateMessage();
+        if (currentTurn + 1 === maxTurn) {
+          makeAIJudgment();
         }
+        setCurrentTurn((prevTurn) => prevTurn + 1);
       }
-      setCurrentTurn((prevTurn) => prevTurn + 1);
-    }
-    setCurrentTurn((prevTurn) => prevTurn + 1);
-  };
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+    fetchAIResponse();
   }, [messages]);
 
   const generateMessage = async () => {
     setIsGenerating(true);
     if (bot) {
-      const response = await generateSingleMessage(bot, messages);
+      const response = await generateSingleMessage(bot, messages, topic);
       setSendMessage(response);
       setIsGenerating(false);
       setShowGeneratedAnswer(true);
@@ -211,7 +211,7 @@ const SingleBattleView: React.FC = () => {
   const makeAIJudgment = async () => {
     setIsGenerating(true);
     setIsJudging(true);
-    const aiJudgmentResponse = await AIJudgement(messages, difficulty);
+    const aiJudgmentResponse = await AIJudgement(messages, topic, difficulty);
     if (!aiJudgmentResponse) {
       throw new Error("AIJudgement returned undefined");
     }

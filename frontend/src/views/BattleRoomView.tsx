@@ -43,6 +43,7 @@ import {
   Divider,
   ListItemAvatar,
   Avatar,
+  Tooltip,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -294,16 +295,20 @@ const BattleRoomView: React.FC = () => {
                             }
                           }}
                         >
-                          <FormControlLabel
-                            value="ai"
-                            control={<Radio />}
-                            label="AIがプレイする"
-                          />
-                          <FormControlLabel
-                            value="human"
-                            control={<Radio />}
-                            label="自分でプレイする"
-                          />
+                          <Tooltip title="AIがメッセージを生成してゲームを進めます。">
+                            <FormControlLabel
+                              value="ai"
+                              control={<Radio />}
+                              label="AIがプレイする"
+                            />
+                          </Tooltip>
+                          <Tooltip title="あなた自身がAIのふりをしてゲームを進めます。">
+                            <FormControlLabel
+                              value="human"
+                              control={<Radio />}
+                              label="自分でプレイする"
+                            />
+                          </Tooltip>
                         </RadioGroup>
                       </FormControl>
                     </Box>
