@@ -158,6 +158,7 @@ export const generateBattleMessage = async (
       - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
       - 先頭の[proponent]や[opponent]は出力に含めないでください。
       - 出力がそのまま相手プレイヤーに送信されます。
+      - 対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
 
       # カスタムプロンプト
       - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
@@ -211,7 +212,9 @@ export const generateTopic = async (battleId: string) => {
       role: "system",
       content: `ランダムに会話の話題を設定して、チャットの最初のメッセージを生成してください。
       メッセージは具体的で20〜30文字で返信できる疑問形にして下さい。
-      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
+      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。
+      対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
+`,
     },
   ];
 
@@ -256,7 +259,6 @@ export const generateImageFront = async (prompt: string) => {
         "OPENAI_API_KEY is not defined in the environment variables."
       );
     }
-    console.log("hs");
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -313,6 +315,8 @@ export const generateSingleMessage = async (
     # 出力形式
     - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
     - 出力がそのまま相手プレイヤーに送信されます。
+    - 対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
+
 
     # カスタムプロンプト
     - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
@@ -344,7 +348,11 @@ export const AIJudgement = async (
   difficulty: Difficulty
 ) => {
   const prompt = `あなたはチャットゲームの審判として参加しています。\n
-  以下は、プレイヤーとCPUプレイヤーとのメッセージログです。プレイヤーが人間かAIかを判断してください。その際、言語パターン、文法構造、独自性などを考慮してください。\n
+  以下は、プレイヤーとCPUプレイヤーとのメッセージログです。プレイヤーが人間かAIかを判断し、その理由と共に出力してください。\n
+  その際、言語パターン、文法構造、独自性などを考慮してください。\n
+  理由は「あなたの正体はXXです。」から始めて、具体的な理由を日本語で簡潔に説明してください。\n
+  対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。\n
+
   {${messages.map((message) => message.content).join("\n")}}\n
 
   結果を以下のJSON形式で出力してください:
@@ -387,7 +395,9 @@ export const generateSingleTopic = async (): Promise<string> => {
       role: "system",
       content: `ランダムに会話の話題を設定して、チャットの最初のメッセージを生成してください。
       メッセージは具体的で20〜30文字で返信できる疑問形にして下さい。
-      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。`,
+      出力形式は「話題: XXX」の形で話題の内容のみを回答してください。
+      対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
+`,
     },
   ];
 

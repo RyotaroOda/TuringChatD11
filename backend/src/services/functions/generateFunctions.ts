@@ -84,7 +84,7 @@ const generate = async (prompt: ChatGPTRequest): Promise<string> => {
         "OPENAI_API_KEY is not defined in the environment variables."
       );
     }
-    console.log("Sending to ChatGPT...");
+    console.log("Sending to ChatGPT...", prompt);
 
     // ChatGPT APIにリクエストを送信
     const response = await fetch(apiUrl, {

@@ -30,7 +30,10 @@ export const variables = {
   backend: false,
   defaultPrompt: "未設定",
   disableClientGeneration: true,
+  targetAge: "小学校高学年",
 };
+
+//
 
 export const appPaths = {
   HomeView: "/",
