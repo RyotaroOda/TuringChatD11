@@ -34,7 +34,7 @@ import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PersonIcon from "@mui/icons-material/Person";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import Avatar from "@mui/material/Avatar";
-import { auth } from "../API/firebase_f.ts";
+import { auth, firestore } from "../API/firebase_f.ts";
 import SendIcon from "@mui/icons-material/Send";
 import CreateIcon from "@mui/icons-material/Create";
 import ForumIcon from "@mui/icons-material/Forum";
@@ -42,6 +42,8 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 import SchoolIcon from "@mui/icons-material/School";
 import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
+import { DATABASE_PATHS } from "../shared/database-paths.ts";
+import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 
 export type Difficulty = "初級" | "中級" | "上級";
 
@@ -242,6 +244,57 @@ const SingleBattleView: React.FC = () => {
     }, 3000);
   };
 
+  useEffect(() => {
+    if (result && judgmentReason) {
+      saveSingleBattleDataToStore();
+    }
+    // eslint-disable-next-line
+  }, [result, judgmentReason]);
+
+  /** ルームデータをFirestoreにバックアップ
+   * @param battleId バトルルームID
+   */
+  const saveSingleBattleDataToStore = async () => {
+    if (!user) return;
+    try {
+      const backupRef = doc(
+        firestore,
+        DATABASE_PATHS.singleBattleBackups(user.uid)
+      );
+      const backupData = {
+        player: user.displayName,
+        topic: topic,
+        difficulty: difficulty,
+        isHuman: isHuman,
+        bot: bot,
+        messages: messages,
+        result: result,
+        judgmentReason: judgmentReason,
+      };
+
+      const docSnapshot = await getDoc(backupRef); // ドキュメントの存在を確認
+
+      if (docSnapshot.exists()) {
+        // ドキュメントが存在する場合、配列にデータを追加
+        await updateDoc(backupRef, {
+          backups: arrayUnion(backupData),
+        });
+        console.log("Backup data successfully added to array!");
+      } else {
+        // ドキュメントが存在しない場合、新しく作成
+        await setDoc(backupRef, {
+          backups: [backupData], // 配列として初期化
+        });
+        console.log("Backup data successfully created and added!");
+      }
+    } catch (error) {
+      console.error(
+        "Firestoreへのバックアップ中にエラーが発生しました:",
+        error
+      );
+    }
+  };
+
   const renderMessages = () => {
     const filtered = messages.filter((msg) => msg.role !== "system");
     if (filtered.length === 0) {
@@ -389,10 +442,10 @@ const SingleBattleView: React.FC = () => {
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                   {topicLoading ? (
                     <>
-                      トピック生成中...
+                      トピック生成中...　
                       <CircularProgress
                         size={20}
-                        sx={{ marginRight: 1, color: "#fff" }}
+                        sx={{ color: "text.primary" }}
                       />
                     </>
                   ) : (

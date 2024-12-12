@@ -1,5 +1,4 @@
 // frontend/src/services/firestore-database.ts
-import { updateProfile } from "firebase/auth";
 import {
   doc,
   collection,

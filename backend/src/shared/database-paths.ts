@@ -2,7 +2,7 @@
 
 // Firebase Databaseの共通パスを管理
 export const DATABASE_PATHS = {
-  //# region realtime database
+  //#region realtime database
   //root
   route_rooms: "rooms",
   route_battles: "battles",
@@ -48,6 +48,6 @@ export const DATABASE_PATHS = {
   route_impressions: "impressions",
   rating: (userId: string) => `profiles/${userId}/rating`,
   battleBackups: (battleId: string) => `battleBackups/${battleId}`,
-
+  singleBattleBackups: (userId: string) => `singleBattleBackups/${userId}`,
   //#endregion
 };
