@@ -148,8 +148,13 @@ export enum AIModel {
 
 //実験アンケート
 export type QuestionnaireData = {
-  questions: string[];
-  answers: string[];
+  fun: string;
+  difficulty: string;
+  experience: string;
+  understood: string;
+  reuse: string;
+  message: string;
+  timestamp: Timestamp;
 };
 
 //感想

@@ -1,44 +1,166 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import {
+  Container,
+  Typography,
+  Box,
+  TextField,
+  Button,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  Stack,
+  Paper,
+} from "@mui/material";
 import { QuestionnaireData } from "../shared/types.ts";
+import SendIcon from "@mui/icons-material/Send";
+import { updateUserProfile } from "../API/firestore-database_f.ts";
+import { Timestamp } from "firebase/firestore";
 
 const QuestionnaireEdit: React.FC = () => {
-  const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>(
-    useLocation().state
-  );
-  const [message, setMessage] = useState<string>("");
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>({
+    fun: "",
+    difficulty: "",
+    experience: "",
+    understood: "",
+    reuse: "",
+    message: "",
+    timestamp: Timestamp.now(),
+  });
+  const [message, setMessage] = useState<string>(questionnaire?.message || "");
   const navigate = useNavigate();
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
     setQuestionnaire((prev) => (prev ? { ...prev, [name]: value } : prev));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const requiredFields = [
+      "fun",
+      "difficulty",
+      "experience",
+      "understood",
+      "reuse",
+    ];
+    const missingFields = requiredFields.filter(
+      (field) => !questionnaire || !questionnaire[field]
+    );
+
+    if (missingFields.length > 0) {
+      alert("すべての質問に回答してください。");
+      return;
+    }
     if (questionnaire) {
       console.log("questionnaire", questionnaire);
+      console.log("message", message);
+      const data = { questionnaire: questionnaire };
+      updateUserProfile(data);
+      navigate(-1);
     }
-    navigate(-1);
   };
 
+  const options = [
+    { value: "1", label: "全くそう思わない" },
+    { value: "2", label: "" },
+    { value: "3", label: "どちらとも言えない" },
+    { value: "4", label: "" },
+    { value: "5", label: "とてもそう思う" },
+  ];
+
   return (
-    <div>
-      <h2>アンケート</h2>
-      <form>
-        <div>
-          <textarea
-            rows={4}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            style={{ width: "100%", padding: "8px" }}
-          />
-        </div>
-        <button onClick={handleSubmit}>更新</button>
-      </form>
-    </div>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Typography
+        variant="h4"
+        component="h1"
+        gutterBottom
+        sx={{ textAlign: "center", mb: 3 }}
+      >
+        アンケートフォーム
+      </Typography>
+
+      <Box component="form" onSubmit={handleSubmit}>
+        <Stack spacing={4}>
+          {[
+            "楽しかったか",
+            "むずかしかったか",
+            "生成AIを使った経験があるか",
+            "生成AIの使い方が理解できたか",
+            "また生成AIを使いたいと思ったか",
+          ].map((question, index) => (
+            <Paper key={index} elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+              <FormControl component="fieldset" fullWidth>
+                <FormLabel
+                  component="legend"
+                  sx={{ fontWeight: "bold", mb: 1 }}
+                >
+                  {index + 1}. {question}
+                </FormLabel>
+                <RadioGroup
+                  name={
+                    ["fun", "difficulty", "experience", "understood", "reuse"][
+                      index
+                    ]
+                  }
+                  value={
+                    questionnaire?.[
+                      [
+                        "fun",
+                        "difficulty",
+                        "experience",
+                        "understood",
+                        "reuse",
+                      ][index]
+                    ] || ""
+                  }
+                  onChange={handleChange}
+                  row
+                >
+                  {options.map((opt) => (
+                    <FormControlLabel
+                      key={opt.value}
+                      value={opt.value}
+                      control={<Radio />}
+                      label={opt.label}
+                      labelPlacement="top"
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
+            </Paper>
+          ))}
+
+          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+            <TextField
+              label="コメント"
+              name="message"
+              multiline
+              rows={4}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              variant="outlined"
+              fullWidth
+            />
+          </Paper>
+
+          <Box textAlign="center">
+            <Button
+              variant="contained"
+              color="primary"
+              type="submit"
+              startIcon={<SendIcon />}
+              sx={{ minWidth: 200, borderRadius: 2 }}
+            >
+              送信
+            </Button>
+          </Box>
+        </Stack>
+      </Box>
+    </Container>
   );
 };
+
 export default QuestionnaireEdit;

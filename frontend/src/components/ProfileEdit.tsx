@@ -482,12 +482,12 @@ const ProfileEdit: React.FC = () => {
                 {profile?.questionnaire ? (
                   <Card sx={{ mt: 2 }}>
                     <CardContent>
-                      <Typography variant="body1">
+                      {/* <Typography variant="body1">
                         質問内容: {profile.questionnaire.questions.join(", ")}
                       </Typography>
                       <Typography variant="body1">
                         回答: {profile.questionnaire.answers.join(", ")}
-                      </Typography>
+                      </Typography> */}
                     </CardContent>
                   </Card>
                 ) : (
@@ -498,7 +498,7 @@ const ProfileEdit: React.FC = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleImpressionEdit}
+                  onClick={handleQuestionnaireEdit}
                   sx={{ mt: 2 }}
                 >
                   アンケートの回答/編集
