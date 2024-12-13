@@ -34,8 +34,6 @@ export const variables = {
   maxToken: 300,
 };
 
-//
-
 export const appPaths = {
   HomeView: "/",
   RoomView: (roomId: string) => `/room/${roomId}`,
@@ -98,7 +96,14 @@ function App() {
         {/* 認証状態をアプリ全体に提供 */}
         <Router>
           <Routes>
-            <Route path="/" element={<HomeView />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <HomeView />
+                </ProtectedRoute>
+              }
+            />
             {/* 認証が必要なルート */}
             <Route
               path={appPaths.RoomView("/room/:roomId")}

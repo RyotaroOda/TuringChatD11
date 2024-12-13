@@ -206,6 +206,7 @@ const BattleView: React.FC = () => {
     ) {
       await addMessage(battleId, sendMessage, currentTurn + 1, opponentData.id);
       setSendMessage("");
+      setGeneratedAnswer("");
     }
   };
 
@@ -637,7 +638,11 @@ const BattleView: React.FC = () => {
                     onClick={generateMessage}
                     disabled={isGenerating || !isMyTurn}
                     sx={{
-                      backgroundColor: isMyTurn ? "primary.main" : "grey.300",
+                      backgroundColor: isMyTurn
+                        ? generatedAnswer
+                          ? "secondary.main"
+                          : "primary.main"
+                        : "grey.300",
                       color: isMyTurn ? "white" : "grey.500",
                       "&:hover": {
                         backgroundColor: isMyTurn ? "primary.dark" : "grey.300",
@@ -655,7 +660,7 @@ const BattleView: React.FC = () => {
                     ) : (
                       <>
                         <CreateIcon />
-                        メッセージ生成
+                        {generatedAnswer ? "再生成" : "メッセージ生成"}
                       </>
                     )}
                   </Button>

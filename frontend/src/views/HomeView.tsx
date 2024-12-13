@@ -135,14 +135,10 @@ const HomeView: React.FC = () => {
   useEffect(() => {
     if (user) {
       setPlayerId(user.uid);
-      if (user.isAnonymous) {
-        setNewName("ゲスト");
-        setPlayerName("ゲスト");
-      } else {
-        setPlayerName(user.displayName || "");
-        setPhotoURL(user.photoURL || "");
-        fetchUserProfile();
-      }
+      setPlayerName(user.displayName || "");
+      console.log("ユーザー情報: ", user);
+      setPhotoURL(user.photoURL || "");
+      fetchUserProfile();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -412,7 +408,6 @@ const HomeView: React.FC = () => {
   const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
 
   const handleOpenGeneratePrompt = () => {
-    //? なぜかハンドル経由しないとうまくいかない
     setOpenGeneratePrompt(true);
   };
 
@@ -441,7 +436,7 @@ const HomeView: React.FC = () => {
       difficulty: singlePlayDifficulty,
       isHuman: selectedIsHuman,
       bot: bots
-        ? bots.data[bots.defaultId]
+        ? bots.data[selectedPromptId ? selectedPromptId : bots.defaultId]
         : {
             id: 0,
             name: "default",

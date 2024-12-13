@@ -53,7 +53,7 @@ let theme = createTheme({
       main: "#1976d2",
     },
     secondary: {
-      main: "#c2185b",
+      main: "#ff4081",
     },
     success: {
       main: "#388e3c",
@@ -382,7 +382,7 @@ const SingleBattleView: React.FC = () => {
   };
 
   // 勝敗によるスタイル分岐
-  const isWin = result === "You win";
+  const isWin = result === "勝利！";
   const resultBgColor = isWin
     ? theme.palette.success.main
     : theme.palette.info.main;
@@ -535,10 +535,11 @@ const SingleBattleView: React.FC = () => {
         {!judgmentMade && !isJudging && !isHuman && (
           <Box mb={2}>
             <Button
-              variant="contained"
+              variant={"contained"}
               onClick={generateMessage}
               disabled={isGenerating || isAIGenerating || topicLoading}
               startIcon={<CreateIcon />}
+              color={sendMessage ? "secondary" : "primary"}
               fullWidth
               sx={buttonStyle}
             >
@@ -550,12 +551,14 @@ const SingleBattleView: React.FC = () => {
                   />
                   メッセージ生成中...
                 </>
+              ) : sendMessage ? (
+                "再生成"
               ) : (
                 "メッセージ生成"
               )}
             </Button>
 
-            <Fade in={showGeneratedAnswer && !topicLoading}>
+            <Fade in={!topicLoading}>
               <Card
                 elevation={2}
                 sx={{
@@ -584,7 +587,14 @@ const SingleBattleView: React.FC = () => {
                     }}
                   >
                     <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                      {sendMessage}
+                      {isGenerating ? (
+                        <CircularProgress
+                          size={20}
+                          sx={{ marginRight: 1, color: "primary" }}
+                        />
+                      ) : (
+                        sendMessage
+                      )}
                     </Typography>
                   </Box>
                 </CardContent>
@@ -672,7 +682,8 @@ const SingleBattleView: React.FC = () => {
                     variant="body1"
                     sx={{ mt: 2, mb: 4, whiteSpace: "pre-wrap" }}
                   >
-                    判定理由: {judgmentReason}
+                    判定理由:
+                    {judgmentReason}
                   </Typography>
                   <Button
                     variant="contained"

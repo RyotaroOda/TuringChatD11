@@ -239,6 +239,16 @@ const EditPromptView: React.FC = () => {
     }, 2000);
   };
 
+  const handleBackSegue = () => {
+    if (isPromptSaveEnabled || isSettingsSaveEnabled) {
+      const confirmClose = window.confirm(
+        "編集内容が保存されていません。閉じてもよろしいですか？"
+      );
+      if (!confirmClose) return;
+    }
+    navigate("/");
+  };
+
   // デフォルトに設定処理
   const handleSetDefault = () => {
     setDefaultBotId(selectedBotId);
@@ -265,7 +275,7 @@ const EditPromptView: React.FC = () => {
               borderColor: "#ffffff",
               color: "#ffffff",
             }}
-            onClick={() => navigate("/")}
+            onClick={handleBackSegue}
           >
             戻る
           </Button>
@@ -362,7 +372,6 @@ const EditPromptView: React.FC = () => {
             <TextField
               label="プロンプト"
               multiline
-              rows={4}
               value={prompt}
               onChange={(e) => {
                 setPrompt(e.target.value);

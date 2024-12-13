@@ -100,9 +100,15 @@ const generate = async (prompt: ChatGPTRequest): Promise<any> => {
 export const generateTestMessage = async (
   messages: GPTMessage[]
 ): Promise<string> => {
+  const sysMes: GPTMessage = {
+    role: "system",
+    content:
+      "以下のメッセージに対して返信を生成してください。文字数は1~50文字の範囲で生成して下さい。",
+  };
+
   const prompt: ChatGPTRequest = {
     model: AIModel["gpt-4-turbo"],
-    messages,
+    messages: [sysMes, ...messages],
     max_tokens: variables.maxToken,
     temperature: 1.0, // 高ランダム性
     top_p: 0.9,
