@@ -299,14 +299,14 @@ const BattleRoomView: React.FC = () => {
                             <FormControlLabel
                               value="ai"
                               control={<Radio />}
-                              label="AIがプレイする"
+                              label="AIプレイモード"
                             />
                           </Tooltip>
                           <Tooltip title="あなた自身がAIのふりをしてゲームを進めます。">
                             <FormControlLabel
                               value="human"
                               control={<Radio />}
-                              label="自分でプレイする"
+                              label="手動プレイモード"
                             />
                           </Tooltip>
                         </RadioGroup>

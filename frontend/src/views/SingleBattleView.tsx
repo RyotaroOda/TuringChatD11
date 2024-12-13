@@ -44,7 +44,6 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { update } from "firebase/database";
 import { updateRating } from "../API/firestore-database_f.ts";
 
 export type Difficulty = "初級" | "中級" | "上級";
@@ -112,6 +111,12 @@ const SingleBattleView: React.FC = () => {
   const [topic, setTopic] = useState<string>("");
   const [topicLoading, setTopicLoading] = useState<boolean>(false);
 
+  // 追加ステート: バトル終了～判定開始の演出用
+  const [battleEnded, setBattleEnded] = useState(false); // "バトル終了時"表示用
+  const [displayAIJudging, setDisplayAIJudging] = useState(false); // "AI判定中…"表示用
+  const [displayTypingReason, setDisplayTypingReason] = useState(false); // 判定理由タイプライター開始
+  const [typedReason, setTypedReason] = useState(""); // タイプライターアニメ用
+
   useEffect(() => {
     if (location.state) {
       const { bot, difficulty, isHuman } =
@@ -164,9 +169,16 @@ const SingleBattleView: React.FC = () => {
     setSendMessage("");
     setShowGeneratedAnswer(false);
 
+    // 最終ターンの場合の処理を変更
     if (currentTurn + 1 === maxTurn) {
-      makeAIJudgment();
+      // バトル終了メッセージ表示
+      setBattleEnded(true);
       setCurrentTurn((prevTurn) => prevTurn + 1);
+      // 少し待ってからAI判定中...を表示し、判定を開始
+      setTimeout(() => {
+        setDisplayAIJudging(true);
+        makeAIJudgment();
+      }, 1000); // 1秒後にAI判定中表示＆判定開始
     } else {
       setCurrentTurn((prevTurn) => prevTurn + 1);
       setIsAIGenerating(true); //AIの返信を生成
@@ -187,9 +199,10 @@ const SingleBattleView: React.FC = () => {
         ]);
         setIsAIGenerating(false);
         if (currentTurn + 1 === maxTurn) {
-          makeAIJudgment();
+          // ここは既にhandleSendMessageで処理するため削除
+        } else {
+          setCurrentTurn((prevTurn) => prevTurn + 1);
         }
-        setCurrentTurn((prevTurn) => prevTurn + 1);
       }
     };
     fetchAIResponse();
@@ -204,12 +217,6 @@ const SingleBattleView: React.FC = () => {
       setShowGeneratedAnswer(true);
     }
   };
-
-  useEffect(() => {
-    if (judgmentReason) {
-      console.log("judgmentReason", judgmentReason);
-    }
-  }, [judgmentReason]);
 
   // AI判定処理
   const makeAIJudgment = async () => {
@@ -226,9 +233,6 @@ const SingleBattleView: React.FC = () => {
     const actualIsHuman = isHuman;
 
     if (judgment) {
-      console.log(judgment);
-      console.log("judgment.isHuman", judgment["isHuman"]);
-      console.log("judgment.reason", judgment.reason);
       setJudgmentReason(judgment.reason);
     }
 
@@ -238,13 +242,32 @@ const SingleBattleView: React.FC = () => {
     const battleResult = isWin ? "勝利！" : "負け";
     setResult(battleResult);
 
-    // 3秒間の判定中演出後に結果を表示
-    setTimeout(() => {
-      setJudgmentMade(true);
-      setIsJudging(false);
-      setShowingResult(true);
-    }, 3000);
+    // 判定結果を得たので、タイプライターアニメーション開始フラグをセット
+    setDisplayTypingReason(true);
+    // isJudgingは判定結果を待つための状態なのでここでfalseに
+    setIsJudging(false);
+    // judgmentMadeはtrueにしておく（判定完了）
+    setJudgmentMade(true);
   };
+
+  useEffect(() => {
+    // タイプライターアニメーション
+    if (displayTypingReason && judgmentReason) {
+      setTypedReason("");
+      let index = 0;
+      const intervalId = setInterval(() => {
+        setTypedReason((prev) => prev + judgmentReason.charAt(index));
+        index++;
+        if (index >= judgmentReason.length) {
+          clearInterval(intervalId);
+          // 全文表示完了後に結果表示
+          setTimeout(() => {
+            setShowingResult(true);
+          }, 500);
+        }
+      }, 100); // 50msごとに1文字表示
+    }
+  }, [displayTypingReason, judgmentReason]);
 
   useEffect(() => {
     if (result && judgmentReason) {
@@ -253,9 +276,7 @@ const SingleBattleView: React.FC = () => {
     // eslint-disable-next-line
   }, [result, judgmentReason]);
 
-  /** ルームデータをFirestoreにバックアップ
-   * @param battleId バトルルームID
-   */
+  /** ルームデータをFirestoreにバックアップ */
   const saveSingleBattleDataToStore = async () => {
     if (!user) return;
     try {
@@ -281,13 +302,11 @@ const SingleBattleView: React.FC = () => {
         await updateDoc(backupRef, {
           backups: arrayUnion(backupData),
         });
-        console.log("Backup data successfully added to array!");
       } else {
         // ドキュメントが存在しない場合、新しく作成
         await setDoc(backupRef, {
-          backups: [backupData], // 配列として初期化
+          backups: [backupData],
         });
-        console.log("Backup data successfully created and added!");
       }
       if (user && result === "勝利！") {
         const score = difficulty === "初級" ? 1 : difficulty === "中級" ? 2 : 3;
@@ -304,7 +323,7 @@ const SingleBattleView: React.FC = () => {
   const renderMessages = () => {
     const filtered = messages.filter((msg) => msg.role !== "system");
     if (filtered.length === 0) {
-      // メッセージがない場合、フレンドリーなメッセージとアイコンを表示
+      // メッセージがない場合
       return (
         <Box
           display="flex"
@@ -423,7 +442,7 @@ const SingleBattleView: React.FC = () => {
       </AppBar>
       <Container maxWidth="md" sx={{ py: 4 }}>
         {/* 難易度、トピック、残りターン数表示カード */}
-        {!judgmentMade && !isJudging && (
+        {!judgmentMade && !isJudging && !battleEnded && (
           <Card
             sx={{
               mb: 2,
@@ -471,8 +490,8 @@ const SingleBattleView: React.FC = () => {
           </Card>
         )}
 
-        <Box sx={{ mb: 2 }}>
-          {/* チャットログタイトルとアイコンをカード状に */}
+        <Box sx={{ mb: 2, mt: 2 }}>
+          {/* チャットログ */}
           <Paper
             elevation={1}
             sx={{
@@ -491,7 +510,6 @@ const SingleBattleView: React.FC = () => {
             </Typography>
           </Paper>
 
-          {/* チャットログ */}
           <Paper
             elevation={3}
             sx={{
@@ -538,7 +556,7 @@ const SingleBattleView: React.FC = () => {
         </Box>
 
         {/* isHuman === false の場合、生成ボタンと生成された回答表示 */}
-        {!judgmentMade && !isJudging && !isHuman && (
+        {!judgmentMade && !isJudging && !isHuman && !battleEnded && (
           <Box mb={2}>
             <Button
               variant={"contained"}
@@ -621,49 +639,97 @@ const SingleBattleView: React.FC = () => {
         )}
 
         {/* 人間が操作する場合の入力欄 */}
-        {isHuman && !judgmentMade && !isJudging && !topicLoading && (
-          <Box>
-            <TextField
-              label="メッセージを入力"
-              value={sendMessage}
-              onChange={(e) => setSendMessage(e.target.value)}
-              fullWidth
-              disabled={isGenerating}
-              sx={{ backgroundColor: "white", mb: 2 }}
-            />
-            <Button
-              variant="contained"
-              onClick={handleSendMessage}
-              disabled={isGenerating || sendMessage.trim() === ""}
-              fullWidth
-              startIcon={<SendIcon />}
-              sx={buttonStyle}
+        {isHuman &&
+          !judgmentMade &&
+          !isJudging &&
+          !topicLoading &&
+          !battleEnded && (
+            <Box>
+              <TextField
+                label="メッセージを入力"
+                value={sendMessage}
+                onChange={(e) => setSendMessage(e.target.value)}
+                fullWidth
+                disabled={isGenerating}
+                sx={{ backgroundColor: "white", mb: 2 }}
+              />
+              <Button
+                variant="contained"
+                onClick={handleSendMessage}
+                disabled={isGenerating || sendMessage.trim() === ""}
+                fullWidth
+                startIcon={<SendIcon />}
+                sx={buttonStyle}
+              >
+                {isGenerating ? (
+                  <CircularProgress size={24} sx={{ color: "#fff" }} />
+                ) : (
+                  "送信"
+                )}
+              </Button>
+            </Box>
+          )}
+
+        {/* バトル終了時メッセージ */}
+        {battleEnded && (
+          <Fade in={battleEnded} timeout={500}>
+            <Paper
+              elevation={3}
+              sx={{
+                py: 4,
+                px: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                backgroundColor: "#f9fafb",
+              }}
             >
-              {isGenerating ? (
-                <CircularProgress size={24} sx={{ color: "#fff" }} />
-              ) : (
-                "送信"
+              <Typography variant="h4" sx={{ fontWeight: "bold", mb: 2 }}>
+                バトル終了！
+              </Typography>
+              {!judgmentMade && (
+                <Box
+                  mt={2}
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                >
+                  <Typography variant="h5" sx={{ fontWeight: "bold", mb: 2 }}>
+                    AI判定中…
+                  </Typography>
+                  <CircularProgress size={40} />
+                </Box>
               )}
-            </Button>
-          </Box>
+            </Paper>
+          </Fade>
         )}
 
-        {/* 判定中 */}
-        {isJudging && !judgmentMade && (
-          <Box mt={4} display="flex" flexDirection="column" alignItems="center">
-            <CircularProgress size={40} />
-            <Typography variant="h6" sx={{ mt: 2 }}>
-              判定中...
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
-              しばらくお待ちください
-            </Typography>
-          </Box>
+        {/* 判定理由タイプライターアニメーション */}
+        {displayTypingReason && (
+          <Fade in={displayTypingReason} timeout={500}>
+            <Paper
+              elevation={1}
+              sx={{
+                mt: 4,
+                py: 3,
+                px: 3,
+                textAlign: "center",
+                backgroundColor: "#ffffff",
+              }}
+            >
+              <Typography variant="h5" sx={{ mb: 2, fontWeight: "bold" }}>
+                AI判定結果
+              </Typography>
+              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                {typedReason}
+              </Typography>
+            </Paper>
+          </Fade>
         )}
 
         {/* 判定結果表示 */}
         {judgmentMade && showingResult && (
-          <Fade in={showingResult}>
+          <Fade in={showingResult} timeout={700}>
             <Box mt={4} display="flex" justifyContent="center">
               <Card
                 sx={{
@@ -680,16 +746,9 @@ const SingleBattleView: React.FC = () => {
                   <Typography
                     variant="h4"
                     gutterBottom
-                    sx={{ fontWeight: "bold" }}
+                    sx={{ fontWeight: "bold", mb: 3 }}
                   >
                     {result} {resultEmoji}
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    sx={{ mt: 2, mb: 4, whiteSpace: "pre-wrap" }}
-                  >
-                    判定理由:
-                    {judgmentReason}
                   </Typography>
                   <Button
                     variant="contained"

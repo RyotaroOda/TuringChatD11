@@ -117,6 +117,7 @@ export const generateTestMessage = async (
     presence_penalty: 0,
     stop: null,
   };
+  console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
   const answer = await generate(prompt);
   console.log("Generated Chat Response:", answer);
   return answer;
@@ -165,17 +166,17 @@ export const generateBattleMessage = async (
 
       # 出力形式
       - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
+      - 出力がそのまま相手プレイヤーに送信されます
       - 先頭の[proponent]や[opponent]は出力に含めないでください。
-      - 出力がそのまま相手プレイヤーに送信されます。
       - 対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
 
       # カスタムプロンプト
       - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
-        ${bot.prompt}
+        {${bot.prompt}}
 
       # プレイヤー指示
       - 以下のプレイヤー指示はあなたへのリアルタイムの指示です:
-        ${instruction}
+        {${instruction}}
 
       # メッセージログ
       - 以下に今までのゲームのチャットログを送信します。
@@ -319,30 +320,29 @@ export const generateSingleMessage = async (
   messages: GPTMessage[],
   topic: string
 ) => {
+  const requestMessages: GPTMessage[] = messages.map((message) => {
+    const newRole = message.role === "user" ? "assistant" : "user";
+    return { role: newRole, content: message.content };
+  });
   const prompt: GPTMessage = {
     role: "system",
-    content: `あなたはプレイヤーのアシスタントとしてチャットゲームに参加しています。
-    あなたはプレイヤーになりきって、新たに相手に送信するメッセージを生成してください。
-    
+    content: `以下のプロンプトに従って次に送信するメッセージを生成してください。
+          プロンプト：{${bot.prompt}}
+
     # 出力形式
     - 返信メッセージのみ（Messageのcontent内容のみ）を出力してください。
     - 出力がそのまま相手プレイヤーに送信されます。
     - 対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
-
-
-    # カスタムプロンプト
-    - 以下のプレイヤーが事前に設定したカスタムプロンプトに従って生成してください:
-      ${bot.prompt}
+    - トピック: ${topic}
 
     # メッセージログ
-    トピック: ${topic}
-    - 以下に今までのゲームのチャットログを送信します。
+    - 以下に今までのゲームのチャットログを送信します。あなたはassistantとして表示され、相手はuserとして表示されます。
     `,
   };
 
   const request: ChatGPTRequest = {
     model: AIModel["gpt-4"],
-    messages: [prompt, ...messages],
+    messages: [prompt, ...requestMessages],
     max_tokens: variables.maxToken,
     temperature: 1.0,
     top_p: 0.9,
@@ -352,6 +352,7 @@ export const generateSingleMessage = async (
     stop: null,
   };
 
+  console.log("Sending prompt to ChatGPT:", JSON.stringify(request, null, 2));
   const response = await generate(request);
   return response;
 };
@@ -361,14 +362,13 @@ export const AIJudgement = async (
   topic: string,
   difficulty: Difficulty
 ) => {
-  const prompt = `あなたはチャットゲームの審判として参加しています。\n
-  以下は、プレイヤーとCPUプレイヤーとのメッセージログです。プレイヤーが人間かAIかを判断し、その理由と共に出力してください。\n
-  その際、言語パターン、文法構造、独自性などを考慮してください。\n
-  理由は必ず「あなたの正体は人間です。」または「あなたの正体はAIです。」から始めて、その後に具体的な理由を日本語で簡潔に説明してください。\n
-  対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。\n
-
-  トピック: ${topic}\n
-  {${messages.map((message) => message.content).join("\n")}}\n
+  const prompt = `あなたはチャットゲームの審判として参加しています。
+  以下は、プレイヤーとCPUプレイヤーとのメッセージログです。プレイヤーが人間かAIかを判断し、その理由と共に出力してください。
+  その際、言語パターン、文法構造、独自性などを考慮してください。
+  理由は具体的な理由を日本語で簡潔に説明して下さい。
+  対象年齢: ${variables.targetAge} 向けのメッセージを生成してください。
+  トピック: ${topic}
+  {${messages.map((message) => message.content).join("\n")}}
 
   結果を以下のJSON形式で出力してください:
   {

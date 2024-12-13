@@ -1,4 +1,5 @@
 // frontend/src/views/HomeView.tsx
+
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,7 +10,7 @@ import {
   requestMatch,
   cancelRequest,
 } from "../API/firebase-functions-client.ts";
-import { signInAnonymously, signOut, updateProfile } from "firebase/auth";
+import { signInAnonymously, updateProfile } from "firebase/auth";
 import { auth } from "../API/firebase_f.ts";
 import {
   AIModel,
@@ -18,7 +19,10 @@ import {
   PlayerData,
   ProfileData,
 } from "../shared/types.ts";
-import { getUserProfile } from "../API/firestore-database_f.ts";
+import {
+  getUserProfile,
+  updateUserProfile,
+} from "../API/firestore-database_f.ts";
 import { OnlineRoomViewProps } from "./BattleRoomView.tsx";
 import PromptGenerator from "../components/PromptGenerator.tsx";
 import {
@@ -240,6 +244,10 @@ const HomeView: React.FC = () => {
         const data = await getUserProfile();
         if (data) {
           setProfile(data);
+          setBots(data.bots);
+          setSelectedPromptId(data.bots.defaultId);
+          setAiPrompt(data.bots.data[data.bots.defaultId].prompt);
+          setScore(data.rating);
         } else {
           console.error("プロフィール情報の取得に失敗しました。");
         }
@@ -248,14 +256,6 @@ const HomeView: React.FC = () => {
       console.error("プロフィール取得エラー: ", error);
     }
   };
-
-  useEffect(() => {
-    if (profile) {
-      setBots(profile.bots);
-      setAiPrompt(profile.bots.data[profile.bots.defaultId].prompt);
-      setScore(profile.rating);
-    }
-  }, [profile]);
 
   const handleTutorialOpen = () => setOpenTutorial(true);
   const handleTutorialClose = () => {
@@ -363,16 +363,14 @@ const HomeView: React.FC = () => {
     const props: SingleBattleViewProps = {
       difficulty: singlePlayDifficulty,
       isHuman: selectedIsHuman,
-      bot: bots
-        ? bots.data[selectedPromptId ? selectedPromptId : bots.defaultId]
-        : {
-            id: 0,
-            name: "default",
-            prompt: aiPrompt,
-            model: AIModel["gpt-4"],
-            temperature: 0,
-            top_p: 0,
-          },
+      bot: {
+        id: 0,
+        name: "default",
+        prompt: aiPrompt,
+        model: AIModel["gpt-4"],
+        temperature: 0,
+        top_p: 0,
+      },
     };
     navigate(appPaths.SingleBattleView, { state: props });
   };
@@ -444,6 +442,7 @@ const HomeView: React.FC = () => {
   const handleIconGenerator = () => {
     navigate(appPaths.icon_generator, { state: profile });
   };
+
   const scrollToBottom = () => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -476,6 +475,28 @@ const HomeView: React.FC = () => {
     }
   };
 
+  const handlePromptSelectChange = (event: SelectChangeEvent<number>) => {
+    const promptId = event.target.value as number;
+    setSelectedPromptId(promptId);
+    if (bots) {
+      setAiPrompt(bots.data[promptId].prompt);
+    }
+  };
+
+  const handleSavePrompt = async () => {
+    if (!user || !profile || !bots || selectedPromptId === null) return;
+    const updatedBots = { ...bots };
+    updatedBots.data[selectedPromptId].prompt = aiPrompt;
+    try {
+      await updateUserProfile({ ...profile, bots: updatedBots });
+      setBots(updatedBots);
+      alert("プロンプトを保存しました");
+    } catch (error) {
+      console.error("プロンプト保存エラー:", error);
+      alert("プロンプトの保存に失敗しました");
+    }
+  };
+
   const xsSize = 12;
 
   return (
@@ -498,7 +519,6 @@ const HomeView: React.FC = () => {
               >
                 チューリングゲーム
               </Typography>
-              {/* ログアウトボタンを廃止し、このゲームについてボタンに変更 */}
               <Button
                 variant="outlined"
                 color="inherit"
@@ -707,20 +727,19 @@ const HomeView: React.FC = () => {
                                 <FormControlLabel
                                   value="ai"
                                   control={<Radio />}
-                                  label="AIがプレイする"
+                                  label="AIプレイモード"
                                 />
                               </Tooltip>
                               <Tooltip title="あなた自身がAIのふりをしてゲームを進めます。">
                                 <FormControlLabel
                                   value="human"
                                   control={<Radio />}
-                                  label="自分でプレイする"
+                                  label="手動プレイモード"
                                 />
                               </Tooltip>
                             </RadioGroup>
                           </FormControl>
                         </Box>
-                        {/* 使用するプロンプトセレクター廃止：ここを削除 */}
 
                         <ButtonGroup fullWidth sx={{ mt: 2 }}>
                           <Button
@@ -930,6 +949,31 @@ const HomeView: React.FC = () => {
                       テンプレートから作成
                     </Button>
                   </Box>
+
+                  {bots && (
+                    <FormControl fullWidth sx={{ mt: 2 }}>
+                      <InputLabel id="prompt-select-label">
+                        使用中のプロンプト
+                      </InputLabel>
+                      <Select
+                        labelId="prompt-select-label"
+                        value={
+                          selectedPromptId !== null
+                            ? selectedPromptId
+                            : bots.defaultId
+                        }
+                        label="使用中のプロンプト"
+                        onChange={handlePromptSelectChange}
+                      >
+                        {bots.data.map((bot) => (
+                          <MenuItem key={bot.id} value={bot.id}>
+                            {bot.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+
                   <TextField
                     label="AIへの命令を入力してください。"
                     multiline
@@ -938,6 +982,16 @@ const HomeView: React.FC = () => {
                     fullWidth
                     sx={{ mt: 2 }}
                   />
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    onClick={handleSavePrompt}
+                    disabled={!bots || selectedPromptId === null}
+                  >
+                    保存
+                  </Button>
                 </Card>
               </Grid>
             </Grid>
