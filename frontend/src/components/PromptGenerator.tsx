@@ -388,6 +388,10 @@ function PromptGenerator({ onClose, onComplete, initialPrompt }) {
           >
             <CardContent>
               <Typography variant="h6">生成したプロンプト</Typography>
+              <Typography variant="body1" color="text.secondary">
+                自由に編集ができます
+              </Typography>
+
               <TextField
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}

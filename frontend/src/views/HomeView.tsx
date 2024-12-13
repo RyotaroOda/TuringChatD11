@@ -1,5 +1,4 @@
 // frontend/src/views/HomeView.tsx
-
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -65,6 +64,8 @@ import {
   FormControlLabel,
   Radio,
   Tooltip,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
@@ -103,6 +104,7 @@ const HomeView: React.FC = () => {
   const navigate = useNavigate();
   const user = auth.currentUser;
 
+  //#region State
   const [aiPrompt, setAiPrompt] = useState<string>(variables.defaultPrompt);
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(false);
   const [battleId, setBattleId] = useState<string>("");
@@ -135,6 +137,11 @@ const HomeView: React.FC = () => {
   const [openSoloTutorial, setOpenSoloTutorial] = useState(false);
   const [openMatchTutorial, setOpenMatchTutorial] = useState(false);
 
+  const [openSnackbar, setOpenSnackbar] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  //#endregion
+
+  //#region Steps for Tutorial
   const steps = [
     "ゲーム概要",
     "バトルに参加する",
@@ -220,7 +227,9 @@ const HomeView: React.FC = () => {
       <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
     </>,
   ];
+  //#endregion
 
+  //#region useEffects
   useEffect(() => {
     const hasSeenHowToPlay = localStorage.getItem("firstPlay");
     if (!hasSeenHowToPlay) {
@@ -238,56 +247,9 @@ const HomeView: React.FC = () => {
     }
   }, [user]);
 
-  const fetchUserProfile = async () => {
-    try {
-      if (user) {
-        const data = await getUserProfile();
-        if (data) {
-          setProfile(data);
-          setBots(data.bots);
-          setSelectedPromptId(data.bots.defaultId);
-          setAiPrompt(data.bots.data[data.bots.defaultId].prompt);
-          setScore(data.rating);
-        } else {
-          console.error("プロフィール情報の取得に失敗しました。");
-        }
-      }
-    } catch (error) {
-      console.error("プロフィール取得エラー: ", error);
-    }
-  };
-
-  const handleTutorialOpen = () => setOpenTutorial(true);
-  const handleTutorialClose = () => {
-    setOpenTutorial(false);
-    setActiveStep(0);
-  };
-  const handleStepNext = () => setActiveStep((prevStep) => prevStep + 1);
-  const handleStepBack = () => setActiveStep((prevStep) => prevStep - 1);
-
-  const startMatch = async () => {
-    setIsPushedMatching(true);
-    try {
-      const player: PlayerData = {
-        id: playerId,
-        name: playerName,
-        iconURL: user?.photoURL || "",
-        isReady: false,
-        rating: score,
-      };
-      const result = await requestMatch(player);
-      if (result.battleId !== "") {
-        setBattleId(result.battleId);
-        setBattleRoomListened(true);
-      } else {
-        console.error("マッチングエラー: ", result.message);
-        cancelMatching();
-      }
-    } catch (error) {
-      console.error("マッチングエラー: ", error);
-      cancelMatching();
-    }
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
 
   useEffect(() => {
     if (battleRoomListened) {
@@ -303,18 +265,6 @@ const HomeView: React.FC = () => {
       return () => clearTimeout(timerId);
     }
   }, [matchingTimer]);
-
-  const cancelMatching = async () => {
-    setBattleRoomListened(false);
-    setMatchingTimer(-1);
-    setRoomId(null);
-    setTimeout(() => setIsPushedMatching(false), 1000);
-    try {
-      await cancelRequest();
-    } catch (error) {
-      console.error("キャンセルエラー: ", error);
-    }
-  };
 
   useEffect(() => {
     if (battleRoomListened && battleId !== "") {
@@ -342,10 +292,40 @@ const HomeView: React.FC = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [battleRoomListened, battleId]);
+  //#endregion
+
+  //#region Handlers
+  const fetchUserProfile = async () => {
+    try {
+      if (user) {
+        const data = await getUserProfile();
+        if (data) {
+          setProfile(data);
+          setBots(data.bots);
+          setSelectedPromptId(data.bots.defaultId);
+          setAiPrompt(data.bots.data[data.bots.defaultId].prompt);
+          setScore(data.rating);
+        } else {
+          console.error("プロフィール情報の取得に失敗しました。");
+        }
+      }
+    } catch (error) {
+      console.error("プロフィール取得エラー: ", error);
+    }
+  };
+
+  const handleTutorialOpen = () => setOpenTutorial(true);
+  const handleTutorialClose = () => {
+    setOpenTutorial(false);
+    setActiveStep(0);
+  };
+  const handleStepNext = () => setActiveStep((prevStep) => prevStep + 1);
+  const handleStepBack = () => setActiveStep((prevStep) => prevStep - 1);
 
   const handleOpenGeneratePrompt = () => {
     setOpenGeneratePrompt(true);
   };
+
   const handleCloseGeneratePrompt = () => {
     const confirmClose = window.confirm(
       "編集内容が保存されていません。閉じてもよろしいですか？"
@@ -354,25 +334,11 @@ const HomeView: React.FC = () => {
 
     setOpenGeneratePrompt(false);
   };
+
   const handleCompleteGeneratePrompt = (generatedPrompt: string) => {
     setAiPrompt(generatedPrompt);
     setOpenGeneratePrompt(false);
-  };
-
-  const handleSinglePlayChallenge = () => {
-    const props: SingleBattleViewProps = {
-      difficulty: singlePlayDifficulty,
-      isHuman: selectedIsHuman,
-      bot: {
-        id: 0,
-        name: "default",
-        prompt: aiPrompt,
-        model: AIModel["gpt-4"],
-        temperature: 0,
-        top_p: 0,
-      },
-    };
-    navigate(appPaths.SingleBattleView, { state: props });
+    handleSavePrompt();
   };
 
   const handleCreateRoom = () => {
@@ -386,6 +352,90 @@ const HomeView: React.FC = () => {
       setOpenJoinRoomDialog(false);
     } else {
       alert("ルームIDを入力してください。");
+    }
+  };
+
+  const handleProfileEditClick = () => {
+    navigate(appPaths.profile_edit, { state: profile });
+  };
+
+  const handleIconGenerator = () => {
+    navigate(appPaths.icon_generator, { state: profile });
+  };
+
+  const toggleDrawer = (open: boolean) => {
+    setIsDrawerOpen(open);
+  };
+
+  const handleAboutGame = () => {
+    navigate(appPaths.how_to_play);
+  };
+  //#endregion
+
+  //#region Prompt Handling
+  const handlePromptSelectChange = (event: SelectChangeEvent<number>) => {
+    const promptId = event.target.value as number;
+    setSelectedPromptId(promptId);
+    if (bots) {
+      setAiPrompt(bots.data[promptId].prompt);
+    }
+  };
+
+  const handleSavePrompt = async () => {
+    if (!user || !profile || !bots || selectedPromptId === null) return;
+    const updatedBots = { ...bots };
+    updatedBots.data[selectedPromptId].prompt = aiPrompt;
+    try {
+      await updateUserProfile({ ...profile, bots: updatedBots });
+      setBots(updatedBots);
+      setSnackbarMessage("プロンプトを保存しました");
+      setOpenSnackbar(true);
+    } catch (error) {
+      console.error("プロンプト保存エラー:", error);
+      alert("プロンプトの保存に失敗しました");
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
+    setSnackbarMessage("");
+  };
+  //#endregion
+
+  //#region Battle Handling
+  const startMatch = async () => {
+    setIsPushedMatching(true);
+    try {
+      const player: PlayerData = {
+        id: playerId,
+        name: playerName,
+        iconURL: user?.photoURL || "",
+        isReady: false,
+        rating: score,
+      };
+      const result = await requestMatch(player);
+      if (result.battleId !== "") {
+        setBattleId(result.battleId);
+        setBattleRoomListened(true);
+      } else {
+        console.error("マッチングエラー: ", result.message);
+        cancelMatching();
+      }
+    } catch (error) {
+      console.error("マッチングエラー: ", error);
+      cancelMatching();
+    }
+  };
+
+  const cancelMatching = async () => {
+    setBattleRoomListened(false);
+    setMatchingTimer(-1);
+    setRoomId(null);
+    setTimeout(() => setIsPushedMatching(false), 1000);
+    try {
+      await cancelRequest();
+    } catch (error) {
+      console.error("キャンセルエラー: ", error);
     }
   };
 
@@ -425,6 +475,24 @@ const HomeView: React.FC = () => {
     });
   };
 
+  const handleSinglePlayChallenge = () => {
+    const props: SingleBattleViewProps = {
+      difficulty: singlePlayDifficulty,
+      isHuman: selectedIsHuman,
+      bot: {
+        id: 0,
+        name: "default",
+        prompt: aiPrompt,
+        model: AIModel["gpt-4"],
+        temperature: 0,
+        top_p: 0,
+      },
+    };
+    navigate(appPaths.SingleBattleView, { state: props });
+  };
+  //#endregion
+
+  //#region User Handling
   const handleAnonymousLogin = async () => {
     try {
       await signInAnonymously(auth);
@@ -434,31 +502,13 @@ const HomeView: React.FC = () => {
       console.error("ゲストログインエラー: ", error);
     }
   };
+  //#endregion
 
-  const handleProfileEditClick = () => {
-    navigate(appPaths.profile_edit, { state: profile });
-  };
-
-  const handleIconGenerator = () => {
-    navigate(appPaths.icon_generator, { state: profile });
-  };
-
+  //#region Utility
   const scrollToBottom = () => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
-
-  const toggleDrawer = (open: boolean) => {
-    setIsDrawerOpen(open);
-  };
-
-  const handleAboutGame = () => {
-    navigate(appPaths.how_to_play);
   };
 
   const getCommentByScore = (score: number): string => {
@@ -474,28 +524,7 @@ const HomeView: React.FC = () => {
       return "スタート地点です！チャレンジを続けて成長しましょう！";
     }
   };
-
-  const handlePromptSelectChange = (event: SelectChangeEvent<number>) => {
-    const promptId = event.target.value as number;
-    setSelectedPromptId(promptId);
-    if (bots) {
-      setAiPrompt(bots.data[promptId].prompt);
-    }
-  };
-
-  const handleSavePrompt = async () => {
-    if (!user || !profile || !bots || selectedPromptId === null) return;
-    const updatedBots = { ...bots };
-    updatedBots.data[selectedPromptId].prompt = aiPrompt;
-    try {
-      await updateUserProfile({ ...profile, bots: updatedBots });
-      setBots(updatedBots);
-      alert("プロンプトを保存しました");
-    } catch (error) {
-      console.error("プロンプト保存エラー:", error);
-      alert("プロンプトの保存に失敗しました");
-    }
-  };
+  //#endregion
 
   const xsSize = 12;
 
@@ -985,7 +1014,6 @@ const HomeView: React.FC = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    fullWidth
                     sx={{ mt: 2 }}
                     onClick={handleSavePrompt}
                     disabled={!bots || selectedPromptId === null}
@@ -1166,6 +1194,22 @@ const HomeView: React.FC = () => {
               />
             </DialogContent>
           </Dialog>
+
+          {/* スナックバー */}
+          <Snackbar
+            open={openSnackbar}
+            autoHideDuration={3000}
+            onClose={handleCloseSnackbar}
+            anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          >
+            <Alert
+              onClose={handleCloseSnackbar}
+              severity="success"
+              sx={{ width: "100%" }}
+            >
+              {snackbarMessage}
+            </Alert>
+          </Snackbar>
 
           {/* フローティングボタン - テストチャット */}
           <Fab

@@ -38,6 +38,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { appPaths } from "../App.tsx";
 
 const theme = createTheme({
   typography: {
@@ -307,13 +308,9 @@ const ProfileEdit: React.FC = () => {
     navigate("/");
   };
 
-  // 画像生成(ダミー)
+  // 画像生成
   const handleGenerateImage = async () => {
-    if (user) {
-      const dummyImageURL = "https://via.placeholder.com/150";
-      await updateProfile(user, { photoURL: dummyImageURL });
-      alert("画像が更新されました");
-    }
+    navigate(appPaths.icon_generator, { state: profile });
   };
 
   // メールアドレス変更
