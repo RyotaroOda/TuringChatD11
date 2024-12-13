@@ -81,14 +81,14 @@ import { Add as AddIcon } from "@mui/icons-material";
 import EditIcon from "@mui/icons-material/Edit";
 import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
-import { generateTestMessage } from "../API/chatGPT_f.ts";
 import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
-import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 
-// カスタムフォントの適用
+import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
+
 const theme = createTheme({
   typography: {
     fontFamily: "'Noto Sans JP', sans-serif",
@@ -96,11 +96,9 @@ const theme = createTheme({
 });
 
 const HomeView: React.FC = () => {
-  //#region init
   const navigate = useNavigate();
   const user = auth.currentUser;
 
-  // State variables
   const [aiPrompt, setAiPrompt] = useState<string>(variables.defaultPrompt);
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(false);
   const [battleId, setBattleId] = useState<string>("");
@@ -111,7 +109,6 @@ const HomeView: React.FC = () => {
   const [score, setScore] = useState<number>(0);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [bots, setBots] = useState<BotData | null>(null);
-  const [newName, setNewName] = useState<string>("");
   const [isPushedMatching, setIsPushedMatching] = useState<boolean>(false);
   const [matchingTimer, setMatchingTimer] = useState<number>(-1);
   const [battleRoomListened, setBattleRoomListened] = useState<boolean>(false);
@@ -120,9 +117,106 @@ const HomeView: React.FC = () => {
     useState<Difficulty>("初級");
   const [openJoinRoomDialog, setOpenJoinRoomDialog] = useState(false);
 
-  //#endregion
+  const [openTutorial, setOpenTutorial] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
 
-  // 初回訪問チェック
+  const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
+
+  const [chatMessage, setChatMessage] = useState<string>("");
+  const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
+  const [isSending, setIsSending] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  const [openSoloTutorial, setOpenSoloTutorial] = useState(false);
+  const [openMatchTutorial, setOpenMatchTutorial] = useState(false);
+
+  const steps = [
+    "ゲーム概要",
+    "バトルに参加する",
+    "バトル準備",
+    "バトル開始",
+    "結果発表",
+  ];
+
+  const stepContent = [
+    <>
+      <Typography variant="h6">チューリングゲームとは？</Typography>
+      <Typography>
+        このゲームは、相手プレーヤーとチャットしながら相手が
+        「人間」か「AI」かを見破るゲームです！
+      </Typography>
+      <Typography>
+        AIになりきったり、自分なりにAIをカスタマイズしたりして、
+        相手に自分の正体を悟られないようにしましょう。
+      </Typography>
+    </>,
+    <>
+      <Typography variant="h6">バトルに参加する</Typography>
+      <Typography>以下のモードから選んでプレイを開始しましょう：</Typography>
+      <ul>
+        <li>
+          <strong>ひとりであそぶ</strong>：AIプレイヤーと対戦します。
+        </li>
+        <li>
+          <strong>だれかとあそぶ</strong>
+          ：オンライン上の誰かとマッチングして対戦します。
+        </li>
+      </ul>
+    </>,
+    <>
+      <Typography variant="h6">バトル準備</Typography>
+      <Typography>2つのプレイモードがあります：</Typography>
+      <ul>
+        <li>
+          <strong>自分でプレイする</strong>：あなた自身が相手とチャットします。
+        </li>
+        <li>
+          <strong>AIがプレイする</strong>
+          ：あなたがAIに指示を出し、AIが相手とチャットします。
+        </li>
+      </ul>
+    </>,
+    <>
+      <Typography variant="h6">バトル開始</Typography>
+      <Typography>
+        システムからお題（チャットの話題）が提示されます：
+      </Typography>
+      <ul>
+        <li>お題に沿って相手と自由にチャットしましょう。</li>
+        <li>
+          チャット終了後、以下を送信してください：
+          <ul>
+            <li>
+              <strong>相手の正体</strong>（人間 or AI）
+            </li>
+            <li>
+              <strong>そう判断した理由</strong>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </>,
+    <>
+      <Typography variant="h6">結果発表</Typography>
+      <Typography>お互いの「正体」と「理由」を答え合わせします。</Typography>
+      <ul>
+        <li>
+          <strong>得点ルール</strong>：
+          <ul>
+            <li>
+              相手の正体を当てたら <strong>1ポイント</strong>
+            </li>
+            <li>
+              相手が自分の正体を間違えたら <strong>1ポイント</strong>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
+    </>,
+  ];
+
   useEffect(() => {
     const hasSeenHowToPlay = localStorage.getItem("firstPlay");
     if (!hasSeenHowToPlay) {
@@ -131,22 +225,14 @@ const HomeView: React.FC = () => {
     }
   }, []);
 
-  //#region ログイン状態の確認とプロフィール取得
   useEffect(() => {
     if (user) {
       setPlayerId(user.uid);
       setPlayerName(user.displayName || "");
-      console.log("ユーザー情報: ", user);
       setPhotoURL(user.photoURL || "");
       fetchUserProfile();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-
-  useEffect(() => {
-    if (newName !== playerName) {
-    }
-  }, [newName]);
 
   const fetchUserProfile = async () => {
     try {
@@ -170,50 +256,15 @@ const HomeView: React.FC = () => {
       setScore(profile.rating);
     }
   }, [profile]);
-  //#endregion
 
-  //#region プレイヤーネームの変更(ゲストユーザー用)
-  const handleNameChangeClick = () => {
-    handleNameSubmit();
+  const handleTutorialOpen = () => setOpenTutorial(true);
+  const handleTutorialClose = () => {
+    setOpenTutorial(false);
+    setActiveStep(0);
   };
+  const handleStepNext = () => setActiveStep((prevStep) => prevStep + 1);
+  const handleStepBack = () => setActiveStep((prevStep) => prevStep - 1);
 
-  const handleNameSubmit = async () => {
-    if (user && newName) {
-      try {
-        await updateProfile(user, { displayName: newName });
-        setPlayerName(newName);
-      } catch (error) {
-        console.error("名前の更新に失敗しました: ", error);
-      }
-    }
-  };
-  //#endregion
-
-  //スコア表示
-  const getCommentByScore = (score: number): string => {
-    if (score >= 1500) {
-      return "素晴らしい！あなたはトッププレイヤーです！";
-    } else if (score >= 12) {
-      return "好調ですね！さらなる挑戦を！";
-    } else if (score >= 900) {
-      return "良い調子です！次のステージを目指しましょう！";
-    } else if (score >= 600) {
-      return "まだまだこれから！頑張りましょう！";
-    } else {
-      return "スタート地点です！チャレンジを続けて成長しましょう！";
-    }
-  };
-
-  // プロンプトが選択されたときのハンドラー
-  const handlePromptChange = (event: SelectChangeEvent<number>) => {
-    const promptId = event.target.value as number;
-    setSelectedPromptId(promptId);
-    if (bots) {
-      setAiPrompt(bots.data[promptId].prompt);
-    }
-  };
-
-  //#region マッチング処理
   const startMatch = async () => {
     setIsPushedMatching(true);
     try {
@@ -253,12 +304,11 @@ const HomeView: React.FC = () => {
     }
   }, [matchingTimer]);
 
-  // マッチングをキャンセルする処理
   const cancelMatching = async () => {
     setBattleRoomListened(false);
     setMatchingTimer(-1);
     setRoomId(null);
-    setTimeout(() => setIsPushedMatching(false), 1000); // 1秒後に再び有効化
+    setTimeout(() => setIsPushedMatching(false), 1000);
     try {
       await cancelRequest();
     } catch (error) {
@@ -266,12 +316,10 @@ const HomeView: React.FC = () => {
     }
   };
 
-  // マッチング成立時の処理
   useEffect(() => {
     if (battleRoomListened && battleId !== "") {
       const unsubscribe = onMatched(battleId, (isMatched) => {
         if (isMatched) {
-          console.log("マッチング成立");
           toBattleRoomViewSegue(battleId);
         }
       });
@@ -281,7 +329,6 @@ const HomeView: React.FC = () => {
       };
     }
 
-    // ページ遷移時にマッチングをキャンセル
     const handleBeforeUnload = async (event: BeforeUnloadEvent) => {
       if (battleRoomListened) {
         await cancelMatching();
@@ -294,123 +341,11 @@ const HomeView: React.FC = () => {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [battleRoomListened, battleId]);
-  //#endregion
-
-  //#region チュートリアルダイアログ
-  const [openTutorial, setOpenTutorial] = useState(false);
-  const [activeStep, setActiveStep] = useState(0);
-
-  const handleTutorialOpen = () => setOpenTutorial(true);
-  const handleTutorialClose = () => {
-    setOpenTutorial(false);
-    setActiveStep(0); // Reset stepper when dialog is closed
-  };
-
-  const handleStepNext = () => setActiveStep((prevStep) => prevStep + 1);
-  const handleStepBack = () => setActiveStep((prevStep) => prevStep - 1);
-
-  const steps = [
-    "ゲーム概要",
-    "バトルに参加する",
-    "バトル準備",
-    "バトル開始",
-    "結果発表",
-  ];
-
-  const stepContent = [
-    // Step 0: ゲーム概要
-    <>
-      <Typography variant="h6">チューリングゲームとは？</Typography>
-      <Typography>
-        このゲームは、相手プレーヤーとチャットしながら相手が
-        「人間」か「AI」かを見破るゲームです！
-      </Typography>
-      <Typography>
-        AIになりきったり、自分なりにAIをカスタマイズしたりして、
-        相手に自分の正体を悟られないようにしましょう。
-      </Typography>
-    </>,
-    // Step 1: バトルに参加する
-    <>
-      <Typography variant="h6">バトルに参加する</Typography>
-      <Typography>以下のモードから選んでプレイを開始しましょう：</Typography>
-      <ul>
-        <li>
-          <strong>ひとりであそぶ</strong>：AIプレイヤーと対戦します。
-        </li>
-        <li>
-          <strong>だれかとあそぶ</strong>
-          ：オンライン上の誰かとマッチングして対戦します。
-        </li>
-      </ul>
-    </>,
-    // Step 2: バトル準備
-    <>
-      <Typography variant="h6">バトル準備</Typography>
-      <Typography>2つのプレイモードがあります：</Typography>
-      <ul>
-        <li>
-          <strong>自分でプレイする</strong>：あなた自身が相手とチャットします。
-        </li>
-        <li>
-          <strong>AIがプレイする</strong>
-          ：あなたがAIに指示を出し、AIが相手とチャットします。
-        </li>
-      </ul>
-    </>,
-    // Step 3: バトル開始
-    <>
-      <Typography variant="h6">バトル開始</Typography>
-      <Typography>
-        システムからお題（チャットの話題）が提示されます：
-      </Typography>
-      <ul>
-        <li>お題に沿って相手と自由にチャットしましょう。</li>
-        <li>
-          チャット終了後、以下を送信してください：
-          <ul>
-            <li>
-              <strong>相手の正体</strong>（人間 or AI）
-            </li>
-            <li>
-              <strong>そう判断した理由</strong>
-            </li>
-          </ul>
-        </li>
-      </ul>
-    </>,
-    // Step 4: 結果発表
-    <>
-      <Typography variant="h6">結果発表</Typography>
-      <Typography>お互いの「正体」と「理由」を答え合わせします。</Typography>
-      <ul>
-        <li>
-          <strong>得点ルール</strong>：
-          <ul>
-            <li>
-              相手の正体を当てたら <strong>1ポイント</strong>
-            </li>
-            <li>
-              相手が自分の正体を間違えたら <strong>1ポイント</strong>
-            </li>
-          </ul>
-        </li>
-      </ul>
-      <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
-    </>,
-  ];
-
-  //#endregion
-
-  //#region プロンプト編集ダイアログ
-  const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
 
   const handleOpenGeneratePrompt = () => {
     setOpenGeneratePrompt(true);
   };
-
   const handleCloseGeneratePrompt = () => {
     const confirmClose = window.confirm(
       "編集内容が保存されていません。閉じてもよろしいですか？"
@@ -419,19 +354,12 @@ const HomeView: React.FC = () => {
 
     setOpenGeneratePrompt(false);
   };
-
-  // プロンプトが完成したときの処理
-  const handleCompleteGeneratePrompt = (generatedPrompt) => {
-    setAiPrompt(generatedPrompt); // 完成したプロンプトを保存
-    console.log("プロンプトを更新:", aiPrompt); // 必要に応じてログ出力
+  const handleCompleteGeneratePrompt = (generatedPrompt: string) => {
+    setAiPrompt(generatedPrompt);
     setOpenGeneratePrompt(false);
   };
 
-  //#endregion
-
-  //#region シングルプレイ
   const handleSinglePlayChallenge = () => {
-    // シングルプレイのゲーム画面に遷移（仮のパス）
     const props: SingleBattleViewProps = {
       difficulty: singlePlayDifficulty,
       isHuman: selectedIsHuman,
@@ -449,212 +377,54 @@ const HomeView: React.FC = () => {
     navigate(appPaths.SingleBattleView, { state: props });
   };
 
-  //#endregion
-
-  //#region プライベートルーム
   const handleCreateRoom = () => {
-    // ルーム作成のロジックを実装
+    // 未実装
   };
-
   const handleJoinRoom = () => {
-    if (roomId && roomId.trim() === "") {
-      alert("ルームIDを入力してください。");
-      return;
-    }
-    // ルームに入るロジックを実装
+    // 未実装
   };
-  const handlePrivateRoom = () => {
-    // プライベートルームの作成または参加画面に遷移（仮のパス）
-    // navigate(appPaths.private_room);
-  };
-
-  // const toRoomViewSegue = (roomId: string) => {
-  //   setBattleRoomListened(false);
-  //   getRoomData(roomId).then((roomData) => {
-  //     const battleData = roomData.battleData[battleId.battleRoomId];
-  //     if (roomData.status === "matched") {
-  //       if (user && user.isAnonymous) {
-  //         // ゲストユーザーの場合はデフォルトのAIを使用
-  //         const props: OnlineRoomViewProps = {
-  //           battleData: battleData,
-  //           botData: {
-  //             defaultId: 0,
-  //             data: [
-  //               {
-  //                 id: 0,
-  //                 name: "default",
-  //                 prompt: aiPrompt,
-  //                 model: AIModel["gpt-4"],
-  //                 temperature: 0,
-  //                 top_p: 0,
-  //               },
-  //             ],
-  //           },
-  //         };
-  //         navigate(appPaths.BattleRoomView(battleId), {
-  //           state: props,
-  //         });
-  //       } else if (bots) {
-  //         // プレイヤーの場合はプロフィールのAIを使用
-  //         const props: OnlineRoomViewProps = {
-  //           battleData: battleData,
-  //           botData: bots,
-  //         };
-  //         navigate(appPaths.RoomView(roomId), { state: props });
-  //       } else {
-  //         console.error("ルームに入室できませんでした。");
-  //         cancelMatching();
-  //       }
-  //     }
-  //   });
-  // };
-
   const handleJoinRoomConfirm = () => {
     if (roomId && roomId.trim() !== "") {
-      // ルームに入るロジックを実装
       setOpenJoinRoomDialog(false);
     } else {
       alert("ルームIDを入力してください。");
     }
   };
-  //#endregion
-
-  //#region チャット
-  const [chatMessage, setChatMessage] = useState<string>("");
-  const [chatHistory, setChatHistory] = useState<GPTMessage[]>([]);
-  const [isSending, setIsSending] = useState<boolean>(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  // チャットの最後にスクロールする処理
-  const scrollToBottom = () => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  // メッセージを送信する処理
-  const handleSendMessage = async () => {
-    if (chatMessage.trim() !== "") {
-      const userMessage: GPTMessage = {
-        role: "user",
-        content: chatMessage,
-      };
-      setChatHistory((prev) => [...prev, userMessage]);
-      setChatMessage("");
-      setIsSending(true);
-    }
-  };
-
-  // メッセージ送信とAIの応答を処理するエフェクト
-  useEffect(() => {
-    const sendChatMessage = async () => {
-      try {
-        const filteredMessages = chatHistory.filter(
-          (message) => message.role !== "system"
-        );
-        const responseContent = await generateTestMessage(filteredMessages);
-        const aiMessage: GPTMessage = {
-          role: "assistant",
-          content: responseContent,
-        };
-        setChatHistory((prev) => [...prev, aiMessage]);
-      } catch (error) {
-        console.error("Error generating chat response: ", error);
-      } finally {
-        setIsSending(false);
-      }
-    };
-
-    if (isSending) {
-      sendChatMessage();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSending]);
-
-  // チャット履歴が更新されたときに自動で下にスクロールするエフェクト
-  useEffect(() => {
-    scrollToBottom();
-  }, [chatHistory]);
-
-  // ドロワーの開閉を制御する処理
-  const toggleDrawer = (open: boolean) => {
-    setIsDrawerOpen(open);
-  };
-
-  //#endregion
-
-  //#region 画面遷移処理
 
   const toBattleRoomViewSegue = (battleId: string) => {
     setBattleRoomListened(false);
     getBattleRoomData(battleId).then((battleData) => {
-      console.log("roomData: ", battleData);
       if (
         battleData.status === "matched" &&
         battleData.players[Object.keys(battleData.players)[0]] !==
           battleData.players[Object.keys(battleData.players)[1]]
       ) {
-        if (user && user.isAnonymous) {
-          // ゲストユーザーの場合はデフォルトのAIを使用
-          const props: OnlineRoomViewProps = {
-            battleData: battleData,
-            botData: {
-              defaultId: 0,
-              data: [
-                {
-                  id: 0,
-                  name: "default",
-                  prompt: aiPrompt,
-                  model: AIModel["gpt-4"],
-                  temperature: 0,
-                  top_p: 0,
-                },
-              ],
-            },
-          };
-          console.log("props: ", props);
-          navigate(appPaths.BattleRoomView(battleId), {
-            state: props,
-          });
-        } else if (bots) {
-          // プレイヤーの場合はプロフィールのAIを使用
-          const props: OnlineRoomViewProps = {
-            battleData: battleData,
-            botData: bots,
-          };
-          navigate(appPaths.BattleRoomView(battleId), { state: props });
-        } else {
-          console.error("ルームに入室できませんでした。1");
-          cancelMatching();
-          alert("ルームに入室できませんでした。");
-          navigate(appPaths.HomeView);
-        }
+        const props: OnlineRoomViewProps = {
+          battleData: battleData,
+          botData: bots
+            ? bots
+            : {
+                defaultId: 0,
+                data: [
+                  {
+                    id: 0,
+                    name: "default",
+                    prompt: aiPrompt,
+                    model: AIModel["gpt-4"],
+                    temperature: 0,
+                    top_p: 0,
+                  },
+                ],
+              },
+        };
+        navigate(appPaths.BattleRoomView(battleId), { state: props });
       } else {
-        console.error("ルームに入室できませんでした2。");
+        console.error("ルームに入室できませんでした。");
         cancelMatching();
         alert("ルームに入室できませんでした。");
         navigate(appPaths.HomeView);
       }
     });
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      alert("ログアウトしました");
-      navigate(appPaths.login);
-    } catch (error) {
-      console.error("ログアウトエラー: ", error);
-    }
-  };
-
-  const handleLogin = () => {
-    navigate(appPaths.login);
-  };
-
-  const handleFeedback = () => {
-    navigate(appPaths.impression_edit);
   };
 
   const handleAnonymousLogin = async () => {
@@ -671,21 +441,42 @@ const HomeView: React.FC = () => {
     navigate(appPaths.profile_edit, { state: profile });
   };
 
-  const handlePromptEdit = () => {
-    navigate(appPaths.prompt_edit, { state: bots });
-  };
-
-  const handleHowToPlay = () => {
-    navigate(appPaths.how_to_play);
-  };
-
   const handleIconGenerator = () => {
     navigate(appPaths.icon_generator, { state: profile });
   };
-  //#endregion
+  const scrollToBottom = () => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [chatHistory]);
+
+  const toggleDrawer = (open: boolean) => {
+    setIsDrawerOpen(open);
+  };
+
+  const handleAboutGame = () => {
+    navigate(appPaths.how_to_play);
+  };
+
+  const getCommentByScore = (score: number): string => {
+    if (score >= 1500) {
+      return "素晴らしい！あなたはトッププレイヤーです！";
+    } else if (score >= 1200) {
+      return "好調ですね！さらなる挑戦を！";
+    } else if (score >= 900) {
+      return "良い調子です！次のステージを目指しましょう！";
+    } else if (score >= 600) {
+      return "まだまだこれから！頑張りましょう！";
+    } else {
+      return "スタート地点です！チャレンジを続けて成長しましょう！";
+    }
+  };
 
   const xsSize = 12;
-  const mdSize = 2;
 
   return (
     <ThemeProvider theme={theme}>
@@ -707,25 +498,14 @@ const HomeView: React.FC = () => {
               >
                 チューリングゲーム
               </Typography>
-              {/* <Button
-                startIcon={<InfoOutlinedIcon />}
-                variant="text"
-                color="inherit"
-                onClick={handleHowToPlay}
-                sx={{
-                  textTransform: "none",
-                  fontSize: "1rem",
-                }}
-              >
-                ゲームの遊び方
-              </Button> */}
+              {/* ログアウトボタンを廃止し、このゲームについてボタンに変更 */}
               <Button
                 variant="outlined"
                 color="inherit"
-                onClick={user.isAnonymous ? handleLogin : handleLogout}
+                onClick={handleAboutGame}
                 sx={{ whiteSpace: "nowrap", ml: 2 }}
               >
-                {user.isAnonymous ? "ログイン" : "ログアウト"}
+                このゲームについて
               </Button>
             </Toolbar>
           </AppBar>
@@ -746,18 +526,17 @@ const HomeView: React.FC = () => {
                     padding: 4,
                     borderRadius: 2,
                     boxShadow: 3,
-                    mb: 4,
+                    mb: 2,
                     flex: 1,
                   }}
                 >
                   <Box
                     textAlign="center"
-                    mb={mdSize}
+                    mb={2}
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
                   >
-                    {/* プロフィール画像またはデフォルトアイコン */}
                     {photoURL ? (
                       <IconButton onClick={handleIconGenerator}>
                         <Avatar
@@ -767,13 +546,7 @@ const HomeView: React.FC = () => {
                         />
                       </IconButton>
                     ) : (
-                      <IconButton
-                        onClick={() => {
-                          user.isAnonymous
-                            ? handleLogin()
-                            : handleIconGenerator();
-                        }}
-                      >
+                      <IconButton onClick={handleIconGenerator}>
                         <AccountCircleIcon
                           sx={{ width: 40, height: 40, mr: 2, color: "gray" }}
                         />
@@ -784,28 +557,14 @@ const HomeView: React.FC = () => {
                     </Typography>
                   </Box>
 
-                  {user.isAnonymous ? (
-                    <Box mb={mdSize}>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        onClick={handleLogin}
-                      >
-                        ログイン
-                      </Button>
-                    </Box>
-                  ) : (
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      fullWidth
-                      onClick={handleProfileEditClick}
-                    >
-                      プロフィール編集
-                    </Button>
-                  )}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={handleProfileEditClick}
+                  >
+                    プロフィール編集
+                  </Button>
                 </Card>
               </Grid>
 
@@ -822,110 +581,60 @@ const HomeView: React.FC = () => {
                     padding: 4,
                     borderRadius: 2,
                     boxShadow: 3,
-                    mb: 4,
+                    mb: 2,
                     flex: 1,
                   }}
                 >
-                  {user && !user.isAnonymous ? (
-                    <Box mb={mdSize}>
-                      <Typography
-                        variant="h5"
-                        color="text.primary"
-                        gutterBottom
-                      >
-                        <StarIcon
-                          color="primary"
-                          fontSize="large"
-                          sx={{ verticalAlign: "middle", mr: 1 }}
-                        />
-                        スコア
-                      </Typography>
-                      <Box
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                      >
-                        <Typography
-                          variant="h4"
-                          sx={{
-                            fontWeight: "bold",
-                            mr: 1,
-                            color: "primary.main",
-                          }}
-                        >
-                          {score}
-                        </Typography>
-                        <EmojiEvents
-                          fontSize="large"
-                          sx={{ color: "primary.main" }}
-                        />
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        sx={{ mt: 1, fontStyle: "italic", textAlign: "center" }}
-                      >
-                        {getCommentByScore(score)}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Box mb={mdSize}>
-                      <Typography
-                        variant="h5"
-                        color="text.primary"
-                        gutterBottom
-                      >
-                        <EditIcon color="primary" sx={{ mr: 1 }} />
-                        プレイヤー名の変更
-                      </Typography>
-                      <TextField
-                        label="新しいプレイヤー名"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        variant="outlined"
-                        fullWidth
+                  <Box mb={2}>
+                    <Typography variant="h5" color="text.primary" gutterBottom>
+                      <StarIcon
+                        color="primary"
+                        fontSize="large"
+                        sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        onClick={handleNameChangeClick}
-                        disabled={newName === playerName}
+                      スコア
+                    </Typography>
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight: "bold",
+                          mr: 1,
+                          color: "primary.main",
+                        }}
                       >
-                        名前変更
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        onClick={handleProfileEditClick}
-                        sx={{ mt: 2 }}
-                      >
-                        プロフィール編集
-                      </Button>
+                        {score}
+                      </Typography>
+                      <EmojiEvents
+                        fontSize="large"
+                        sx={{ color: "primary.main" }}
+                      />
                     </Box>
-                  )}
+                    <Typography
+                      variant="body2"
+                      sx={{ mt: 1, fontStyle: "italic", textAlign: "center" }}
+                    >
+                      {getCommentByScore(score)}
+                    </Typography>
+                  </Box>
                 </Card>
               </Grid>
 
               {/* バトル */}
-              <Grid
-                item
-                xs={12}
-                sm={12}
-                md={12}
-                sx={{ display: "flex", flexDirection: "column" }}
-              >
+              <Grid item xs={12} sm={12} md={12}>
                 <Card
                   sx={{
                     padding: 3,
                     borderRadius: 2,
                     boxShadow: 3,
-                    mb: 4,
+                    mb: 2,
                     flex: 1,
                   }}
                 >
-                  {/* タイトルと「遊び方」ボタンを横並びに配置 */}
                   <Box
                     display="flex"
                     justifyContent="space-between"
@@ -949,8 +658,7 @@ const HomeView: React.FC = () => {
                     </Button>
                   </Box>
 
-                  {/* 新しいGridコンテナを追加 */}
-                  <Grid container spacing={2} sx={{ mt: 1 }}>
+                  <Grid container spacing={2} sx={{ mt: 0 }}>
                     {/* ひとりであそぶ */}
                     <Grid
                       item
@@ -967,18 +675,23 @@ const HomeView: React.FC = () => {
                           flex: 1,
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          color="text.primary"
-                          gutterBottom
-                        >
-                          <PersonIcon
-                            color="primary"
-                            fontSize="large"
-                            sx={{ verticalAlign: "middle", mr: 1 }}
-                          />
-                          ひとりであそぶ
-                        </Typography>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography
+                            variant="h6"
+                            color="text.primary"
+                            gutterBottom
+                          >
+                            <PersonIcon
+                              color="primary"
+                              fontSize="large"
+                              sx={{ verticalAlign: "middle", mr: 1 }}
+                            />
+                            ひとりであそぶ
+                          </Typography>
+                          <IconButton onClick={() => setOpenSoloTutorial(true)}>
+                            <InfoOutlinedIcon />
+                          </IconButton>
+                        </Box>
                         <Box mt={2}>
                           <FormControl component="fieldset">
                             <FormLabel component="legend">
@@ -1007,32 +720,9 @@ const HomeView: React.FC = () => {
                             </RadioGroup>
                           </FormControl>
                         </Box>
-                        {selectedIsHuman === false &&
-                          !user.isAnonymous &&
-                          bots && (
-                            <FormControl fullWidth sx={{ mt: 2 }}>
-                              <InputLabel id="prompt-select-label">
-                                使用するプロンプト
-                              </InputLabel>
-                              <Select
-                                labelId="prompt-select-label"
-                                value={
-                                  selectedPromptId !== null
-                                    ? selectedPromptId
-                                    : bots.defaultId
-                                }
-                                label="使用するプロンプト"
-                                onChange={handlePromptChange}
-                              >
-                                {bots.data.map((bot) => (
-                                  <MenuItem key={bot.id} value={bot.id}>
-                                    {bot.name}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-                            </FormControl>
-                          )}
-                        <ButtonGroup fullWidth sx={{ mt: 3 }}>
+                        {/* 使用するプロンプトセレクター廃止：ここを削除 */}
+
+                        <ButtonGroup fullWidth sx={{ mt: 2 }}>
                           <Button
                             onClick={() => setSinglePlayDifficulty("初級")}
                             variant={
@@ -1092,20 +782,26 @@ const HomeView: React.FC = () => {
                           flex: 1,
                         }}
                       >
-                        <Typography
-                          variant="h6"
-                          color="text.primary"
-                          gutterBottom
-                        >
-                          <GroupIcon
-                            color="primary"
-                            fontSize="large"
-                            sx={{ verticalAlign: "middle", mr: 1 }}
-                          />
-                          だれかとあそぶ
-                        </Typography>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography
+                            variant="h6"
+                            color="text.primary"
+                            gutterBottom
+                          >
+                            <GroupIcon
+                              color="primary"
+                              fontSize="large"
+                              sx={{ verticalAlign: "middle", mr: 1 }}
+                            />
+                            だれかとあそぶ
+                          </Typography>
+                          <IconButton
+                            onClick={() => setOpenMatchTutorial(true)}
+                          >
+                            <InfoOutlinedIcon />
+                          </IconButton>
+                        </Box>
 
-                        {/* ランダムマッチ */}
                         <Typography
                           variant="subtitle1"
                           color="text.primary"
@@ -1156,28 +852,12 @@ const HomeView: React.FC = () => {
                               </Typography>
                               <CircularProgress size={24} sx={{ ml: 2 }} />
                             </Box>
-                            {matchingTimer === 0 && (
-                              <Box
-                                mt={2}
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                  sx={{ ml: 2 }}
-                                >
-                                  一定時間待ってもマッチングできない時は一度キャンセルして再度マッチングを試してください。
-                                </Typography>
-                              </Box>
-                            )}
                           </Box>
                         )}
 
                         <Divider sx={{ mt: 4, mb: 4 }} />
 
-                        {/* プライベートルーム */}
+                        {/* プライベートルーム（未実装） */}
                         <Typography
                           variant="subtitle1"
                           color="text.primary"
@@ -1218,13 +898,7 @@ const HomeView: React.FC = () => {
               </Grid>
 
               {/* AIプロンプト */}
-              <Grid
-                item
-                xs={xsSize}
-                sm={12}
-                md={12}
-                sx={{ display: "flex", flexDirection: "column" }}
-              >
+              <Grid item xs={12} sm={12} md={12}>
                 <Card
                   sx={{
                     padding: 4,
@@ -1247,56 +921,23 @@ const HomeView: React.FC = () => {
                       />
                       AIプロンプト
                     </Typography>
-                    {user.isAnonymous ? (
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        onClick={handleOpenGeneratePrompt}
-                        startIcon={<AutoAwesomeIcon />} // 左側にアイコンを追加
-                      >
-                        テンプレートから作成
-                      </Button>
-                    ) : (
-                      ""
-                    )}
+                    <Button
+                      variant="outlined"
+                      color="primary"
+                      onClick={handleOpenGeneratePrompt}
+                      startIcon={<AutoAwesomeIcon />}
+                    >
+                      テンプレートから作成
+                    </Button>
                   </Box>
-                  {user.isAnonymous ? (
-                    <TextField
-                      label="AIへの命令を入力してください。"
-                      multiline
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      fullWidth
-                      sx={{ mt: 2 }}
-                    />
-                  ) : (
-                    <>
-                      <Typography
-                        variant="body1"
-                        color="text.primary"
-                        sx={{ whiteSpace: "pre-wrap", mt: 2, mb: 2 }}
-                      >
-                        設定中のプロンプト：{bots?.data[bots.defaultId].name}
-                      </Typography>
-                      <Divider></Divider>
-                      <Typography
-                        variant="body1"
-                        color="text.primary"
-                        sx={{ whiteSpace: "pre-wrap", mt: 2 }}
-                      >
-                        {aiPrompt}
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        sx={{ mt: 2 }}
-                        onClick={handlePromptEdit}
-                      >
-                        プロンプト編集
-                      </Button>
-                    </>
-                  )}
+                  <TextField
+                    label="AIへの命令を入力してください。"
+                    multiline
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    fullWidth
+                    sx={{ mt: 2 }}
+                  />
                 </Card>
               </Grid>
             </Grid>
@@ -1315,7 +956,7 @@ const HomeView: React.FC = () => {
                 label="ルームID"
                 type="text"
                 fullWidth
-                value={roomId}
+                value={roomId || ""}
                 onChange={(e) => setRoomId(e.target.value)}
               />
             </DialogContent>
@@ -1335,8 +976,8 @@ const HomeView: React.FC = () => {
             fullWidth
             PaperProps={{
               sx: {
-                width: "800px", // 固定幅
-                height: "500px", // 固定高さ
+                width: "800px",
+                height: "500px",
                 padding: 2,
                 borderRadius: 8,
               },
@@ -1348,20 +989,8 @@ const HomeView: React.FC = () => {
                 sx={{ verticalAlign: "middle", mr: 1 }}
               />
               チュートリアル
-              {/* <IconButton
-                aria-label="close"
-                onClick={handleTutorialClose}
-                sx={{
-                  position: "absolute",
-                  right: 8,
-                  top: 8,
-                }}
-              >
-                <CloseIcon />
-              </IconButton> */}
             </DialogTitle>
             <DialogContent>
-              {/* Stepper */}
               <Stepper activeStep={activeStep} alternativeLabel>
                 {steps.map((label) => (
                   <Step key={label}>
@@ -1399,7 +1028,41 @@ const HomeView: React.FC = () => {
             </DialogActions>
           </Dialog>
 
-          {/* プロンプト生成ツールのダイアログ */}
+          {/* 「ひとりであそぶ」情報ダイアログ */}
+          <Dialog
+            open={openSoloTutorial}
+            onClose={() => setOpenSoloTutorial(false)}
+          >
+            <DialogTitle>「ひとりであそぶ」のチュートリアル</DialogTitle>
+            <DialogContent>
+              <Typography>
+                シングルプレイの概要です。難易度を選んでAIと対戦することができます。
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenSoloTutorial(false)}>閉じる</Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* 「だれかとあそぶ」情報ダイアログ */}
+          <Dialog
+            open={openMatchTutorial}
+            onClose={() => setOpenMatchTutorial(false)}
+          >
+            <DialogTitle>「だれかとあそぶ」のチュートリアル</DialogTitle>
+            <DialogContent>
+              <Typography>
+                ランダムマッチでオンラインの相手と対戦します。マッチング開始を押して相手を待ちましょう。
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setOpenMatchTutorial(false)}>
+                閉じる
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* プロンプト生成ツールダイアログ */}
           <Dialog
             open={openGeneratePrompt}
             onClose={handleCloseGeneratePrompt}
@@ -1407,7 +1070,7 @@ const HomeView: React.FC = () => {
             maxWidth="md"
             BackdropProps={{
               sx: {
-                backgroundColor: "rgba(0, 0, 0, 0.7)", // より濃いバックドロップ
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
                 transition: "opacity 0.5s ease",
               },
             }}
@@ -1434,7 +1097,6 @@ const HomeView: React.FC = () => {
               <SmartToyIcon sx={{ mr: 1 }} />
               プロンプト生成ツール
             </DialogTitle>
-
             <DialogContent
               dividers
               sx={{
@@ -1449,42 +1111,9 @@ const HomeView: React.FC = () => {
                 initialPrompt={aiPrompt === "未設定" ? "" : aiPrompt}
               />
             </DialogContent>
-            {/* <DialogActions
-              sx={{
-                justifyContent: "space-between",
-                padding: "16px 24px",
-                backgroundColor: "#f0f0f0",
-              }}
-            >
-              <Button
-                onClick={handleCloseGeneratePrompt}
-                color="secondary"
-                variant="outlined"
-                startIcon={<CloseIcon />}
-                sx={{
-                  borderRadius: 2,
-                  padding: "8px 16px",
-                }}
-              >
-                閉じる
-              </Button>
-
-              <Button
-                onClick={() => handleCompleteGeneratePrompt(prompt)}
-                color="primary"
-                variant="outlined"
-                startIcon={<CheckIcon />}
-                sx={{
-                  borderRadius: 2,
-                  padding: "8px 24px",
-                }}
-              >
-                完了
-              </Button>
-            </DialogActions> */}
           </Dialog>
 
-          {/* フローティングボタン */}
+          {/* フローティングボタン - テストチャット */}
           <Fab
             color="primary"
             aria-label="チャット"
@@ -1493,15 +1122,16 @@ const HomeView: React.FC = () => {
           >
             <ChatIcon />
           </Fab>
-          {/* Drawer for テストチャット */}
+
+          {/* テストチャット用Drawer */}
           <Drawer
             anchor="right"
             open={isDrawerOpen}
             onClose={() => toggleDrawer(false)}
-            transitionDuration={500} // アニメーションの時間を指定
+            transitionDuration={500}
             sx={{
               "& .MuiDrawer-paper": {
-                transition: "transform 0.5s ease-in-out", // 開閉時のスムーズなアニメーション
+                transition: "transform 0.5s ease-in-out",
               },
             }}
           >
@@ -1521,7 +1151,6 @@ const HomeView: React.FC = () => {
                 }}
                 role="presentation"
               >
-                {/* Header */}
                 <Box
                   display="flex"
                   justifyContent="space-between"
@@ -1536,8 +1165,6 @@ const HomeView: React.FC = () => {
                     <CloseIcon />
                   </IconButton>
                 </Box>
-
-                {/* Chat History */}
                 <Box
                   sx={{
                     flex: 1,
@@ -1585,11 +1212,8 @@ const HomeView: React.FC = () => {
                               }}
                             >
                               {message.role === "user" ? (
-                                user.photoURL ? (
-                                  <Avatar
-                                    src={user.photoURL}
-                                    alt="User Avatar"
-                                  />
+                                photoURL ? (
+                                  <Avatar src={photoURL} alt="User Avatar" />
                                 ) : (
                                   <PersonIcon />
                                 )
@@ -1631,7 +1255,6 @@ const HomeView: React.FC = () => {
                   </List>
                 </Box>
 
-                {/* Message Input Section */}
                 <Box display="flex" mt={2} alignItems="stretch">
                   <TextField
                     label="メッセージを入力"
@@ -1649,13 +1272,23 @@ const HomeView: React.FC = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={handleSendMessage}
+                    onClick={() => {
+                      if (chatMessage.trim() !== "") {
+                        const userMessage: GPTMessage = {
+                          role: "user",
+                          content: chatMessage,
+                        };
+                        setChatHistory((prev) => [...prev, userMessage]);
+                        setChatMessage("");
+                        setIsSending(true);
+                      }
+                    }}
                     disabled={isSending || !chatMessage.trim()}
                     sx={{
                       ml: 2,
-                      height: "auto", // ボタンの高さを入力フィールドに合わせる
+                      height: "auto",
                       alignSelf: "center",
-                      py: 2, // 高さを入力フィールドとマッチさせるためにパディングを使用
+                      py: 2,
                     }}
                     endIcon={<SendIcon />}
                   >
@@ -1684,7 +1317,7 @@ const HomeView: React.FC = () => {
               <Button
                 variant="outlined"
                 color="inherit"
-                onClick={handleFeedback}
+                onClick={() => navigate(appPaths.impression_edit)}
                 sx={{ ml: 2 }}
               >
                 フィードバックを送信
@@ -1699,7 +1332,7 @@ const HomeView: React.FC = () => {
           flexDirection="column"
           alignItems="center"
           justifyContent="center"
-          mt={mdSize}
+          mt={12}
         >
           <Button
             variant="contained"

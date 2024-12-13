@@ -44,6 +44,8 @@ import LightbulbOutlinedIcon from "@mui/icons-material/LightbulbOutlined";
 import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { update } from "firebase/database";
+import { updateRating } from "../API/firestore-database_f.ts";
 
 export type Difficulty = "初級" | "中級" | "上級";
 
@@ -286,6 +288,10 @@ const SingleBattleView: React.FC = () => {
           backups: [backupData], // 配列として初期化
         });
         console.log("Backup data successfully created and added!");
+      }
+      if (user && result === "勝利！") {
+        const score = difficulty === "初級" ? 1 : difficulty === "中級" ? 2 : 3;
+        updateRating(user.uid, score);
       }
     } catch (error) {
       console.error(

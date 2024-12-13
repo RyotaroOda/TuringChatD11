@@ -39,8 +39,8 @@ const ResultView: React.FC = () => {
   useEffect(() => {
     const user = auth.currentUser;
     const myId = user ? user.uid : null;
-    if (resultData && myId && !user?.isAnonymous) {
-      updateRating(myId, resultData.score);
+    if (resultData && myId) {
+      updateRating(myId, resultData.score * 2);
     }
     // eslint-disable-next-line
   }, [resultData]);

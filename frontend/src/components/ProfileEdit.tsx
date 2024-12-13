@@ -1,4 +1,5 @@
 // frontend/src/components/ProfileEdit.tsx
+
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { auth } from "../API/firebase_f.ts";
@@ -11,6 +12,7 @@ import {
   reauthenticateWithCredential,
   signInWithPopup,
   updateProfile,
+  updateEmail,
 } from "firebase/auth";
 import {
   AppBar,
@@ -30,14 +32,21 @@ import {
   CssBaseline,
   SelectChangeEvent,
   ListSubheader,
+  Avatar,
+  Divider,
+  Paper,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { Timestamp } from "@google-cloud/firestore";
 
 const theme = createTheme({
   typography: {
     fontFamily: "'Noto Sans JP', sans-serif",
+  },
+  palette: {
+    background: {
+      default: "#f5f5f5",
+    },
   },
 });
 
@@ -50,6 +59,7 @@ const languages = [
   "Chinese",
   "Russian",
 ];
+
 const countries = [
   "日本",
   "United States",
@@ -131,6 +141,9 @@ const ProfileEdit: React.FC = () => {
   const navigate = useNavigate();
   const user = auth.currentUser;
 
+  // メールアドレス更新用state
+  const [newEmail, setNewEmail] = useState("");
+
   const handleChange = (
     event:
       | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -143,7 +156,7 @@ const ProfileEdit: React.FC = () => {
 
       // location.xxx の場合、locationオブジェクト内の更新に対応
       if (name.startsWith("location.")) {
-        const field = name.split(".")[1]; // location.country => country, location.region => region
+        const field = name.split(".")[1];
         return {
           ...prev,
           location: {
@@ -152,7 +165,6 @@ const ProfileEdit: React.FC = () => {
           },
         };
       } else {
-        // それ以外はトップレベル
         return { ...prev, [name]: value };
       }
     });
@@ -241,11 +253,10 @@ const ProfileEdit: React.FC = () => {
       )
     ) {
       try {
-        // 再認証を試みる
+        // 再認証
         const providerId = user.providerData[0]?.providerId;
 
         if (providerId === "password") {
-          // メールとパスワードでログインしている場合
           const email = user.email;
           const password = prompt("再認証のためパスワードを入力してください:");
 
@@ -257,7 +268,6 @@ const ProfileEdit: React.FC = () => {
             return;
           }
         } else if (providerId === "google.com") {
-          // Googleログインの場合
           const provider = new GoogleAuthProvider();
           await signInWithPopup(auth, provider);
         } else {
@@ -265,10 +275,9 @@ const ProfileEdit: React.FC = () => {
           return;
         }
 
-        // 再認証後にアカウント削除
         await deleteUser(user);
         alert("アカウントが削除されました。");
-        navigate("/"); // ホーム画面にリダイレクト
+        navigate("/");
       } catch (error: any) {
         console.error("アカウント削除エラー:", error);
         if (error.code === "auth/requires-recent-login") {
@@ -280,14 +289,50 @@ const ProfileEdit: React.FC = () => {
     }
   };
 
-  //#region 画面遷移
+  //#endregion
+
+  //#region その他機能
   const handleQuestionnaireEdit = () => {
     navigate("/questionnaire_edit");
   };
 
-  // 感想編集画面へ遷移
   const handleImpressionEdit = () => {
     navigate("/impression_edit");
+  };
+
+  // ログアウト
+  const handleLogout = async () => {
+    await auth.signOut();
+    alert("ログアウトしました");
+    navigate("/");
+  };
+
+  // 画像生成(ダミー)
+  const handleGenerateImage = async () => {
+    if (user) {
+      const dummyImageURL = "https://via.placeholder.com/150";
+      await updateProfile(user, { photoURL: dummyImageURL });
+      alert("画像が更新されました");
+    }
+  };
+
+  // メールアドレス変更
+  const handleChangeEmail = async () => {
+    if (user && newEmail) {
+      try {
+        await updateEmail(user, newEmail);
+        alert("メールアドレスが更新されました");
+      } catch (error: any) {
+        console.error("メールアドレス更新エラー:", error);
+        if (error.code === "auth/requires-recent-login") {
+          alert("再認証が必要です。再度ログインしてください。");
+        } else {
+          alert("メールアドレス更新中にエラーが発生しました。");
+        }
+      }
+    } else {
+      alert("メールアドレスを入力してください。");
+    }
   };
   //#endregion
 
@@ -297,18 +342,18 @@ const ProfileEdit: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="static">
+      <AppBar position="static" color="primary" elevation={2}>
         <Toolbar>
           <Button
-            variant="outlined" // ボタンのスタイルをテキストベースに
+            variant="outlined"
             color="inherit"
-            startIcon={<ArrowBackIcon />} // 矢印アイコンを追加
+            startIcon={<ArrowBackIcon />}
             sx={{
-              textTransform: "none", // テキストをそのままの形で表示（全大文字を防ぐ）
-              borderColor: "#ffffff", // ボーダーカラーを白に設定
-              color: "#ffffff", // テキストカラーを白
+              textTransform: "none",
+              borderColor: "#ffffff",
+              color: "#ffffff",
               ":hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.1)", // ホバー時の背景色
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
               },
             }}
             onClick={() => navigate("/")}
@@ -320,33 +365,53 @@ const ProfileEdit: React.FC = () => {
             sx={{
               flexGrow: 1,
               textAlign: "center",
-              whiteSpace: "nowrap", // テキストの折り返しを防止
-              overflow: "hidden", // 必要に応じてあふれたテキストを隠す
-              textOverflow: "ellipsis", // 必要に応じて省略記号を表示
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             プロフィール編集
           </Typography>
         </Toolbar>
       </AppBar>
-      <Container maxWidth="sm">
-        <Box mt={4}>
+      <Container maxWidth="sm" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
           <form onSubmit={handleSubmit}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <Typography variant="h5">基本情報</Typography>
-              </Grid>
+            <Typography variant="h5" gutterBottom>
+              基本情報
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
 
+            <Grid container spacing={2}>
+              {/* ユーザーネーム */}
               <Grid item xs={12}>
                 <TextField
-                  label="名前"
+                  label="ユーザーネーム"
                   name="name"
                   value={profile?.name || ""}
                   onChange={handleChange}
                   fullWidth
+                  variant="outlined"
                 />
               </Grid>
 
+              {/* プロフィール画像 */}
+              <Grid item xs={12} sx={{ textAlign: "center" }}>
+                <Avatar
+                  alt="Profile Image"
+                  src={user?.photoURL || ""}
+                  sx={{ width: 100, height: 100, margin: "0 auto" }}
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleGenerateImage}
+                  sx={{ mt: 2 }}
+                >
+                  プロフィール画像生成
+                </Button>
+              </Grid>
+
+              {/* 年齢 */}
               <Grid item xs={12}>
                 <TextField
                   label="年齢"
@@ -355,16 +420,19 @@ const ProfileEdit: React.FC = () => {
                   value={profile?.age || ""}
                   onChange={handleChange}
                   fullWidth
+                  variant="outlined"
                 />
               </Grid>
 
+              {/* 性別 */}
               <Grid item xs={12}>
-                <FormControl fullWidth>
+                <FormControl fullWidth variant="outlined">
                   <InputLabel>性別</InputLabel>
                   <Select
                     name="gender"
                     value={profile?.gender || ""}
                     onChange={handleChange}
+                    label="性別"
                   >
                     <MenuItem value="no_answer">回答しない</MenuItem>
                     <MenuItem value="male">男性</MenuItem>
@@ -374,13 +442,15 @@ const ProfileEdit: React.FC = () => {
                 </FormControl>
               </Grid>
 
+              {/* 言語 */}
               <Grid item xs={12}>
-                <FormControl fullWidth>
+                <FormControl fullWidth variant="outlined">
                   <InputLabel>言語</InputLabel>
                   <Select
                     name="language"
                     value={profile?.language || ""}
                     onChange={handleChange}
+                    label="言語"
                   >
                     {languages.map((lang) => (
                       <MenuItem key={lang} value={lang}>
@@ -391,13 +461,15 @@ const ProfileEdit: React.FC = () => {
                 </FormControl>
               </Grid>
 
+              {/* 国 */}
               <Grid item xs={12}>
-                <FormControl fullWidth>
+                <FormControl fullWidth variant="outlined">
                   <InputLabel>国</InputLabel>
                   <Select
                     name="location.country"
                     value={profile?.location.country || ""}
                     onChange={handleCountryChange}
+                    label="国"
                   >
                     {countries.map((country) => (
                       <MenuItem key={country} value={country}>
@@ -408,14 +480,16 @@ const ProfileEdit: React.FC = () => {
                 </FormControl>
               </Grid>
 
+              {/* 地域 */}
               {profile?.location.country === "日本" ? (
                 <Grid item xs={12}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth variant="outlined">
                     <InputLabel>地域</InputLabel>
                     <Select
                       name="location.region"
                       value={profile?.location.region || ""}
                       onChange={handleChange}
+                      label="地域"
                     >
                       {prefectureGroups.flatMap((group) => [
                         <ListSubheader key={`${group.label}-header`}>
@@ -438,10 +512,12 @@ const ProfileEdit: React.FC = () => {
                     value={profile?.location.region || ""}
                     onChange={handleChange}
                     fullWidth
+                    variant="outlined"
                   />
                 </Grid>
               )}
 
+              {/* プラットフォーム */}
               <Grid item xs={12}>
                 <TextField
                   label="プラットフォーム"
@@ -451,12 +527,115 @@ const ProfileEdit: React.FC = () => {
                     readOnly: true,
                   }}
                   fullWidth
+                  variant="outlined"
                 />
               </Grid>
 
               <Grid item xs={12}>
-                <Typography variant="h5">その他情報</Typography>
-                <Card sx={{ mt: 2 }}>
+                <Divider sx={{ mt: 2, mb: 2 }} />
+              </Grid>
+
+              {/* アンケート */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  実験アンケート
+                </Typography>
+                <Card
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    boxShadow: 1,
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  {profile?.questionnaire ? (
+                    <Typography variant="body1">アンケート回答済み</Typography>
+                  ) : (
+                    <Typography variant="body1">
+                      アンケートはまだ回答されていません
+                    </Typography>
+                  )}
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleQuestionnaireEdit}
+                    sx={{ mt: 2 }}
+                  >
+                    アンケートの回答/編集
+                  </Button>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Divider sx={{ mt: 4, mb: 2 }} />
+              </Grid>
+
+              {/* アカウント情報 */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  アカウント情報
+                </Typography>
+                <Card
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    boxShadow: 1,
+                    backgroundColor: "#fafafa",
+                  }}
+                >
+                  <Typography variant="body1" sx={{ mt: 1 }}>
+                    登録メールアドレス: {user?.email || "未設定"}
+                  </Typography>
+                  <TextField
+                    label="新しいメールアドレス"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mt: 1 }}
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={handleChangeEmail}
+                    sx={{ mt: 1 }}
+                  >
+                    メールアドレス登録・変更
+                  </Button>
+
+                  <Divider sx={{ mt: 2, mb: 2 }} />
+
+                  <Button variant="outlined" onClick={handleLogout}>
+                    ログアウト
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    onClick={handleDelete}
+                    sx={{ ml: 26 }}
+                  >
+                    アカウントを削除
+                  </Button>
+                </Card>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Divider sx={{ mt: 4, mb: 2 }} />
+              </Grid>
+
+              {/* その他情報 */}
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  その他情報
+                </Typography>
+                <Card
+                  sx={{
+                    mt: 2,
+                    p: 2,
+                    borderRadius: 2,
+                    boxShadow: 1,
+                    backgroundColor: "#fafafa",
+                  }}
+                >
                   <CardContent>
                     <Typography variant="body1">
                       レーティング: {profile?.rating || 0}
@@ -477,34 +656,7 @@ const ProfileEdit: React.FC = () => {
                 </Card>
               </Grid>
 
-              <Grid item xs={12}>
-                <Typography variant="h5">実験アンケート</Typography>
-                {profile?.questionnaire ? (
-                  <Card sx={{ mt: 2 }}>
-                    <CardContent>
-                      {/* <Typography variant="body1">
-                        質問内容: {profile.questionnaire.questions.join(", ")}
-                      </Typography>
-                      <Typography variant="body1">
-                        回答: {profile.questionnaire.answers.join(", ")}
-                      </Typography> */}
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Typography variant="body1">
-                    アンケートはまだ回答されていません
-                  </Typography>
-                )}
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleQuestionnaireEdit}
-                  sx={{ mt: 2 }}
-                >
-                  アンケートの回答/編集
-                </Button>
-              </Grid>
-
+              {/* 更新ボタン */}
               <Grid item xs={12} sx={{ mt: 4 }}>
                 <Button
                   variant="contained"
@@ -515,20 +667,9 @@ const ProfileEdit: React.FC = () => {
                   更新
                 </Button>
               </Grid>
-
-              <Grid item xs={12}>
-                <Button
-                  variant="outlined"
-                  color="secondary"
-                  onClick={handleDelete}
-                  fullWidth
-                >
-                  アカウントを削除
-                </Button>
-              </Grid>
             </Grid>
           </form>
-        </Box>
+        </Paper>
       </Container>
     </ThemeProvider>
   );
