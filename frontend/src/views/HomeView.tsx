@@ -1396,32 +1396,6 @@ const HomeView: React.FC = () => {
               </Box>
             </Slide>
           </Drawer>
-
-          {/* フッター */}
-          <AppBar
-            position="fixed"
-            sx={{
-              top: "auto",
-              bottom: 0,
-              backgroundColor: "primary.main",
-              padding: 1,
-            }}
-          >
-            <Toolbar sx={{ justifyContent: "center", gap: 2 }}>
-              <CopyrightIcon fontSize="small" />
-              <Typography variant="body2" color="inherit">
-                <strong>2024 RyotaroOda @ WashizakiUbayashi Lab</strong>
-              </Typography>
-              <Button
-                variant="outlined"
-                color="inherit"
-                onClick={() => navigate(appPaths.impression_edit)}
-                sx={{ ml: 2 }}
-              >
-                フィードバックを送信
-              </Button>
-            </Toolbar>
-          </AppBar>
         </>
       ) : (
         /* ログイン画面 */
