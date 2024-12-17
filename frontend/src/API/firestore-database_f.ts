@@ -61,7 +61,7 @@ export const createUserProfile = async () => {
     name: user.displayName || "未設定",
     rating: 0,
     bots: {
-      defaultId: 1,
+      defaultId: 0,
       data: botData,
     },
     questionnaire: null,

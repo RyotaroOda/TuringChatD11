@@ -161,7 +161,7 @@ const Auth: React.FC = () => {
                   setErrorMessage(null);
                 }}
               >
-                こちらからログイン
+                ログイン
               </Button>
             </Card>
           </Box>
@@ -329,7 +329,7 @@ const Auth: React.FC = () => {
             {isLoading ? (
               <CircularProgress size={24} color="inherit" />
             ) : (
-              "次へ"
+              "アカウント作成"
             )}
           </Button>
         )}

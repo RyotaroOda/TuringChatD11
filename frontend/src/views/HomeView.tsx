@@ -9,7 +9,7 @@ import {
   requestMatch,
   cancelRequest,
 } from "../API/firebase-functions-client.ts";
-import { signInAnonymously, updateProfile } from "firebase/auth";
+import { signInAnonymously } from "firebase/auth";
 import { auth } from "../API/firebase_f.ts";
 import {
   AIModel,
@@ -70,7 +70,6 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import { appPaths, variables } from "../App.tsx";
-import CopyrightIcon from "@mui/icons-material/Copyright";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import StarIcon from "@mui/icons-material/Star";
 import CodeIcon from "@mui/icons-material/Code";
@@ -82,17 +81,14 @@ import MenuBookIcon from "@mui/icons-material/MenuBook";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloseIcon from "@mui/icons-material/Close";
-import { Add as AddIcon } from "@mui/icons-material";
-import EditIcon from "@mui/icons-material/Edit";
 import SendIcon from "@mui/icons-material/Send";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import ChatIcon from "@mui/icons-material/Chat";
 import Fade from "@mui/material/Fade";
-import CheckIcon from "@mui/icons-material/Check";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-
 import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
+import { generateTestMessage } from "../API/chatGPT_f.ts";
 
 const theme = createTheme({
   typography: {
@@ -101,10 +97,9 @@ const theme = createTheme({
 });
 
 const HomeView: React.FC = () => {
+  //#region State
   const navigate = useNavigate();
   const user = auth.currentUser;
-
-  //#region State
   const [aiPrompt, setAiPrompt] = useState<string>(variables.defaultPrompt);
   const [selectedIsHuman, setSelectedIsHuman] = useState<boolean>(false);
   const [battleId, setBattleId] = useState<string>("");
@@ -143,88 +138,96 @@ const HomeView: React.FC = () => {
 
   //#region Steps for Tutorial
   const steps = [
-    "ゲーム概要",
     "バトルに参加する",
     "バトル準備",
-    "バトル開始",
-    "結果発表",
+    "バトルの流れ",
+    "バトルスコア",
   ];
 
   const stepContent = [
-    <>
-      <Typography variant="h6">チューリングゲームとは？</Typography>
-      <Typography>
-        このゲームは、相手プレーヤーとチャットしながら相手が
-        「人間」か「AI」かを見破るゲームです！
-      </Typography>
-      <Typography>
-        AIになりきったり、自分なりにAIをカスタマイズしたりして、
-        相手に自分の正体を悟られないようにしましょう。
-      </Typography>
-    </>,
     <>
       <Typography variant="h6">バトルに参加する</Typography>
       <Typography>以下のモードから選んでプレイを開始しましょう：</Typography>
       <ul>
         <li>
-          <strong>ひとりであそぶ</strong>：AIプレイヤーと対戦します。
+          <strong>ひとりであそぶ</strong>
+          <br />
+          AIプレイヤーと対戦します。
         </li>
+        <br />
         <li>
           <strong>だれかとあそぶ</strong>
-          ：オンライン上の誰かとマッチングして対戦します。
+          <br />
+          オンライン上の誰かとマッチングして対戦します。
         </li>
       </ul>
     </>,
     <>
       <Typography variant="h6">バトル準備</Typography>
-      <Typography>2つのプレイモードがあります：</Typography>
+      <Typography>2つのプレイモード</Typography>
       <ul>
         <li>
-          <strong>自分でプレイする</strong>：あなた自身が相手とチャットします。
+          <strong>AIモード</strong>
+          <br />
+          あらかじめ設定したプロンプトを用いてあなたの代わりにAIがチャットします。
+          <br />
+          プロンプトは画面下の<strong>「AIプロンプト」</strong>
+          から編集できます。
         </li>
+        <br />
         <li>
-          <strong>AIがプレイする</strong>
-          ：あなたがAIに指示を出し、AIが相手とチャットします。
+          <strong>手動モード</strong>
+          <br />
+          あなた自身が相手とチャットします。
         </li>
+        <br />
       </ul>
     </>,
     <>
-      <Typography variant="h6">バトル開始</Typography>
+      <Typography variant="h6">バトルの流れ</Typography>
+      <br />
       <Typography>
-        システムからお題（チャットの話題）が提示されます：
+        1.まず初めにからお題（チャットの話題）が提示されます。
       </Typography>
-      <ul>
-        <li>お題に沿って相手と自由にチャットしましょう。</li>
-        <li>
-          チャット終了後、以下を送信してください：
-          <ul>
-            <li>
-              <strong>相手の正体</strong>（人間 or AI）
-            </li>
-            <li>
-              <strong>そう判断した理由</strong>
-            </li>
-          </ul>
-        </li>
-      </ul>
+      <br />
+      <Typography>2.お題に沿って相手とチャットする。</Typography>
+      <br />
+      <Typography>3.残りターン数が0になったらチャット終了。</Typography>
+      <br />
+      <Typography>4.相手の正体を推理して答えを送信。</Typography>
     </>,
     <>
-      <Typography variant="h6">結果発表</Typography>
-      <Typography>お互いの「正体」と「理由」を答え合わせします。</Typography>
+      <Typography variant="h6">バトルスコア</Typography>
       <ul>
         <li>
-          <strong>得点ルール</strong>：
+          <strong>だれかとあそぶ</strong>：
           <ul>
             <li>
-              相手の正体を当てたら <strong>1ポイント</strong>
+              相手の正体を当てたら <strong>2ポイント</strong>
             </li>
             <li>
-              相手が自分の正体を間違えたら <strong>1ポイント</strong>
+              相手が自分の正体を間違えたら <strong>2ポイント</strong>
+            </li>
+          </ul>
+          <strong>合計得点が高いプレイヤーが勝ち！</strong>
+        </li>
+      </ul>
+      <ul>
+        <li>
+          <strong>ひとりであそぶ</strong>：
+          <ul>
+            <li>
+              初級： <strong>1ポイント</strong>
+            </li>
+            <li>
+              中級： <strong>2ポイント</strong>
+            </li>
+            <li>
+              上級： <strong>3ポイント</strong>
             </li>
           </ul>
         </li>
       </ul>
-      <Typography>合計得点が高いプレイヤーが勝利です！</Typography>
     </>,
   ];
   //#endregion
@@ -233,7 +236,7 @@ const HomeView: React.FC = () => {
   useEffect(() => {
     const hasSeenHowToPlay = localStorage.getItem("firstPlay");
     if (!hasSeenHowToPlay) {
-      setOpenTutorial(true);
+      navigate(appPaths.how_to_play);
       localStorage.setItem("firstPlay", "true");
     }
   }, []);
@@ -370,6 +373,44 @@ const HomeView: React.FC = () => {
   const handleAboutGame = () => {
     navigate(appPaths.how_to_play);
   };
+
+  const testChatHandler = () => {
+    if (chatMessage.trim() !== "") {
+      const userMessage: GPTMessage = {
+        role: "user",
+        content: chatMessage,
+      };
+      setChatHistory((prev) => [...prev, userMessage]);
+      setChatMessage("");
+      setIsSending(true);
+    }
+  };
+
+  // メッセージ送信とAIの応答を処理するエフェクト
+  useEffect(() => {
+    const sendChatMessage = async () => {
+      try {
+        const filteredMessages = chatHistory.filter(
+          (message) => message.role !== "system"
+        );
+        const responseContent = await generateTestMessage(filteredMessages);
+        const aiMessage: GPTMessage = {
+          role: "assistant",
+          content: responseContent,
+        };
+        setChatHistory((prev) => [...prev, aiMessage]);
+      } catch (error) {
+        console.error("Error generating chat response: ", error);
+      } finally {
+        setIsSending(false);
+      }
+    };
+
+    if (isSending) {
+      sendChatMessage();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSending]);
   //#endregion
 
   //#region Prompt Handling
@@ -402,7 +443,7 @@ const HomeView: React.FC = () => {
   };
   //#endregion
 
-  //#region Battle Handling
+  //#region Matching Handling
   const startMatch = async () => {
     setIsPushedMatching(true);
     try {
@@ -737,9 +778,6 @@ const HomeView: React.FC = () => {
                             />
                             ひとりであそぶ
                           </Typography>
-                          <IconButton onClick={() => setOpenSoloTutorial(true)}>
-                            <InfoOutlinedIcon />
-                          </IconButton>
                         </Box>
                         <Box mt={2}>
                           <FormControl component="fieldset">
@@ -843,11 +881,6 @@ const HomeView: React.FC = () => {
                             />
                             だれかとあそぶ
                           </Typography>
-                          <IconButton
-                            onClick={() => setOpenMatchTutorial(true)}
-                          >
-                            <InfoOutlinedIcon />
-                          </IconButton>
                         </Box>
 
                         <Typography
@@ -1212,14 +1245,16 @@ const HomeView: React.FC = () => {
           </Snackbar>
 
           {/* フローティングボタン - テストチャット */}
-          <Fab
-            color="primary"
-            aria-label="チャット"
-            sx={{ position: "fixed", bottom: 100, right: 16, zIndex: 1300 }}
-            onClick={() => toggleDrawer(true)}
-          >
-            <ChatIcon />
-          </Fab>
+          {!isDrawerOpen && (
+            <Fab
+              color="primary"
+              aria-label="チャット"
+              sx={{ position: "fixed", bottom: 15, right: 15, zIndex: 1300 }}
+              onClick={() => toggleDrawer(true)}
+            >
+              <ChatIcon />
+            </Fab>
+          )}
 
           {/* テストチャット用Drawer */}
           <Drawer
@@ -1370,17 +1405,7 @@ const HomeView: React.FC = () => {
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => {
-                      if (chatMessage.trim() !== "") {
-                        const userMessage: GPTMessage = {
-                          role: "user",
-                          content: chatMessage,
-                        };
-                        setChatHistory((prev) => [...prev, userMessage]);
-                        setChatMessage("");
-                        setIsSending(true);
-                      }
-                    }}
+                    onClick={testChatHandler}
                     disabled={isSending || !chatMessage.trim()}
                     sx={{
                       ml: 2,

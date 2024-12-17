@@ -545,14 +545,17 @@ const EditPromptView: React.FC = () => {
         </Card>
       </Container>
       {/* フローティングボタン */}
-      <Fab
-        color="primary"
-        aria-label="チャット"
-        sx={{ position: "fixed", bottom: 16, right: 16 }}
-        onClick={() => toggleDrawer(true)}
-      >
-        <ChatIcon />
-      </Fab>
+      {!isDrawerOpen && (
+        <Fab
+          color="primary"
+          aria-label="チャット"
+          sx={{ position: "fixed", bottom: 16, right: 16 }}
+          onClick={() => toggleDrawer(true)}
+        >
+          <ChatIcon />
+        </Fab>
+      )}
+
       {/* Drawer for テストチャット */}
       <Drawer
         anchor="right"

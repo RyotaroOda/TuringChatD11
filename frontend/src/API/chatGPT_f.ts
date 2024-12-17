@@ -443,3 +443,33 @@ export const generateSingleTopic = async (): Promise<string> => {
     throw new Error("Failed to generate topic.");
   }
 };
+
+export const askAITeacher = async (messages: GPTMessage[]) => {
+  const prompt = `あなたは先生として。以下の生徒からの質問に対して分かりやすい回答を生成してください。
+  対象年齢：${variables.targetAge} 向けのメッセージを生成してください。
+`;
+  const request: ChatGPTRequest = {
+    model: AIModel["gpt-4"],
+    messages: [
+      {
+        role: "system",
+        content: prompt,
+      },
+      ...messages,
+    ],
+    max_tokens: variables.maxToken,
+    temperature: 0.7,
+    top_p: 0.9,
+    n: 1,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    stop: null,
+  };
+  try {
+    const response = await generate(request);
+    console.log("API Response:", response);
+    return response;
+  } catch (error) {
+    console.error("Error calling OpenAI API:", error);
+  }
+};
