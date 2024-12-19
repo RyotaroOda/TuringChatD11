@@ -333,7 +333,13 @@ const ProfileEdit: React.FC = () => {
   };
   //#endregion
 
-  if (!profile) return <p>読み込み中...</p>;
+  if (!profile)
+    return (
+      <>
+        <p>エラー：プロフィールデータが見つかりません！</p>
+        <Button onClick={() => navigate("/")}>戻る</Button>
+      </>
+    );
   if (errorMessage) return <p style={{ color: "red" }}>{errorMessage}</p>;
 
   return (

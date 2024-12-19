@@ -114,7 +114,6 @@ const Auth: React.FC = () => {
     }
   };
 
-  //#region ゲストログイン処理
   const handleAnonymousLogin = async () => {
     try {
       setIsLoading(true);
@@ -134,7 +133,6 @@ const Auth: React.FC = () => {
       setIsLoading(false);
     }
   };
-  //#endregion
   //#endregion
 
   const renderStepContent = (step: number) => {

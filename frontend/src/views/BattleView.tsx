@@ -54,6 +54,7 @@ import { appPaths } from "../App.tsx";
 import SendIcon from "@mui/icons-material/Send";
 import CreateIcon from "@mui/icons-material/Create";
 import HourglassFullIcon from "@mui/icons-material/HourglassFull"; // 必要であればアイコン変更
+import { set } from "firebase/database";
 
 let theme = createTheme({
   typography: {
@@ -213,21 +214,27 @@ const BattleView: React.FC = () => {
   const generateMessage = async () => {
     setIsGenerating(true);
     if (bot && battleData) {
-      const generatedMessage = await generateBattleMessage(
-        messages,
-        battleData.chatData.messages[
-          Object.keys(battleData.chatData.messages)[0]
-        ].message,
-        promptInstruction,
-        bot,
-        battleData.battleRule
-      );
-      setSendMessage(generatedMessage);
-      setGeneratedAnswer(generatedMessage);
-    } else {
-      console.error("Bot setting is null");
+      try {
+        const generatedMessage = await generateBattleMessage(
+          messages,
+          battleData.chatData.messages[
+            Object.keys(battleData.chatData.messages)[0]
+          ].message,
+          promptInstruction,
+          bot,
+          battleData.battleRule
+        );
+        setSendMessage(generatedMessage);
+        setGeneratedAnswer(generatedMessage);
+      } catch (e) {
+        console.error(e);
+        setGeneratedAnswer(
+          "メッセージの生成に失敗しました。もう一度生成して下さい"
+        );
+      } finally {
+        setIsGenerating(false);
+      }
     }
-    setIsGenerating(false);
   };
 
   useEffect(() => {

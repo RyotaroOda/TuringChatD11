@@ -45,6 +45,8 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { updateRating } from "../API/firestore-database_f.ts";
+import { set } from "firebase/database";
+import e from "cors";
 
 export type Difficulty = "初級" | "中級" | "上級";
 
@@ -111,6 +113,8 @@ const SingleBattleView: React.FC = () => {
   const [topic, setTopic] = useState<string>("");
   const [topicLoading, setTopicLoading] = useState<boolean>(false);
 
+  const [errorMessage, setErrorMessage] = useState<string>("");
+
   // 追加ステート: バトル終了～判定開始の演出用
   const [battleEnded, setBattleEnded] = useState(false); // "バトル終了時"表示用
   const [displayAIJudging, setDisplayAIJudging] = useState(false); // "AI判定中…"表示用
@@ -126,9 +130,17 @@ const SingleBattleView: React.FC = () => {
       setIsHuman(isHuman);
       const initializeTopic = async () => {
         setTopicLoading(true);
-        const newTopic = await generateSingleTopic();
-        setTopic(newTopic);
-        setTopicLoading(false);
+        try {
+          const newTopic = await generateSingleTopic();
+          setTopic(newTopic);
+        } catch (error) {
+          console.error("トピック生成中にエラーが発生しました:", error);
+          setTopic(
+            "トピックの生成に失敗しました。前のページに戻り、もう一度バトル開始して下さい。"
+          );
+        } finally {
+          setTopicLoading(false);
+        }
       };
       initializeTopic();
     }
@@ -210,9 +222,17 @@ const SingleBattleView: React.FC = () => {
 
   const generateMessage = async () => {
     setIsGenerating(true);
+    setErrorMessage("");
     if (bot) {
-      const response = await generateSingleMessage(bot, messages, topic);
-      setSendMessage(response);
+      try {
+        const response = await generateSingleMessage(bot, messages, topic);
+        setSendMessage(response);
+      } catch (error) {
+        console.error("メッセージ生成中にエラーが発生しました:", error);
+        setErrorMessage("メッセージ生成中にエラーが発生しました。");
+      } finally {
+        setIsGenerating(false);
+      }
       setIsGenerating(false);
       setShowGeneratedAnswer(true);
     }
@@ -253,19 +273,27 @@ const SingleBattleView: React.FC = () => {
   useEffect(() => {
     // タイプライターアニメーション
     if (displayTypingReason && judgmentReason) {
-      setTypedReason("");
+      setTypedReason(""); // 初期化
+
+      // タイピング制御のための変数
       let index = 0;
       const intervalId = setInterval(() => {
         setTypedReason((prev) => prev + judgmentReason.charAt(index));
-        index++;
+        index += 1;
+
+        // 全文が表示されたらタイピングを終了
         if (index >= judgmentReason.length) {
           clearInterval(intervalId);
+
           // 全文表示完了後に結果表示
           setTimeout(() => {
             setShowingResult(true);
           }, 500);
         }
-      }, 100); // 50msごとに1文字表示
+      }, 100); // 100msごとに1文字表示
+
+      // コンポーネントがアンマウントされた場合や、条件が変わった場合にクリーンアップ
+      return () => clearInterval(intervalId);
     }
   }, [displayTypingReason, judgmentReason]);
 
@@ -558,6 +586,22 @@ const SingleBattleView: React.FC = () => {
         {/* isHuman === false の場合、生成ボタンと生成された回答表示 */}
         {!judgmentMade && !isJudging && !isHuman && !battleEnded && (
           <Box mb={2}>
+            {errorMessage && (
+              <Paper
+                elevation={3}
+                sx={{
+                  p: 2,
+                  backgroundColor: "#ffcdd2",
+                  borderRadius: 2,
+                  border: "1px solid #e57373",
+                }}
+              >
+                <Typography variant="body1" sx={{ color: "#d32f2f" }}>
+                  {errorMessage}
+                </Typography>
+              </Paper>
+            )}
+
             <Button
               variant={"contained"}
               onClick={generateMessage}
