@@ -42,55 +42,81 @@ export interface ChatGPTRequest {
  * @throws APIのエラーやレスポンスの欠落
  */
 const generate = async (prompt: ChatGPTRequest): Promise<any> => {
-  if (variables.disableClientGeneration) {
-    return await generateMessageBack(prompt);
-  } else {
-    const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
-    const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
+  const maxAttempts = 3; // 最大試行回数
+  let attempts = 0;
 
-    // 環境変数の検証
-    if (!apiUrl) {
-      throw new Error(
-        "CHATGPT_API_URL is not defined in the environment variables."
-      );
-    }
-    if (!apiKey) {
-      throw new Error(
-        "OPENAI_API_KEY is not defined in the environment variables."
-      );
-    }
+  while (attempts < maxAttempts) {
+    try {
+      if (variables.disableClientGeneration) {
+        return await generateMessageBack(prompt);
+      } else {
+        const apiUrl = process.env.REACT_APP_CHATGPT_API_URL;
+        const apiKey = process.env.REACT_APP_OPENAI_API_KEY;
 
-    console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
+        // 環境変数の検証
+        if (!apiUrl) {
+          throw new Error(
+            "CHATGPT_API_URL is not defined in the environment variables."
+          );
+        }
+        if (!apiKey) {
+          throw new Error(
+            "OPENAI_API_KEY is not defined in the environment variables."
+          );
+        }
 
-    // ChatGPT APIリクエストの送信
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(prompt),
-    });
+        console.log(
+          `Attempt ${attempts + 1}: Sending prompt to ChatGPT...`,
+          JSON.stringify(prompt, null, 2)
+        );
 
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.error("ChatGPT API Error Details:", errorDetails);
-      throw new Error(
-        `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
-      );
-    }
+        // ChatGPT APIリクエストの送信
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(prompt),
+        });
 
-    // レスポンスの解析
-    const dataResponse = (await response.json()) as ChatGPTResponse;
-    if (dataResponse.choices && dataResponse.choices.length > 0) {
-      const message = dataResponse.choices[0].message;
-      if (message?.content) {
-        return message.content;
+        if (!response.ok) {
+          const errorDetails = await response.text();
+          console.error("ChatGPT API Error Details:", errorDetails);
+          throw new Error(
+            `Failed to fetch from ChatGPT API: ${response.status} - ${errorDetails}`
+          );
+        }
+
+        // レスポンスの解析
+        const dataResponse = (await response.json()) as ChatGPTResponse;
+        if (dataResponse.choices && dataResponse.choices.length > 0) {
+          const message = dataResponse.choices[0].message;
+          if (message?.content) {
+            return message.content; // 成功時にコンテンツを返す
+          }
+        }
+
+        throw new Error("No content found in ChatGPT response.");
       }
-    }
+    } catch (error) {
+      console.error(`Error in attempt ${attempts + 1}:`, error);
+      attempts++;
 
-    throw new Error("No content found in ChatGPT response.");
+      // 最大試行回数に達した場合はエラーをスロー
+      if (attempts === maxAttempts) {
+        throw new Error(
+          `Failed to fetch from ChatGPT API after ${maxAttempts} attempts.`
+        );
+      }
+
+      // 次回試行まで少し待つ（オプション: 例 1秒待つ）
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   }
+
+  // ここには到達しないはず
+  throw new Error("Unexpected error in generate.");
 };
 
 /** テストメッセージ生成用関数
@@ -117,37 +143,10 @@ export const generateTestMessage = async (
     presence_penalty: 0,
     stop: null,
   };
-
-  let attempts = 0;
-  const maxAttempts = 3;
-
-  while (attempts < maxAttempts) {
-    try {
-      console.log(
-        `Attempt ${attempts + 1}: Sending prompt to ChatGPT...`,
-        JSON.stringify(prompt, null, 2)
-      );
-
-      const answer = await generate(prompt);
-      console.log("Generated Chat Response:", answer);
-
-      // 生成が成功した場合は結果を返す
-      if (answer) {
-        return answer;
-      }
-
-      throw new Error("Empty response from ChatGPT API.");
-    } catch (error) {
-      console.error(`Error in attempt ${attempts + 1}:`, error);
-      attempts++;
-      if (attempts === maxAttempts) {
-        throw new Error("Failed to generate response after 3 attempts.");
-      }
-    }
-  }
-
-  // ここには到達しないはず
-  throw new Error("Unexpected error in generateTestMessage.");
+  console.log("Sending prompt to ChatGPT:", JSON.stringify(prompt, null, 2));
+  const answer = await generate(prompt);
+  console.log("Generated Chat Response:", answer);
+  return answer;
 };
 
 /** バトル用メッセージ生成関数
@@ -269,39 +268,15 @@ export const generateTopic = async (battleId: string) => {
     presence_penalty: 0,
   };
 
-  let attempts = 0;
-  const maxAttempts = 3;
+  try {
+    const topic = await generate(prompt);
+    console.log("Generated topic:", topic);
 
-  while (attempts < maxAttempts) {
-    try {
-      console.log(
-        `Attempt ${attempts + 1}: Sending prompt to ChatGPT...`,
-        JSON.stringify(prompt, null, 2)
-      );
-
-      const topic = await generate(prompt);
-      console.log("Generated topic:", topic);
-
-      // 成功時にトピックを記録して終了
-      if (topic) {
-        addMessage(battleId, topic, 0, null);
-        return;
-      }
-
-      throw new Error("Empty response from ChatGPT API.");
-    } catch (error) {
-      console.error(`Error in attempt ${attempts + 1}:`, error);
-      attempts++;
-
-      // 最大試行回数を超えた場合、エラーをスロー
-      if (attempts === maxAttempts) {
-        throw new Error("Failed to generate topic after 3 attempts.");
-      }
-    }
+    addMessage(battleId, topic, 0, null);
+  } catch (error) {
+    console.error("Failed to generate topic:", error);
+    throw new Error("Failed to generate topic.");
   }
-
-  // ここには到達しないはず
-  throw new Error("Unexpected error in generateTopic.");
 };
 
 export const generateImageFront = async (prompt: string) => {
@@ -485,38 +460,14 @@ export const generateSingleTopic = async (): Promise<string> => {
     presence_penalty: 0,
   };
 
-  let attempts = 0;
-  const maxAttempts = 3;
-
-  while (attempts < maxAttempts) {
-    try {
-      console.log(
-        `Attempt ${attempts + 1}: Sending prompt to ChatGPT...`,
-        JSON.stringify(prompt, null, 2)
-      );
-
-      const topic = await generate(prompt);
-      console.log("Generated topic:", topic);
-
-      // 成功した場合はトピックを返す
-      if (topic) {
-        return topic;
-      }
-
-      throw new Error("Empty response from ChatGPT API.");
-    } catch (error) {
-      console.error(`Error in attempt ${attempts + 1}:`, error);
-      attempts++;
-
-      // 最大試行回数を超えた場合はエラーをスロー
-      if (attempts === maxAttempts) {
-        throw new Error("Failed to generate topic after 3 attempts.");
-      }
-    }
+  try {
+    const topic = await generate(prompt);
+    console.log("Generated topic:", topic);
+    return topic;
+  } catch (error) {
+    console.error("Failed to generate topic:", error);
+    throw new Error("Failed to generate topic.");
   }
-
-  // ここには到達しないはず
-  throw new Error("Unexpected error in generateSingleTopic.");
 };
 
 export const askAITeacher = async (messages: GPTMessage[]) => {

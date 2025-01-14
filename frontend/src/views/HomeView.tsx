@@ -1261,7 +1261,7 @@ const HomeView: React.FC = () => {
             anchor="right"
             open={isDrawerOpen}
             onClose={() => toggleDrawer(false)}
-            transitionDuration={500}
+            transitionDuration={550}
             sx={{
               "& .MuiDrawer-paper": {
                 transition: "transform 0.5s ease-in-out",
@@ -1408,16 +1408,27 @@ const HomeView: React.FC = () => {
                     onClick={testChatHandler}
                     disabled={isSending || !chatMessage.trim()}
                     sx={{
-                      ml: 2,
+                      ml: 1,
                       height: "auto",
                       alignSelf: "center",
                       py: 2,
+                      px: 1,
+                      minWidth: "60px",
+                      minHeight: "60px",
+                      borderRadius: "26px",
                     }}
-                    endIcon={<SendIcon />}
                   >
-                    送信
+                    <SendIcon />
                   </Button>
                 </Box>
+                <Typography
+                  mt={2}
+                  variant="body2"
+                  color="text.secondary"
+                  alignSelf={"center"}
+                >
+                  生成AIの回答は必ずしも正しいとは限りません。
+                </Typography>
               </Box>
             </Slide>
           </Drawer>

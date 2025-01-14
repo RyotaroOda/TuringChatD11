@@ -423,6 +423,7 @@ const HowToPlay: React.FC = () => {
                 variant="contained"
                 sx={{ mt: 3, textAlign: "center" }}
                 size="large"
+                onClick={() => navigate(appPaths.HomeView)}
               >
                 ホーム画面へ
               </Button>
@@ -631,16 +632,28 @@ const HowToPlay: React.FC = () => {
                     }}
                     disabled={isSending || !chatMessage.trim()}
                     sx={{
-                      ml: 2,
+                      ml: 1,
                       height: "auto",
                       alignSelf: "center",
                       py: 2,
+                      px: 1,
+                      minWidth: "60px",
+                      minHeight: "60px",
+                      borderRadius: "26px",
                     }}
-                    endIcon={<SendIcon />}
                   >
-                    送信
+                    {" "}
+                    <SendIcon />
                   </Button>
                 </Box>
+                <Typography
+                  mt={2}
+                  variant="body2"
+                  color="text.secondary"
+                  alignSelf={"center"}
+                >
+                  生成AIの回答は必ずしも正しいとは限りません。
+                </Typography>
               </Box>
             </Slide>
           </Drawer>

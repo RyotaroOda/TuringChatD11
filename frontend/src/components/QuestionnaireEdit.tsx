@@ -59,6 +59,7 @@ const QuestionnaireEdit: React.FC = () => {
       console.log("message", message);
       const data = { questionnaire: questionnaire };
       updateUserProfile(data);
+      alert("アンケートを送信しました。");
       navigate(-1);
     }
   };
