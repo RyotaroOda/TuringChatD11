@@ -7,6 +7,7 @@ import {
   getDoc,
   addDoc,
   Timestamp,
+  getDocs,
 } from "firebase/firestore";
 import {
   AIModel,
@@ -273,4 +274,74 @@ export const updateRating = async (userId: string, score: number) => {
   await updateUserProfile({ rating: newRating });
   console.log("レートが更新されました:", userId, newRating);
 };
+//#endregion
+
+//#region QuizResult
+
+//y  クイズ結果を保存するための型定義
+export type QuizResultData = {
+  quizId: string; // どのクイズか
+  correctCount: number; // 正答数
+  totalCount: number; // 問題数
+  date: Timestamp; // 保存日時
+};
+
+/**
+ * ユーザーのクイズ結果を追加
+ * @param quizId クイズのID
+ * @param correctCount 正解数
+ * @param totalCount 出題数
+ */
+export const addUserQuizResult = async (
+  quizId: string,
+  correctCount: number,
+  totalCount: number
+) => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    throw new Error("ユーザーIDが見つかりません");
+  }
+
+  // "quizResults"サブコレクションにクイズ結果を追加する
+  const quizResultsRef = collection(
+    firestore,
+    DATABASE_PATHS.route_profiles,
+    userId,
+    "quizResults"
+  );
+
+  const newQuizResult: QuizResultData = {
+    quizId,
+    correctCount,
+    totalCount,
+    date: Timestamp.now(),
+  };
+
+  await addDoc(quizResultsRef, newQuizResult);
+  console.log("クイズ結果が追加されました:", newQuizResult);
+};
+
+export const getUserQuizResults = async (): Promise<QuizResultData[]> => {
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    throw new Error("ユーザーIDが見つかりません");
+  }
+
+  const quizResultsRef = collection(
+    firestore,
+    DATABASE_PATHS.route_profiles,
+    userId,
+    "quizResults"
+  );
+  const snapshot = await getDocs(quizResultsRef);
+
+  const results: QuizResultData[] = [];
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data() as QuizResultData;
+    results.push(data);
+  });
+
+  return results;
+};
+
 //#endregion

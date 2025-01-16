@@ -24,6 +24,8 @@ import RoomView from "./views/PrivateRoomView.tsx";
 import HowToPlay from "./components/HowToPlay.tsx";
 import IconGenerator from "./components/IconGenerator.tsx";
 import SingleBattleView from "./views/SingleBattleView.tsx";
+import QuizView from "./views/QuizView.tsx";
+import QuizSelection from "./views/QuizSelection.tsx";
 
 export const variables = {
   experiment: true,
@@ -41,6 +43,8 @@ export const appPaths = {
   BattleView: (battleId: string) => `/battle/${battleId}/battle`,
   ResultView: (battleId: string) => `/battle/${battleId}/result`,
   SingleBattleView: "/single_battle",
+  QuizView: "/quiz",
+  QuizSelection: "/quiz_selection",
   login: "/login",
   profile: "/profile",
   profile_edit: "/profile_edit",
@@ -160,6 +164,22 @@ function App() {
               element={
                 <ProtectedRoute>
                   <SingleBattleView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={appPaths.QuizView}
+              element={
+                <ProtectedRoute>
+                  <QuizView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={appPaths.QuizSelection}
+              element={
+                <ProtectedRoute>
+                  <QuizSelection />
                 </ProtectedRoute>
               }
             />
