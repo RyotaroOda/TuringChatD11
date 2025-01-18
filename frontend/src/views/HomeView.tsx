@@ -69,7 +69,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
-import { appPaths, variables } from "../App.tsx";
+import { appPaths, theme, variables } from "../App.tsx";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import StarIcon from "@mui/icons-material/Star";
 import CodeIcon from "@mui/icons-material/Code";
@@ -89,12 +89,11 @@ import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { Difficulty, SingleBattleViewProps } from "./SingleBattleView.tsx";
 import { generateTestMessage } from "../API/chatGPT_f.ts";
-
-const theme = createTheme({
-  typography: {
-    fontFamily: "'Noto Sans JP', sans-serif",
-  },
-});
+import EditIcon from "@mui/icons-material/Edit";
+import SchoolIcon from "@mui/icons-material/School";
+import QuizIcon from "@mui/icons-material/Quiz";
+import EditNoteIcon from "@mui/icons-material/EditNote";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const HomeView: React.FC = () => {
   //#region State
@@ -386,6 +385,17 @@ const HomeView: React.FC = () => {
     }
   };
 
+  const handleOpenNote = () => {
+    window.open(
+      "https://www.google.com/search?q=%E7%94%9F%E6%88%90AI%E3%81%A8%E3%81%AF",
+      "_blank"
+    );
+  };
+
+  const handleOpenQuizSelection = () => {
+    navigate(appPaths.QuizSelection);
+  };
+
   // メッセージ送信とAIの応答を処理するエフェクト
   useEffect(() => {
     const sendChatMessage = async () => {
@@ -626,39 +636,62 @@ const HomeView: React.FC = () => {
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
+                    gap={6}
                   >
                     {photoURL ? (
                       <IconButton onClick={handleIconGenerator}>
                         <Avatar
                           src={photoURL}
                           alt={user?.displayName || "Guest"}
-                          sx={{ width: 40, height: 40, mr: 2 }}
+                          sx={{ width: 60, height: 60, mr: 2 }}
                         />
                       </IconButton>
                     ) : (
                       <IconButton onClick={handleIconGenerator}>
                         <AccountCircleIcon
-                          sx={{ width: 40, height: 40, mr: 2, color: "gray" }}
+                          sx={{ width: 50, height: 50, mr: 2, color: "gray" }}
                         />
                       </IconButton>
                     )}
-                    <Typography variant="h6" color="text.primary">
+                    <Typography variant="h4" color="text.primary">
                       {playerName}
                     </Typography>
-                  </Box>
 
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    onClick={handleProfileEditClick}
-                  >
-                    プロフィール編集
-                  </Button>
+                    <Typography
+                      variant="h4"
+                      sx={{
+                        fontWeight: "bold",
+                        mr: 1,
+                        color: "primary.main",
+                      }}
+                      alignItems="center"
+                    >
+                      <StarIcon
+                        color="primary"
+                        fontSize="large"
+                        sx={{ verticalAlign: "middle", mr: 1 }}
+                      />
+                      {score}
+                    </Typography>
+                  </Box>
+                  <Box textAlign="center">
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      sx={{
+                        px: 8,
+                        py: 1.5,
+                      }}
+                      onClick={handleProfileEditClick}
+                      startIcon={<EditNoteIcon />}
+                    >
+                      プロフィール編集
+                    </Button>
+                  </Box>
                 </Card>
               </Grid>
 
-              {/* スコア表示 */}
+              {/* 生成AIとは？ */}
               <Grid
                 item
                 xs={xsSize}
@@ -677,39 +710,49 @@ const HomeView: React.FC = () => {
                 >
                   <Box mb={2}>
                     <Typography variant="h5" color="text.primary" gutterBottom>
-                      <StarIcon
+                      <SchoolIcon
                         color="primary"
                         fontSize="large"
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                      スコア
+                      生成AIとは？
                     </Typography>
                     <Box
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
+                      gap={2}
+                      sx={{ mt: 4 }}
                     >
-                      <Typography
-                        variant="h4"
+                      <Button
+                        variant="contained"
+                        color="primary"
                         sx={{
+                          minWidth: 180,
+                          py: 2.5,
                           fontWeight: "bold",
-                          mr: 1,
-                          color: "primary.main",
+                          boxShadow: 2,
                         }}
+                        onClick={handleOpenNote}
+                        startIcon={<DescriptionIcon />}
                       >
-                        {score}
-                      </Typography>
-                      <EmojiEvents
-                        fontSize="large"
-                        sx={{ color: "primary.main" }}
-                      />
+                        生成AIについて学ぶ
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        sx={{
+                          minWidth: 180,
+                          py: 2.5,
+                          fontWeight: "bold",
+                          boxShadow: 2,
+                        }}
+                        onClick={handleOpenQuizSelection}
+                        startIcon={<QuizIcon />}
+                      >
+                        クイズで遊ぶ
+                      </Button>
                     </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{ mt: 1, fontStyle: "italic", textAlign: "center" }}
-                    >
-                      {getCommentByScore(score)}
-                    </Typography>
                   </Box>
                 </Card>
               </Grid>
@@ -1000,40 +1043,59 @@ const HomeView: React.FC = () => {
                         fontSize="large"
                         sx={{ verticalAlign: "middle", mr: 1 }}
                       />
-                      AIプロンプト
+                      プロンプト
                     </Typography>
                     <Button
+                      variant="outlined"
+                      color="primary"
+                      sx={{ mt: 2, ml: 2 }}
+                      onClick={() =>
+                        navigate(appPaths.prompt_edit, { state: bots })
+                      }
+                    >
+                      <EditIcon sx={{ mr: 1 }} />
+                      プロンプト編集
+                    </Button>
+                    {/* <Button
                       variant="outlined"
                       color="primary"
                       onClick={handleOpenGeneratePrompt}
                       startIcon={<AutoAwesomeIcon />}
                     >
                       テンプレートから作成
-                    </Button>
+                    </Button> */}
                   </Box>
 
                   {bots && (
-                    <FormControl fullWidth sx={{ mt: 2 }}>
-                      <InputLabel id="prompt-select-label">
-                        使用中のプロンプト
-                      </InputLabel>
-                      <Select
-                        labelId="prompt-select-label"
-                        value={
-                          selectedPromptId !== null
-                            ? selectedPromptId
-                            : bots.defaultId
-                        }
-                        label="使用中のプロンプト"
-                        onChange={handlePromptSelectChange}
-                      >
-                        {bots.data.map((bot) => (
-                          <MenuItem key={bot.id} value={bot.id}>
-                            {bot.name}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    // <FormControl fullWidth sx={{ mt: 2 }}>
+                    //   <InputLabel id="prompt-select-label">
+                    //     使用中のプロンプト
+                    //   </InputLabel>
+                    //   <Select
+                    //     labelId="prompt-select-label"
+                    //     value={
+                    //       selectedPromptId !== null
+                    //         ? selectedPromptId
+                    //         : bots.defaultId
+                    //     }
+                    //     label="使用中のプロンプト"
+                    //     onChange={handlePromptSelectChange}
+                    //   >
+                    //     {bots.data.map((bot) => (
+                    //       <MenuItem key={bot.id} value={bot.id}>
+                    //         {bot.name}
+                    //       </MenuItem>
+                    //     ))}
+                    //   </Select>
+                    // </FormControl>
+                    <TextField
+                      label="使用中のプロンプト"
+                      multiline
+                      value={bots.data[bots.defaultId].name}
+                      fullWidth
+                      slotProps={{ input: { readOnly: true } }}
+                      sx={{ mt: 2 }}
+                    />
                   )}
 
                   <TextField

@@ -56,7 +56,7 @@ export const appPaths = {
 };
 
 // カスタムテーマの作成
-const theme = createTheme({
+export const theme = createTheme({
   palette: {
     primary: {
       main: "#1976d2", // 深いブルー

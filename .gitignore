@@ -19,6 +19,7 @@ backend/node_modules/
 
 firebase-debug.log
 
+プロンプト.txt
 
 # テスト出力
 coverage/

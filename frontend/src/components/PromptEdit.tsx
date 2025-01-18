@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import PromptGenerator from "./PromptGenerator.tsx";
+import PromptGenerator from "./PromptGenerator2.tsx";
 import {
   AppBar,
   Toolbar,
@@ -28,9 +28,11 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  Slide,
+  Fade,
   SelectChangeEvent,
   CardActions,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -45,44 +47,43 @@ import EditIcon from "@mui/icons-material/Edit";
 import SettingsIcon from "@mui/icons-material/Settings";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
-import Fade from "@mui/material/Fade";
 import CheckIcon from "@mui/icons-material/Check";
 import { updateUserProfile } from "../API/firestore-database_f.ts";
 import { auth } from "../API/firebase_f.ts";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
-
-const theme = createTheme({
-  typography: {
-    fontFamily: "'Noto Sans JP', sans-serif",
-  },
-});
+import { theme } from "../App.tsx";
 
 const EditPromptView: React.FC = () => {
   const bots: BotData = useLocation().state;
   const navigate = useNavigate();
 
   // State variables
-
   const [defaultBotId, setDefaultBotId] = useState<number>(bots.defaultId);
   const [selectedBotId, setSelectedBotId] = useState<number>(
     bots.defaultId || bots.data[0].id
   );
-
   const [botSettings, setBotSettings] = useState(bots.data);
-  const [prompt, setPrompt] = useState<string>(bots.data[defaultBotId].prompt);
-  const [botName, setBotName] = useState<string>(bots.data[defaultBotId].name);
-  const [model, setModel] = useState<AIModel>(bots.data[defaultBotId].model);
+
+  // 選択中のBot情報
+  const currentBot = botSettings.find((b) => b.id === selectedBotId);
+  const [prompt, setPrompt] = useState<string>(currentBot?.prompt ?? "");
+  const [botName, setBotName] = useState<string>(currentBot?.name ?? "");
+  const [model, setModel] = useState<AIModel>(
+    currentBot?.model ?? AIModel["gpt-3.5-turbo"]
+  );
   const [creativity, setCreativity] = useState<number>(
-    bots.data[defaultBotId].temperature
+    currentBot?.temperature ?? 0.7
   );
-  const [certainty, setCertainty] = useState<number>(
-    bots.data[defaultBotId].top_p
-  );
+  const [certainty, setCertainty] = useState<number>(currentBot?.top_p ?? 0.9);
+
   const [isPromptSaveEnabled, setIsPromptSaveEnabled] =
+    useState<boolean>(false);
+  const [isPromptNameSaveEnabled, setIsPromptNameSaveEnabled] =
     useState<boolean>(false);
   const [isSettingsSaveEnabled, setIsSettingsSaveEnabled] =
     useState<boolean>(false);
-  const user = auth.currentUser;
+
+  const [changeDefault, setChangeDefault] = useState<boolean>(false);
 
   // ボット選択変更時の処理
   const handleBotSelection = (event: SelectChangeEvent<number>) => {
@@ -154,7 +155,7 @@ const EditPromptView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSending]);
 
-  // チャット履歴が更新されたときに自動で下にスクロールするエフェクト
+  // チャット履歴が更新されたときに自動で下にスクロール
   useEffect(() => {
     scrollToBottom();
   }, [chatHistory]);
@@ -163,10 +164,9 @@ const EditPromptView: React.FC = () => {
   const toggleDrawer = (open: boolean) => {
     setIsDrawerOpen(open);
   };
-
   //#endregion
 
-  //#region プロンプト編集ダイアログ
+  //#region プロンプト編集ツール（Dialog）
   const [openGeneratePrompt, setOpenGeneratePrompt] = useState(false);
 
   const handleOpenGeneratePrompt = () => {
@@ -178,28 +178,31 @@ const EditPromptView: React.FC = () => {
       "編集内容が保存されていません。閉じてもよろしいですか？"
     );
     if (!confirmClose) return;
-
     setOpenGeneratePrompt(false);
   };
 
-  // プロンプトが完成したときの処理
-  const handleCompleteGeneratePrompt = (generatedPrompt) => {
+  // 生成ツールにより完成したプロンプトを受け取り
+  const handleCompleteGeneratePrompt = (generatedPrompt: string) => {
     setPrompt(generatedPrompt); // 完成したプロンプトを保存
     handlePromptSave(generatedPrompt);
+    setOpenGeneratePrompt(false);
   };
   //#endregion
 
-  //#region 保存
+  //#region 保存処理
   const [isPromptSaving, setIsPromptSaving] = useState(false);
   const [isPromptSaved, setIsPromptSaved] = useState(false);
-  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
-  const [isSettingsSaved, setIsSettingsSaved] = useState(false);
-
+  const [isSettingsSaving, setIsSettingsSaved] = useState(false);
+  const [isSettingsSaved, setIsSettingsSavedLocal] = useState(false);
+  const [isPromptNameSaving, setIsPromptNameSaving] = useState(false);
+  const [isPromptNameSaved, setIsPromptNameSaved] = useState(false);
   // プロンプト保存処理
-  const handlePromptSave = async (prompt: string) => {
-    setIsPromptSaving(true); // ロード中状態にする
+  const handlePromptSave = async (newPrompt: string) => {
+    setIsPromptSaving(true); // ロード中状態
     const updatedBotSettings = botSettings.map((bot) =>
-      bot.id === selectedBotId ? { ...bot, name: botName, prompt: prompt } : bot
+      bot.id === selectedBotId
+        ? { ...bot, name: botName, prompt: newPrompt }
+        : bot
     );
     setBotSettings(updatedBotSettings);
     await updateUserProfile({
@@ -209,16 +212,16 @@ const EditPromptView: React.FC = () => {
       },
     });
     setIsPromptSaveEnabled(false);
-    setIsPromptSaving(false); // ロード終了
-    setIsPromptSaved(true); // 保存完了状態にする
+    setIsPromptSaving(false);
+    setIsPromptSaved(true);
     setTimeout(() => {
-      setIsPromptSaved(false); // 数秒後に元に戻す
+      setIsPromptSaved(false);
     }, 1000);
   };
 
   // 設定保存処理
   const handleSettingsSave = async () => {
-    setIsSettingsSaving(true); // ロード中状態にする
+    setIsSettingsSaved(true);
     const updatedBotSettings = botSettings.map((bot) =>
       bot.id === selectedBotId
         ? { ...bot, model: model, temperature: creativity, top_p: certainty }
@@ -232,21 +235,31 @@ const EditPromptView: React.FC = () => {
       },
     });
     setIsSettingsSaveEnabled(false);
-    setIsSettingsSaving(false); // ロード終了
-    setIsSettingsSaved(true); // 保存完了状態にする
+    setIsSettingsSaved(false);
+    setIsSettingsSavedLocal(true);
     setTimeout(() => {
-      setIsSettingsSaved(false); // 数秒後に元に戻す
-    }, 2000);
+      setIsSettingsSavedLocal(false);
+    }, 1000);
   };
 
-  const handleBackSegue = () => {
-    if (isPromptSaveEnabled || isSettingsSaveEnabled) {
-      const confirmClose = window.confirm(
-        "編集内容が保存されていません。閉じてもよろしいですか？"
-      );
-      if (!confirmClose) return;
-    }
-    navigate("/");
+  const handlePromptNameSave = async () => {
+    setIsPromptNameSaving(true); // ロード中状態
+    const updatedBotSettings = botSettings.map((bot) =>
+      bot.id === selectedBotId ? { ...bot, name: botName, prompt: prompt } : bot
+    );
+    setBotSettings(updatedBotSettings);
+    await updateUserProfile({
+      bots: {
+        defaultId: changeDefault ? selectedBotId : defaultBotId,
+        data: updatedBotSettings,
+      },
+    });
+    setIsPromptNameSaveEnabled(false);
+    setIsPromptNameSaving(false);
+    setIsPromptNameSaved(true);
+    setTimeout(() => {
+      setIsPromptNameSaved(false);
+    }, 1000);
   };
 
   // デフォルトに設定処理
@@ -259,12 +272,22 @@ const EditPromptView: React.FC = () => {
       },
     });
   };
+
+  const handleBackSegue = () => {
+    if (isPromptSaveEnabled || isSettingsSaveEnabled) {
+      const confirmClose = window.confirm(
+        "編集内容が保存されていません。閉じてもよろしいですか？"
+      );
+      if (!confirmClose) return;
+    }
+    navigate("/");
+  };
   //#endregion
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* AppBar with navigation */}
+      {/* AppBar */}
       <AppBar position="static" sx={{ mb: 4 }}>
         <Toolbar>
           <Button
@@ -293,17 +316,34 @@ const EditPromptView: React.FC = () => {
           </Typography>
         </Toolbar>
       </AppBar>
+
       {/* Main Content */}
       <Container maxWidth="md">
         {/* 保存されているプロンプト */}
         <Card sx={{ mb: 4 }}>
           <CardContent>
-            <Box display="flex" alignItems="center" mb={2}>
-              <SaveIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h5">保存されているプロンプト</Typography>
+            <Box
+              display="flex"
+              alignItems="center"
+              mb={2}
+              justifyContent="space-between"
+            >
+              <Typography variant="h5">
+                {" "}
+                <SaveIcon color="primary" sx={{ mr: 1 }} />
+                プロンプト
+              </Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => setOpenGeneratePrompt(true)}
+                startIcon={<AddIcon />}
+              >
+                新規作成
+              </Button>
             </Box>
             <FormControl fullWidth>
-              <InputLabel>プロンプト選択</InputLabel>
+              <InputLabel>プロンプトを選択</InputLabel>
               <Select
                 value={selectedBotId}
                 onChange={handleBotSelection}
@@ -315,7 +355,36 @@ const EditPromptView: React.FC = () => {
                   </MenuItem>
                 ))}
               </Select>
+              <TextField
+                label="プロンプト名 変更"
+                value={botName}
+                onChange={(e) => {
+                  setBotName(e.target.value);
+                  setIsPromptNameSaveEnabled(true);
+                }}
+                fullWidth
+                sx={{ mt: 2 }}
+              />
             </FormControl>
+            {defaultBotId === selectedBotId ? (
+              <Box display="flex" sx={{ mt: 2 }}>
+                <CheckIcon color="primary" />
+                <Typography sx={{ ml: 1 }}>デフォルトに設定中</Typography>
+              </Box>
+            ) : (
+              <FormControlLabel
+                sx={{ mt: 2 }}
+                control={
+                  <Checkbox
+                    onChange={(e) => {
+                      setChangeDefault(e.target.checked);
+                      setIsPromptNameSaveEnabled(true);
+                    }}
+                  />
+                }
+                label="デフォルトに設定"
+              />
+            )}
           </CardContent>
           <CardActions
             sx={{
@@ -323,16 +392,48 @@ const EditPromptView: React.FC = () => {
               justifyContent: "center",
             }}
           >
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={handleSetDefault}
-              disabled={defaultBotId === selectedBotId}
-            >
-              {defaultBotId === selectedBotId
-                ? "デフォルトに設定中"
-                : "デフォルトに設定"}
-            </Button>
+            <Box sx={{ position: "relative" }}>
+              <Fade in={!isPromptNameSaving && !isPromptNameSaved}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  disabled={!isPromptNameSaveEnabled || isPromptNameSaving}
+                  onClick={() => handlePromptNameSave()}
+                  sx={{
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  保存
+                </Button>
+              </Fade>
+              {/* 保存処理中アニメーション */}
+              {isPromptSaving && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  <CircularProgress size={24} color="inherit" />
+                </Box>
+              )}
+              {/* 保存完了アイコン */}
+              {isPromptSaved && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    color: "success.main",
+                  }}
+                >
+                  <CheckIcon />
+                </Box>
+              )}
+            </Box>
           </CardActions>
         </Card>
 
@@ -346,7 +447,6 @@ const EditPromptView: React.FC = () => {
               justifyContent="space-between"
             >
               <Typography variant="h5">
-                {" "}
                 <EditIcon color="primary" sx={{ mr: 1 }} />
                 プロンプト編集
               </Typography>
@@ -356,19 +456,10 @@ const EditPromptView: React.FC = () => {
                 onClick={handleOpenGeneratePrompt}
                 startIcon={<AutoAwesomeIcon />}
               >
-                テンプレートから作成
+                テンプレート
               </Button>
             </Box>
-            <TextField
-              label="ボット名"
-              value={botName}
-              onChange={(e) => {
-                setBotName(e.target.value);
-                setIsPromptSaveEnabled(true);
-              }}
-              fullWidth
-              sx={{ mt: 2 }}
-            />
+
             <TextField
               label="プロンプト"
               multiline
@@ -387,7 +478,6 @@ const EditPromptView: React.FC = () => {
               justifyContent: "center",
             }}
           >
-            {" "}
             <Box sx={{ position: "relative" }}>
               <Fade in={!isPromptSaving && !isPromptSaved}>
                 <Button
@@ -402,48 +492,43 @@ const EditPromptView: React.FC = () => {
                   保存
                 </Button>
               </Fade>
-              <Fade in={isPromptSaving}>
+              {/* 保存処理中アニメーション */}
+              {isPromptSaving && (
                 <Box
                   sx={{
                     position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: isPromptSaving ? "flex" : "none",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
                   }}
                 >
                   <CircularProgress size={24} color="inherit" />
                 </Box>
-              </Fade>
-              <Fade in={isPromptSaved}>
+              )}
+              {/* 保存完了アイコン */}
+              {isPromptSaved && (
                 <Box
                   sx={{
                     position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: isPromptSaved ? "flex" : "none",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    color: "success.main",
                   }}
                 >
                   <CheckIcon />
                 </Box>
-              </Fade>
+              )}
             </Box>
           </CardActions>
         </Card>
 
-        {/* 設定 */}
+        {/* モデル設定 */}
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Box display="flex" alignItems="center" mb={2}>
               <SettingsIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h5">設定</Typography>
+              <Typography variant="h5">モデル設定</Typography>
             </Box>
             <FormControl fullWidth sx={{ mt: 2 }}>
               <InputLabel>モデル</InputLabel>
@@ -455,12 +540,14 @@ const EditPromptView: React.FC = () => {
                 }}
               >
                 <MenuItem value={AIModel["gpt-4o"]}>GPT-4o</MenuItem>
-                <MenuItem value={AIModel["gpt-4o-mini"]}>GPT-4o mini</MenuItem>
+                <MenuItem value={AIModel["gpt-3.5-turbo"]}>
+                  GPT-3.5-turbo
+                </MenuItem>
                 <MenuItem value={AIModel["gpt-4"]}>GPT-4</MenuItem>
               </Select>
             </FormControl>
-            <Box mt={2}>
-              <Typography gutterBottom>創造性</Typography>
+            <Box mt={4}>
+              <Typography gutterBottom>Temperature（創造性）</Typography>
               <Slider
                 value={creativity}
                 min={0}
@@ -473,8 +560,8 @@ const EditPromptView: React.FC = () => {
                 valueLabelDisplay="auto"
               />
             </Box>
-            <Box mt={2}>
-              <Typography gutterBottom>確実性</Typography>
+            <Box mt={4}>
+              <Typography gutterBottom>Top_p（確実性）</Typography>
               <Slider
                 value={certainty}
                 min={0}
@@ -499,52 +586,45 @@ const EditPromptView: React.FC = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  disabled={!isSettingsSaveEnabled || isSettingsSaving}
+                  disabled={!isSettingsSaveEnabled}
                   onClick={handleSettingsSave}
-                  sx={{
-                    transition: "all 0.3s ease",
-                  }}
                 >
                   保存
                 </Button>
               </Fade>
-              <Fade in={isSettingsSaving}>
+              {/* 保存処理中アニメーション */}
+              {isSettingsSaving && (
                 <Box
                   sx={{
                     position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: isSettingsSaving ? "flex" : "none",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
                   }}
                 >
                   <CircularProgress size={24} color="inherit" />
                 </Box>
-              </Fade>
-              <Fade in={isSettingsSaved}>
+              )}
+              {/* 保存完了アイコン */}
+              {isSettingsSaved && (
                 <Box
                   sx={{
                     position: "absolute",
-                    top: 0,
-                    left: 0,
-                    width: "100%",
-                    height: "100%",
-                    display: isSettingsSaved ? "flex" : "none",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    top: 6,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    color: "success.main",
                   }}
                 >
                   <CheckIcon />
                 </Box>
-              </Fade>
+              )}
             </Box>
           </CardActions>
         </Card>
       </Container>
-      {/* フローティングボタン */}
+
+      {/* フローティングボタン（テストチャット用） */}
       {!isDrawerOpen && (
         <Fab
           color="primary"
@@ -561,157 +641,158 @@ const EditPromptView: React.FC = () => {
         anchor="right"
         open={isDrawerOpen}
         onClose={() => toggleDrawer(false)}
-        transitionDuration={500} // アニメーションの時間を指定
+        transitionDuration={500}
         sx={{
           "& .MuiDrawer-paper": {
-            transition: "transform 0.5s ease-in-out", // 開閉時のスムーズなアニメーション
+            transition: "transform 0.5s ease-in-out",
           },
         }}
       >
-        <Slide direction="left" in={isDrawerOpen} mountOnEnter unmountOnExit>
+        <Box
+          sx={{
+            width: 400,
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+          role="presentation"
+        >
+          {/* Header */}
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={2}
+            sx={{ borderBottom: "1px solid #ccc", pb: 1 }}
+          >
+            <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+              テストチャット
+            </Typography>
+            <IconButton onClick={() => toggleDrawer(false)}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* チャット履歴 */}
           <Box
             sx={{
-              width: 400,
-              p: 2,
-              display: "flex",
-              flexDirection: "column",
-              height: "100%",
+              flex: 1,
+              overflowY: "auto",
+              border: "1px solid #ccc",
+              borderRadius: 2,
+              padding: 2,
+              backgroundColor: "#f9f9f9",
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "#f0f0f0",
+                borderRadius: "10px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "#c0c0c0",
+                borderRadius: "10px",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "#a0a0a0",
+              },
             }}
-            role="presentation"
           >
-            {/* Header */}
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-              sx={{ borderBottom: "1px solid #ccc", pb: 1 }}
-            >
-              <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                テストチャット
-              </Typography>
-              <IconButton onClick={() => toggleDrawer(false)}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-
-            {/* Chat History */}
-            <Box
-              sx={{
-                flex: 1,
-                overflowY: "auto",
-                border: "1px solid #ccc",
-                borderRadius: 2,
-                padding: 2,
-                backgroundColor: "#f9f9f9",
-                "&::-webkit-scrollbar": {
-                  width: "8px",
-                },
-                "&::-webkit-scrollbar-track": {
-                  background: "#f0f0f0",
-                  borderRadius: "10px",
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  background: "#c0c0c0",
-                  borderRadius: "10px",
-                },
-                "&::-webkit-scrollbar-thumb:hover": {
-                  background: "#a0a0a0",
-                },
-              }}
-            >
-              <List>
-                {chatHistory.map((message, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem
-                      sx={{
-                        alignItems: "flex-start",
-                        backgroundColor:
-                          message.role === "user" ? "#e3f2fd" : "#f1f8e9",
-                        borderRadius: 2,
-                        mb: 1,
-                        boxShadow: 1,
-                      }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar
+            <List>
+              {chatHistory.map((message, index) => (
+                <React.Fragment key={index}>
+                  <ListItem
+                    sx={{
+                      alignItems: "flex-start",
+                      backgroundColor:
+                        message.role === "user" ? "#e3f2fd" : "#f1f8e9",
+                      borderRadius: 2,
+                      mb: 1,
+                      boxShadow: 1,
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Avatar
+                        sx={{
+                          backgroundColor:
+                            message.role === "user" ? "#2196f3" : "#8bc34a",
+                        }}
+                      >
+                        {message.role === "user" ? (
+                          auth.currentUser && auth.currentUser.photoURL ? (
+                            <Avatar
+                              src={auth.currentUser.photoURL}
+                              alt="User Avatar"
+                            />
+                          ) : (
+                            <PersonIcon />
+                          )
+                        ) : (
+                          <SmartToyIcon />
+                        )}
+                      </Avatar>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Typography
+                          variant="subtitle1"
                           sx={{
-                            backgroundColor:
-                              message.role === "user" ? "#2196f3" : "#8bc34a",
+                            fontWeight: "bold",
+                            color:
+                              message.role === "user" ? "#0d47a1" : "#33691e",
                           }}
                         >
-                          {message.role === "user" ? (
-                            user && user.photoURL ? (
-                              <Avatar src={user.photoURL} alt="User Avatar" />
-                            ) : (
-                              <PersonIcon />
-                            )
-                          ) : (
-                            <SmartToyIcon />
-                          )}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={
-                          <Typography
-                            variant="subtitle1"
-                            sx={{
-                              fontWeight: "bold",
-                              color:
-                                message.role === "user" ? "#0d47a1" : "#33691e",
-                            }}
-                          >
-                            {message.role === "user" ? "あなた" : "ボット"}
-                          </Typography>
-                        }
-                        secondary={message.content}
-                      />
-                    </ListItem>
-                  </React.Fragment>
-                ))}
-                {isSending && (
-                  <ListItem>
-                    <CircularProgress size={24} />
-                    <ListItemText primary="応答を生成中..." sx={{ ml: 2 }} />
+                          {message.role === "user" ? "あなた" : "ボット"}
+                        </Typography>
+                      }
+                      secondary={message.content}
+                    />
                   </ListItem>
-                )}
-                <div ref={chatEndRef} />
-              </List>
-            </Box>
-
-            {/* Message Input Section */}
-            <Box display="flex" mt={2} alignItems="stretch">
-              <TextField
-                label="メッセージを入力"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                fullWidth
-                multiline
-                rows={2}
-                sx={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: 1,
-                  boxShadow: 1,
-                }}
-              />
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={handleSendMessage}
-                disabled={isSending || !chatMessage.trim()}
-                sx={{
-                  ml: 2,
-                  height: "auto", // ボタンの高さを入力フィールドに合わせる
-                  alignSelf: "center",
-                  py: 2, // 高さを入力フィールドとマッチさせるためにパディングを使用
-                }}
-                endIcon={<SendIcon />}
-              >
-                送信
-              </Button>
-            </Box>
+                </React.Fragment>
+              ))}
+              {isSending && (
+                <ListItem>
+                  <CircularProgress size={24} />
+                  <ListItemText primary="応答を生成中..." sx={{ ml: 2 }} />
+                </ListItem>
+              )}
+              <div ref={chatEndRef} />
+            </List>
           </Box>
-        </Slide>
+
+          {/* メッセージ入力 */}
+          <Box display="flex" mt={2} alignItems="stretch">
+            <TextField
+              label="メッセージを入力"
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              fullWidth
+              multiline
+              rows={2}
+              sx={{
+                backgroundColor: "#ffffff",
+                borderRadius: 1,
+                boxShadow: 1,
+              }}
+            />
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSendMessage}
+              disabled={isSending || !chatMessage.trim()}
+              sx={{
+                ml: 2,
+                height: "auto",
+                alignSelf: "center",
+                py: 2,
+              }}
+              endIcon={<SendIcon />}
+            >
+              送信
+            </Button>
+          </Box>
+        </Box>
       </Drawer>
 
       {/* プロンプト生成ツールのダイアログ */}
@@ -722,7 +803,7 @@ const EditPromptView: React.FC = () => {
         maxWidth="md"
         BackdropProps={{
           sx: {
-            backgroundColor: "rgba(0, 0, 0, 0.7)", // より濃いバックドロップ
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
             transition: "opacity 0.5s ease",
           },
         }}
@@ -741,8 +822,8 @@ const EditPromptView: React.FC = () => {
             alignItems: "center",
             backgroundColor: "#2196f3",
             color: "#ffffff",
-            borderTopLeftRadius: 12,
-            borderTopRightRadius: 12,
+            borderTopLeftRadius: 4,
+            borderTopRightRadius: 4,
             padding: "16px 24px",
           }}
         >
@@ -758,45 +839,13 @@ const EditPromptView: React.FC = () => {
             boxShadow: "inset 0 0 10px rgba(0, 0, 0, 0.1)",
           }}
         >
+          {/* ここで新しい仕様を反映したPromptGeneratorを呼び出す */}
           <PromptGenerator
             onClose={() => setOpenGeneratePrompt(false)}
             onComplete={handleCompleteGeneratePrompt}
             initialPrompt={prompt}
           />
         </DialogContent>
-        {/* <DialogActions
-          sx={{
-            justifyContent: "space-between",
-            padding: "16px 24px",
-            backgroundColor: "#f0f0f0",
-          }}
-        >
-          <Button
-            onClick={handleCloseGeneratePrompt}
-            color="secondary"
-            variant="outlined"
-            startIcon={<CloseIcon />}
-            sx={{
-              borderRadius: 2,
-              padding: "8px 16px",
-            }}
-          >
-            閉じる
-          </Button>
-
-          <Button
-            onClick={() => handleCompleteGeneratePrompt(prompt)}
-            color="primary"
-            variant="outlined"
-            startIcon={<CheckIcon />}
-            sx={{
-              borderRadius: 2,
-              padding: "8px 24px",
-            }}
-          >
-            完了
-          </Button>
-        </DialogActions> */}
       </Dialog>
     </ThemeProvider>
   );

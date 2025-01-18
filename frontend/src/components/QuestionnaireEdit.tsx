@@ -13,11 +13,16 @@ import {
   Radio,
   Stack,
   Paper,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import { QuestionnaireData } from "../shared/types.ts";
 import SendIcon from "@mui/icons-material/Send";
 import { updateUserProfile } from "../API/firestore-database_f.ts";
 import { Timestamp } from "firebase/firestore";
+import { ThemeProvider } from "@emotion/react";
+import { theme } from "../App.tsx";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 const QuestionnaireEdit: React.FC = () => {
   const [questionnaire, setQuestionnaire] = useState<QuestionnaireData>({
@@ -73,41 +78,59 @@ const QuestionnaireEdit: React.FC = () => {
   ];
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography
-        variant="h4"
-        component="h1"
-        gutterBottom
-        sx={{ textAlign: "center", mb: 3 }}
-      >
-        アンケートフォーム
-      </Typography>
-
-      <Box component="form" onSubmit={handleSubmit}>
-        <Stack spacing={4}>
-          {[
-            "楽しかったか",
-            "むずかしかったか",
-            "生成AIを使った経験があるか",
-            "生成AIの使い方が理解できたか",
-            "また生成AIを使いたいと思ったか",
-          ].map((question, index) => (
-            <Paper key={index} elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-              <FormControl component="fieldset" fullWidth>
-                <FormLabel
-                  component="legend"
-                  sx={{ fontWeight: "bold", mb: 1 }}
-                >
-                  {index + 1}. {question}
-                </FormLabel>
-                <RadioGroup
-                  name={
-                    ["fun", "difficulty", "experience", "understood", "reuse"][
-                      index
-                    ]
-                  }
-                  value={
-                    questionnaire?.[
+    <ThemeProvider theme={theme}>
+      <AppBar position="static" color="primary" elevation={2}>
+        <Toolbar>
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<ArrowBackIcon />}
+            sx={{
+              textTransform: "none",
+              borderColor: "#ffffff",
+              color: "#ffffff",
+              ":hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+              },
+            }}
+            onClick={() => navigate("/")}
+          >
+            戻る
+          </Button>
+          <Typography
+            variant="h6"
+            sx={{
+              flexGrow: 1,
+              textAlign: "center",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            アンケートフォーム
+          </Typography>
+        </Toolbar>
+      </AppBar>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={4}>
+            {[
+              "楽しかったか",
+              "むずかしかったか",
+              "生成AIを使った経験があるか",
+              "生成AIの使い方が理解できたか",
+              "また生成AIを使いたいと思ったか",
+            ].map((question, index) => (
+              <Paper key={index} elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+                <FormControl component="fieldset" fullWidth>
+                  <FormLabel
+                    component="legend"
+                    sx={{ fontWeight: "bold", mb: 1 }}
+                  >
+                    {index + 1}. {question}
+                  </FormLabel>
+                  <RadioGroup
+                    name={
                       [
                         "fun",
                         "difficulty",
@@ -115,52 +138,63 @@ const QuestionnaireEdit: React.FC = () => {
                         "understood",
                         "reuse",
                       ][index]
-                    ] || ""
-                  }
-                  onChange={handleChange}
-                  row
-                >
-                  {options.map((opt) => (
-                    <FormControlLabel
-                      key={opt.value}
-                      value={opt.value}
-                      control={<Radio />}
-                      label={opt.label}
-                      labelPlacement="top"
-                    />
-                  ))}
-                </RadioGroup>
-              </FormControl>
+                    }
+                    value={
+                      questionnaire?.[
+                        [
+                          "fun",
+                          "difficulty",
+                          "experience",
+                          "understood",
+                          "reuse",
+                        ][index]
+                      ] || ""
+                    }
+                    onChange={handleChange}
+                    row
+                  >
+                    {options.map((opt) => (
+                      <FormControlLabel
+                        key={opt.value}
+                        value={opt.value}
+                        control={<Radio />}
+                        label={opt.label}
+                        labelPlacement="top"
+                      />
+                    ))}
+                  </RadioGroup>
+                </FormControl>
+              </Paper>
+            ))}
+
+            <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
+              <TextField
+                label="コメント"
+                name="message"
+                multiline
+                rows={4}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                variant="outlined"
+                fullWidth
+              />
             </Paper>
-          ))}
 
-          <Paper elevation={3} sx={{ p: 3, borderRadius: 2 }}>
-            <TextField
-              label="コメント"
-              name="message"
-              multiline
-              rows={4}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              variant="outlined"
-              fullWidth
-            />
-          </Paper>
-
-          <Box textAlign="center">
-            <Button
-              variant="contained"
-              color="primary"
-              type="submit"
-              startIcon={<SendIcon />}
-              sx={{ minWidth: 200, borderRadius: 2 }}
-            >
-              送信
-            </Button>
-          </Box>
-        </Stack>
-      </Box>
-    </Container>
+            <Box textAlign="center">
+              <Button
+                variant="contained"
+                color="primary"
+                type="submit"
+                startIcon={<SendIcon />}
+                sx={{ minWidth: 200, borderRadius: 2 }}
+              >
+                送信
+              </Button>
+            </Box>
+          </Stack>
+        </Box>
+      </Container>
+    </ThemeProvider>
   );
 };
 

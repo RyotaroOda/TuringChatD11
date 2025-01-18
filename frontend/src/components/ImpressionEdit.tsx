@@ -15,12 +15,7 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-
-const theme = createTheme({
-  typography: {
-    fontFamily: "'Noto Sans JP', sans-serif",
-  },
-});
+import { theme } from "../App.tsx";
 
 const ImpressionEdit: React.FC = () => {
   const [message, setMessage] = useState<string>("");
