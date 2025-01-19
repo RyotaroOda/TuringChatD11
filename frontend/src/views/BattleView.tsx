@@ -17,6 +17,12 @@ import {
   ListItemAvatar,
   Card,
   CardContent,
+  Fade,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
 } from "@mui/material";
 import {
   createTheme,
@@ -53,7 +59,7 @@ import {
 import { appPaths } from "../App.tsx";
 import SendIcon from "@mui/icons-material/Send";
 import CreateIcon from "@mui/icons-material/Create";
-import HourglassFullIcon from "@mui/icons-material/HourglassFull"; // 必要であればアイコン変更
+import HourglassFullIcon from "@mui/icons-material/HourglassFull";
 import { set } from "firebase/database";
 
 let theme = createTheme({
@@ -80,18 +86,29 @@ const BattleView: React.FC = () => {
 
   const [isHuman, setIsHuman] = useState<boolean>(true);
   const [bot, setBot] = useState<BotSetting | null>(null);
+
+  // バトル／チャットロード中かどうか
   const [loading, setLoading] = useState<boolean>(true);
 
+  // 最初に表示する「話題」の文面
+  const [topic, setTopic] = useState<string>("");
+
+  // 入力や生成周り
   const [sendMessage, setSendMessage] = useState<string>("");
   const [promptInstruction, setPromptInstruction] = useState<string>("");
-  const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
-  const [remainTurn, setRemainTurn] = useState<number>(999);
-  const [currentTurn, setCurrentTurn] = useState<number>(1);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
-
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatedAnswer, setGeneratedAnswer] = useState<string>("");
 
+  // 現在のターン管理
+  const [isMyTurn, setIsMyTurn] = useState<boolean>(false);
+  const [remainTurn, setRemainTurn] = useState<number>(999);
+  const [currentTurn, setCurrentTurn] = useState<number>(1);
+
+  // タイマー系
+  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [isTimeout, setIsTimeout] = useState<boolean>(false);
+
+  // 回答関連
   const [answer, setAnswer] = useState({
     playerId: "",
     isHuman: true,
@@ -99,16 +116,17 @@ const BattleView: React.FC = () => {
     message: "",
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const endRef = useRef<HTMLDivElement | null>(null);
 
+  // 自分 & 相手プレイヤー情報
   const myId = auth.currentUser?.uid || "";
   const [myName, setMyName] = useState<string>("");
   const [myData, setMyData] = useState<PlayerData | null>(null);
   const [playerNames, setPlayerNames] = useState<Record<string, string>>({});
   const [opponentData, setOpponentData] = useState<PlayerData | null>(null);
   const [isHost, setIsHost] = useState<boolean>(false);
-  const [isTimeout, setIsTimeout] = useState<boolean>(false);
-  const user = auth.currentUser;
+
+  // チャット末尾スクロール用
+  const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -116,19 +134,21 @@ const BattleView: React.FC = () => {
       if (location.state) {
         const { battleData, isHuman, bot } = location.state as BattleViewProps;
         setBattleData(battleData);
-        if (battleData.chatData.messages)
+        if (battleData.chatData.messages) {
           setMessages(Object.values(battleData.chatData.messages));
+        }
         setCurrentTurn(battleData.chatData.currentTurn);
         setIsMyTurn(battleData.chatData.activePlayerId === myId);
         setIsHuman(isHuman);
         setBot(bot);
         navigate(appPaths.BattleView(battleData.battleId), { replace: true });
       } else if (battleId) {
+        // バトル情報取得
         const fetchedBattleData = await getBattleRoomData(battleId);
         if (fetchedBattleData) {
           setBattleData(fetchedBattleData);
+          // チャット情報取得
           const fetchChatData = await getChatData(battleId);
-
           if (fetchChatData) {
             setMessages(Object.values(fetchChatData.messages));
             setCurrentTurn(fetchChatData.currentTurn);
@@ -136,7 +156,7 @@ const BattleView: React.FC = () => {
           } else {
             console.error("Failed to fetch battle log");
           }
-
+          // 自分の設定情報
           if (battleId && auth.currentUser) {
             const myPrivateData = await getPrivateBattleData(
               battleId,
@@ -164,38 +184,122 @@ const BattleView: React.FC = () => {
   useEffect(() => {
     if (battleData) {
       const playersKey = Object.keys(battleData.players);
-      const isHost = myId === battleData.hostId;
-      setIsHost(isHost);
+      const hostIsMe = myId === battleData.hostId;
+      setIsHost(hostIsMe);
 
-      const myData: PlayerData = isHost
+      const myPlayerData = hostIsMe
         ? battleData.players[playersKey[0]]
         : battleData.players[playersKey[1]];
-      setMyData(myData);
-      const opponentData: PlayerData = Object.values(battleData.players).find(
+      setMyData(myPlayerData);
+
+      // 相手プレイヤーを特定
+      const oppData = Object.values(battleData.players).find(
         (player) => player.id !== myId
       )!;
-      setOpponentData(opponentData);
+      setOpponentData(oppData);
 
-      const myName = `${myData.name} (あなた)` || "error";
-      setMyName(myName);
+      const name = (myPlayerData.name || "") + " (あなた)";
+      setMyName(name);
 
       setPlayerNames({
-        [myId]: myName,
-        [opponentData.id]: opponentData.name,
+        [myId]: name,
+        [oppData.id]: oppData.name,
       });
 
+      // タイマー
       setTimeLeft(battleData.battleRule.oneTurnTime);
 
-      setMessages(battleData.chatData.messages);
-
-      setAnswer((prevAnswer) => ({
-        ...prevAnswer,
+      // 回答情報
+      setAnswer((prev) => ({
+        ...prev,
         playerId: myId,
         isHuman: isHuman,
       }));
     }
   }, [battleData, isHuman, myId]);
 
+  // リアルタイムチャット購読
+  useEffect(() => {
+    if (!battleId) return;
+    const unsubscribe = onUpdateChatData(battleId, (newChatData) => {
+      if (!newChatData) return;
+      if (newChatData.messages && !isSubmitted) {
+        setMessages(Object.values(newChatData.messages));
+      }
+      setIsMyTurn(newChatData.activePlayerId === myId);
+      setCurrentTurn(newChatData.currentTurn);
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [battleId, isSubmitted, myId]);
+
+  // 残りターン数
+  useEffect(() => {
+    if (battleData) {
+      setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
+    }
+  }, [currentTurn, battleData]);
+
+  // バトル終了チェック
+  useEffect(() => {
+    if (remainTurn === 0 && !loading) {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+      console.log("Battle Ended");
+    }
+  }, [remainTurn, loading]);
+
+  // ターン時間切れのタイマー処理
+  useEffect(() => {
+    if (remainTurn <= 0 || loading) return;
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
+    if (timeLeft <= 0 && isMyTurn) {
+      // 時間切れ時、自動送信
+      handleSendMessage();
+    }
+    if (timeLeft <= 0 && !isMyTurn) {
+      // 相手が出さないまま時間切れ
+      setIsTimeout(true);
+    }
+    return () => clearInterval(timer);
+  }, [timeLeft, isMyTurn, remainTurn, loading]);
+
+  // ターン変更でタイマーリセット
+  useEffect(() => {
+    if (!battleData || loading) return;
+    setTimeLeft(battleData.battleRule.oneTurnTime);
+    setIsTimeout(false);
+  }, [isMyTurn, battleData, loading]);
+
+  // 結果が更新されたかを監視→ホストなら結果決定でResultへ
+  useEffect(() => {
+    if (isSubmitted && battleId && !loading) {
+      const unsubscribe = onResultUpdated(battleId, isHost, (result) => {
+        if (result) {
+          toResultSegue(result);
+        }
+      });
+      return () => {
+        unsubscribe();
+      };
+    }
+  }, [isSubmitted, battleId, loading, isHost]);
+
+  // 最初（ページ読み込み時）に「話題」(messages[0]) を topic に設定
+  // もしすでに topic が空でなく、かつ最初のmessagesに何か入っていればそれを代入。
+  useEffect(() => {
+    if (!loading && messages.length > 0) {
+      // まだtopicが未設定なら最初のメッセージを話題として使う
+      if (!topic) {
+        setTopic(messages[0].message);
+      }
+    }
+  }, [loading, messages, topic]);
+
+  // チャット送信
   const handleSendMessage = async () => {
     if (
       sendMessage.trim() &&
@@ -205,21 +309,22 @@ const BattleView: React.FC = () => {
       battleData &&
       opponentData
     ) {
+      // 送信
       await addMessage(battleId, sendMessage, currentTurn + 1, opponentData.id);
       setSendMessage("");
       setGeneratedAnswer("");
     }
   };
 
+  // AI(Bot)用メッセージ生成
   const generateMessage = async () => {
     setIsGenerating(true);
     if (bot && battleData) {
       try {
+        // 画面に表示する「話題」を渡す
         const generatedMessage = await generateBattleMessage(
           messages,
-          battleData.chatData.messages[
-            Object.keys(battleData.chatData.messages)[0]
-          ].message,
+          topic,
           promptInstruction,
           bot,
           battleData.battleRule
@@ -237,38 +342,10 @@ const BattleView: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!battleId) return;
-    const unsubscribe = onUpdateChatData(battleId, (newChatData) => {
-      if (!newChatData) return;
-      if (newChatData.messages && !isSubmitted) {
-        const newMessage = newChatData.messages;
-        setMessages(Object.values(newMessage));
-      }
-      setIsMyTurn(newChatData.activePlayerId === myId);
-      setCurrentTurn(newChatData.currentTurn);
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, [battleId, isSubmitted, myId]);
-
-  useEffect(() => {
-    if (battleData) {
-      setRemainTurn(battleData.battleRule.maxTurn - currentTurn);
-    }
-  }, [currentTurn, battleData]);
-
-  useEffect(() => {
-    if (remainTurn === 0 && !loading) {
-      endRef.current?.scrollIntoView({ behavior: "smooth" });
-      console.log("Battle Ended");
-    }
-  }, [remainTurn, loading]);
-
+  // 回答送信
   const handleSubmit = async () => {
-    if (answer.select === null || !battleId || !myId) {
-      console.error("Invalid answer data");
+    if (!battleId || !myId) {
+      console.error("Invalid answer data or no battleId");
       return;
     }
     if (answer.message.trim() === "") {
@@ -283,22 +360,7 @@ const BattleView: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (remainTurn <= 0 || loading) return;
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(prev - 1, 0));
-    }, 1000);
-
-    if ((timeLeft === 0 || timeLeft < 0) && isMyTurn) {
-      handleSendMessage();
-    }
-    if ((timeLeft === 0 || timeLeft < 0) && !isMyTurn) {
-      setIsTimeout(true);
-    }
-
-    return () => clearInterval(timer);
-  }, [timeLeft, isMyTurn, remainTurn, loading]);
-
+  // バトルルーム解散
   const exitBattle = () => {
     const isConfirmed = window.confirm("解散しますか？");
     if (isConfirmed) {
@@ -308,25 +370,7 @@ const BattleView: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!battleData || loading) return;
-    setTimeLeft(battleData.battleRule.oneTurnTime);
-    setIsTimeout(false);
-  }, [isMyTurn, battleData, loading]);
-
-  useEffect(() => {
-    if (isSubmitted && battleId && !loading) {
-      const unsubscribe = onResultUpdated(battleId, isHost, (result) => {
-        if (result) {
-          toResultSegue(result);
-        }
-      });
-      return () => {
-        unsubscribe();
-      };
-    }
-  }, [isSubmitted, battleId, loading, isHost]);
-
+  // 結果画面へ
   const toResultSegue = (result: ResultData) => {
     const props: ResultViewProps = {
       resultData: result,
@@ -334,29 +378,172 @@ const BattleView: React.FC = () => {
     navigate(appPaths.ResultView(battleId), { state: props });
   };
 
-  if (loading) {
-    return (
-      <ThemeProvider theme={theme}>
-        <Container maxWidth="md">
-          <Box mt={4}>
-            <Typography variant="h6">読み込み中...</Typography>
-          </Box>
-        </Container>
-      </ThemeProvider>
-    );
-  }
+  // 勝利条件を表示するためのテキスト
+  const victoryCondition = isHuman
+    ? "CPU相手に「AI」と誤認させれば勝利"
+    : "人間相手に「人間」と誤認させれば勝利";
 
-  if (!battleData || !opponentData) {
+  // 「システム」メッセージをシングルバトルと同じデザインに
+  const renderSystemMessage = (systemText: string) => {
     return (
-      <ThemeProvider theme={theme}>
-        <Container maxWidth="md">
-          <Box mt={4}>
-            <Typography variant="h6">バトルを続行できません。</Typography>
-          </Box>
-        </Container>
-      </ThemeProvider>
+      <ListItem
+        sx={{
+          alignItems: "flex-start",
+          backgroundColor: "#eeeeee",
+          borderRadius: 2,
+          mb: 2,
+          boxShadow: 1,
+        }}
+      >
+        <ListItemAvatar>
+          <Avatar sx={{ backgroundColor: "#9e9e9e" }}>
+            <ForumIcon />
+          </Avatar>
+        </ListItemAvatar>
+        <ListItemText
+          primary={
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: "bold",
+                color: "#424242",
+              }}
+            >
+              システム
+            </Typography>
+          }
+          secondary={
+            <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+              {systemText}
+            </Typography>
+          }
+        />
+      </ListItem>
     );
-  }
+  };
+
+  // 通常メッセージを表示するコンポーネント
+  const renderMessages = () => {
+    // トピック(=systemメッセージ)を先頭に表示
+    // その後に通常のメッセージのログを表示
+    return (
+      <>
+        {/* 1) トピック部分。topicが空でなければ system メッセージとして表示 */}
+        {topic && renderSystemMessage(topic)}
+
+        {/* 2) それ以降のメッセージ(Log) */}
+        {messages.length > 0 ? (
+          // messages[0] が話題だった分は飛ばして表示したい場合は slice(1) する。
+          // しかし既に topic に入れており、messages[0] にも同じ情報があるので
+          // 重複が気になるようなら slice(1) する
+          messages.slice(1).map((msg, index) => {
+            // 送信者IDからロールを判定
+            let role;
+            if (msg.senderId === "system") {
+              // 何らかのシステムメッセージがあればこちら
+              role = "system";
+            } else if (msg.senderId === myId) {
+              role = "user";
+            } else {
+              role = "player";
+            }
+
+            // 各種スタイルを切り替え
+            let backgroundColor = "#fff8e1";
+            let avatarBgColor = "#ffca28";
+            let primaryTextColor = "#ff6f00";
+            let displayName = playerNames?.[msg.senderId] || "Unknown Player";
+
+            if (role === "system") {
+              backgroundColor = "#eeeeee";
+              avatarBgColor = "#9e9e9e";
+              primaryTextColor = "#424242";
+              displayName = "システム";
+            } else if (role === "user") {
+              backgroundColor = "#e3f2fd";
+              avatarBgColor = "#2196f3";
+              primaryTextColor = "#0d47a1";
+              displayName = myName || "あなた";
+            }
+
+            // アバターアイコン
+            let avatarIcon: React.ReactNode = <PersonIcon />;
+            if (role === "system") {
+              avatarIcon = <ForumIcon />;
+            } else if (role === "user") {
+              if (myData?.iconURL) {
+                avatarIcon = <Avatar src={myData.iconURL} alt="User Avatar" />;
+              } else {
+                avatarIcon = <PersonIcon />;
+              }
+            } else {
+              // 敵
+              if (opponentData?.iconURL) {
+                avatarIcon = (
+                  <Avatar src={opponentData?.iconURL} alt="opponent Avatar" />
+                );
+              }
+            }
+
+            return (
+              <ListItem
+                key={index}
+                sx={{
+                  alignItems: "flex-start",
+                  backgroundColor: backgroundColor,
+                  borderRadius: 2,
+                  mb: 1,
+                  boxShadow: 1,
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar sx={{ backgroundColor: avatarBgColor }}>
+                    {avatarIcon}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: "bold",
+                        color: primaryTextColor,
+                      }}
+                    >
+                      {displayName}
+                    </Typography>
+                  }
+                  secondary={
+                    <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                      {msg.message}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            );
+          })
+        ) : (
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            sx={{ py: 3 }}
+          >
+            <ChatBubbleOutlineIcon
+              sx={{ fontSize: 40, color: "#9e9e9e", mb: 2 }}
+            />
+            <Typography
+              variant="body1"
+              sx={{ color: "#757575", textAlign: "center" }}
+            >
+              まだメッセージはありません。
+            </Typography>
+          </Box>
+        )}
+      </>
+    );
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -376,9 +563,10 @@ const BattleView: React.FC = () => {
           </Typography>
         </Toolbar>
       </AppBar>
+
       <Container maxWidth="md">
         <Box mt={4}>
-          {/* 難易度を削除し、ターンプレイヤー、残り時間もカード内へ */}
+          {/* 勝利条件＋ターン・タイマー情報 */}
           <Card
             sx={{
               mb: 2,
@@ -389,25 +577,23 @@ const BattleView: React.FC = () => {
             }}
           >
             <CardContent>
+              {/* 勝利条件 */}
               <Box display="flex" alignItems="center" mb={1}>
                 <LightbulbOutlinedIcon sx={{ mr: 1, color: "#1976d2" }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  {
-                    battleData.chatData.messages[
-                      Object.keys(battleData.chatData.messages)[0]
-                    ].message
-                  }
+                  勝利条件: {victoryCondition}
                 </Typography>
               </Box>
 
-              {/* ターンプレイヤー */}
+              {/* ターンプレーヤー */}
               <Box display="flex" alignItems="center" mb={1}>
                 <PersonIcon sx={{ mr: 1, color: "#1976d2" }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  ターンプレーヤー: {isMyTurn ? "あなた" : "相手"}
+                  ターンプレイヤー: {isMyTurn ? "あなた" : "相手"}
                 </Typography>
               </Box>
 
+              {/* 残りターン数 */}
               <Box display="flex" alignItems="center" mb={1}>
                 <HourglassEmptyIcon sx={{ mr: 1, color: "#1976d2" }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
@@ -454,7 +640,7 @@ const BattleView: React.FC = () => {
             </Typography>
           </Paper>
 
-          {/* チャットログ */}
+          {/* チャットログ本体 */}
           <Paper
             elevation={3}
             sx={{
@@ -468,121 +654,21 @@ const BattleView: React.FC = () => {
             }}
           >
             <List sx={{ pb: 0, minHeight: 200 }}>
-              {Array.isArray(messages) && messages.length > 1 ? (
-                messages.slice(1).map((msg, index) => {
-                  let role;
-                  if (msg.senderId === "system") {
-                    role = "system";
-                  } else if (msg.senderId === myId) {
-                    role = "user";
-                  } else {
-                    role = "player";
-                  }
-
-                  const backgroundColor =
-                    role === "user"
-                      ? "#e3f2fd"
-                      : role === "system"
-                        ? "#f1f8e9"
-                        : "#fff8e1";
-                  const avatarBgColor =
-                    role === "user"
-                      ? "#2196f3"
-                      : role === "system"
-                        ? "#8bc34a"
-                        : "#ffca28";
-                  const primaryTextColor =
-                    role === "user"
-                      ? "#0d47a1"
-                      : role === "system"
-                        ? "#33691e"
-                        : "#ff6f00";
-
-                  let displayName;
-                  if (role === "system") {
-                    displayName = "システム";
-                  } else if (role === "user") {
-                    displayName = myName || "あなた";
-                  } else {
-                    displayName =
-                      playerNames?.[msg.senderId] || "Unknown Player";
-                  }
-
-                  let avatarIcon;
-                  if (role === "system") {
-                    avatarIcon = <SmartToyIcon />;
-                  } else if (role === "user") {
-                    avatarIcon = myData?.iconURL ? (
-                      <Avatar src={myData?.iconURL} alt="User Avatar" />
-                    ) : (
-                      <PersonIcon />
-                    );
-                  } else if (role === "player") {
-                    avatarIcon = opponentData?.iconURL ? (
-                      <Avatar src={opponentData?.iconURL} alt="User Avatar" />
-                    ) : (
-                      <PersonIcon />
-                    );
-                  }
-
-                  return (
-                    <React.Fragment key={index}>
-                      <ListItem
-                        sx={{
-                          alignItems: "flex-start",
-                          backgroundColor: backgroundColor,
-                          borderRadius: 2,
-                          mb: 1,
-                          boxShadow: 1,
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar sx={{ backgroundColor: avatarBgColor }}>
-                            {avatarIcon}
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography
-                              variant="subtitle1"
-                              sx={{
-                                fontWeight: "bold",
-                                color: primaryTextColor,
-                              }}
-                            >
-                              {displayName}
-                            </Typography>
-                          }
-                          secondary={msg.message}
-                        />
-                      </ListItem>
-                    </React.Fragment>
-                  );
-                })
+              {/* 1) ロード中ならぐるぐる表示 */}
+              {loading ? (
+                <ListItem>
+                  <CircularProgress />
+                  <Typography sx={{ ml: 2 }}>読み込み中...</Typography>
+                </ListItem>
               ) : (
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  justifyContent="center"
-                  sx={{ py: 5 }}
-                >
-                  <ChatBubbleOutlineIcon
-                    sx={{ fontSize: 40, color: "#9e9e9e", mb: 2 }}
-                  />
-                  <Typography
-                    variant="body1"
-                    sx={{ color: "#757575", textAlign: "center" }}
-                  >
-                    まだメッセージはありません。
-                  </Typography>
-                </Box>
+                // 2) ロード完了後はメッセージ表示
+                renderMessages()
               )}
-
               <div ref={endRef} />
             </List>
           </Paper>
 
+          {/* まだターンが残っていればチャット送信UIを表示 */}
           <Typography variant="body1">
             残りメッセージ数: {remainTurn}
           </Typography>
@@ -666,32 +752,35 @@ const BattleView: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <CreateIcon />
+                        <CreateIcon sx={{ mr: 1.5 }} />
                         {generatedAnswer ? "再生成" : "メッセージ生成"}
                       </>
                     )}
                   </Button>
+
                   {generatedAnswer && (
-                    <Box
-                      mt={4}
-                      p={2}
-                      sx={{
-                        backgroundColor: "info.main",
-                        color: "white",
-                        borderRadius: 2,
-                        boxShadow: 3,
-                      }}
-                    >
-                      <Typography variant="h6" gutterBottom>
-                        生成された回答:
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        sx={{ whiteSpace: "pre-wrap" }}
+                    <Fade in={!!generatedAnswer}>
+                      <Box
+                        mt={4}
+                        p={2}
+                        sx={{
+                          backgroundColor: "info.main",
+                          color: "white",
+                          borderRadius: 2,
+                          boxShadow: 3,
+                        }}
                       >
-                        {generatedAnswer}
-                      </Typography>
-                    </Box>
+                        <Typography variant="h6" gutterBottom>
+                          生成された回答:
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {generatedAnswer}
+                        </Typography>
+                      </Box>
+                    </Fade>
                   )}
                 </div>
               )}
@@ -737,7 +826,7 @@ const BattleView: React.FC = () => {
                     <CircularProgress size={24} color="inherit" />
                   ) : (
                     <>
-                      <SendIcon />
+                      <SendIcon sx={{ mr: 1.5 }} />
                       送信
                     </>
                   )}
@@ -767,11 +856,76 @@ const BattleView: React.FC = () => {
               </Box>
             </>
           )}
-
+          {/* 回答送信エリア */}
           {remainTurn === 0 && !isSubmitted && (
-            <Box mt={4}>{/* 回答送信ロジックは元のまま */}</Box>
+            <Box mt={4}>
+              <Typography variant="h6" gutterBottom>
+                チャット相手は人間？それともAI？
+              </Typography>
+              <FormControl component="fieldset">
+                <FormLabel component="legend">相手の正体を選択</FormLabel>
+                <RadioGroup
+                  value={
+                    answer.select !== null ? String(answer.select) : "false"
+                  }
+                  onChange={(e) =>
+                    setAnswer((prevAnswer) => ({
+                      ...prevAnswer,
+                      select: e.target.value === "true", // "true" or "false" を論理値に変換
+                    }))
+                  }
+                >
+                  <FormControlLabel
+                    value="true"
+                    control={<Radio />}
+                    label="人間"
+                  />
+                  <FormControlLabel
+                    value="false"
+                    control={<Radio />}
+                    label="AI"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <TextField
+                label="理由"
+                value={answer.message}
+                onChange={(e) =>
+                  setAnswer((prevAnswer) => ({
+                    ...prevAnswer,
+                    message: e.target.value,
+                  }))
+                }
+                fullWidth
+                multiline
+                rows={4}
+                sx={{ mt: 2 }}
+              />
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSubmit}
+                  disabled={
+                    isSubmitted ||
+                    answer.select === null ||
+                    answer.message.trim() === ""
+                  }
+                >
+                  {isSubmitted ? (
+                    "送信完了"
+                  ) : (
+                    <>
+                      <SendIcon sx={{ mr: 1.5 }} />
+                      送信
+                    </>
+                  )}
+                </Button>
+              </Box>
+            </Box>
           )}
 
+          {/* タイムアウト */}
           {isTimeout && (
             <Box mt={2}>
               <Typography variant="h6">相手からの応答がありません。</Typography>
@@ -781,6 +935,7 @@ const BattleView: React.FC = () => {
             </Box>
           )}
 
+          {/* 回答を送信済みなら結果待ち */}
           {isSubmitted && (
             <Box mt={4}>
               <Typography variant="h6">結果を待っています...</Typography>

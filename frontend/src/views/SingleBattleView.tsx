@@ -45,42 +45,10 @@ import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
 import { DATABASE_PATHS } from "../shared/database-paths.ts";
 import { arrayUnion, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { updateRating } from "../API/firestore-database_f.ts";
+import { theme } from "../App.tsx";
 import { set } from "firebase/database";
-import e from "cors";
 
 export type Difficulty = "初級" | "中級" | "上級";
-
-let theme = createTheme({
-  palette: {
-    primary: {
-      main: "#1976d2",
-    },
-    secondary: {
-      main: "#ff4081",
-    },
-    success: {
-      main: "#388e3c",
-    },
-    info: {
-      main: "#1976d2",
-    },
-    background: {
-      default: "#f5f5f5",
-      paper: "#ffffff",
-    },
-    text: {
-      primary: "#333",
-      secondary: "#555",
-    },
-  },
-  typography: {
-    fontFamily: "'Noto Sans JP', sans-serif",
-    h6: {
-      fontWeight: "bold",
-    },
-  },
-});
-theme = responsiveFontSizes(theme);
 
 export interface SingleBattleViewProps {
   difficulty: Difficulty;
@@ -112,6 +80,7 @@ const SingleBattleView: React.FC = () => {
 
   const [topic, setTopic] = useState<string>("");
   const [topicLoading, setTopicLoading] = useState<boolean>(false);
+  const [generatedTopic, setGeneratedTopic] = useState<boolean>(false);
 
   const [errorMessage, setErrorMessage] = useState<string>("");
 
@@ -128,6 +97,8 @@ const SingleBattleView: React.FC = () => {
       setBot(bot);
       setDifficulty(difficulty);
       setIsHuman(isHuman);
+
+      // トピック生成
       const initializeTopic = async () => {
         setTopicLoading(true);
         try {
@@ -145,6 +116,28 @@ const SingleBattleView: React.FC = () => {
       initializeTopic();
     }
   }, [location.state]);
+
+  // トピックが確定したら、システムメッセージとしてチャットログに追加
+  useEffect(() => {
+    if (!topicLoading && topic && !generatedTopic) {
+      setMessages((prev) => {
+        // 重複チェック
+        const alreadyHasTopic = prev.some(
+          (m) => m.role === "system" && m.content === topic
+        );
+        setGeneratedTopic(true);
+        if (alreadyHasTopic) return prev;
+        // システムメッセージとしてトピックを追加
+        return [
+          {
+            role: "system",
+            content: topic,
+          },
+          ...prev,
+        ];
+      });
+    }
+  }, [topic, topicLoading, generatedTopic]);
 
   useEffect(() => {
     if (difficulty) {
@@ -181,7 +174,7 @@ const SingleBattleView: React.FC = () => {
     setSendMessage("");
     setShowGeneratedAnswer(false);
 
-    // 最終ターンの場合の処理を変更
+    // 最終ターンの場合の処理
     if (currentTurn + 1 === maxTurn) {
       // バトル終了メッセージ表示
       setBattleEnded(true);
@@ -190,13 +183,14 @@ const SingleBattleView: React.FC = () => {
       setTimeout(() => {
         setDisplayAIJudging(true);
         makeAIJudgment();
-      }, 1000); // 1秒後にAI判定中表示＆判定開始
+      }, 1000);
     } else {
       setCurrentTurn((prevTurn) => prevTurn + 1);
       setIsAIGenerating(true); //AIの返信を生成
     }
   };
 
+  // AIからの返信生成
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     const fetchAIResponse = async () => {
@@ -211,15 +205,16 @@ const SingleBattleView: React.FC = () => {
         ]);
         setIsAIGenerating(false);
         if (currentTurn + 1 === maxTurn) {
-          // ここは既にhandleSendMessageで処理するため削除
+          // ここは handleSendMessage 側で処理しているため不要
         } else {
           setCurrentTurn((prevTurn) => prevTurn + 1);
         }
       }
     };
     fetchAIResponse();
-  }, [messages]);
+  }, [messages, isAIGenerating, currentTurn, maxTurn]);
 
+  // メッセージ自動生成 (Bot想定)
   const generateMessage = async () => {
     setIsGenerating(true);
     setErrorMessage("");
@@ -233,12 +228,11 @@ const SingleBattleView: React.FC = () => {
       } finally {
         setIsGenerating(false);
       }
-      setIsGenerating(false);
       setShowGeneratedAnswer(true);
     }
   };
 
-  // AI判定処理
+  // AIによる勝敗判定
   const makeAIJudgment = async () => {
     setIsGenerating(true);
     setIsJudging(true);
@@ -270,33 +264,29 @@ const SingleBattleView: React.FC = () => {
     setJudgmentMade(true);
   };
 
+  // タイプライターアニメーションで判定理由を表示
   useEffect(() => {
-    // タイプライターアニメーション
     if (displayTypingReason && judgmentReason) {
       setTypedReason(""); // 初期化
 
-      // タイピング制御のための変数
       let index = 0;
       const intervalId = setInterval(() => {
         setTypedReason((prev) => prev + judgmentReason.charAt(index));
         index += 1;
 
-        // 全文が表示されたらタイピングを終了
         if (index >= judgmentReason.length) {
           clearInterval(intervalId);
-
-          // 全文表示完了後に結果表示
           setTimeout(() => {
             setShowingResult(true);
           }, 500);
         }
-      }, 100); // 100msごとに1文字表示
+      }, 100);
 
-      // コンポーネントがアンマウントされた場合や、条件が変わった場合にクリーンアップ
       return () => clearInterval(intervalId);
     }
   }, [displayTypingReason, judgmentReason]);
 
+  // 勝敗と理由を取得したら Firestore に保存
   useEffect(() => {
     if (result && judgmentReason) {
       saveSingleBattleDataToStore();
@@ -304,7 +294,7 @@ const SingleBattleView: React.FC = () => {
     // eslint-disable-next-line
   }, [result, judgmentReason]);
 
-  /** ルームデータをFirestoreにバックアップ */
+  // Firestoreへの保存処理
   const saveSingleBattleDataToStore = async () => {
     if (!user) return;
     try {
@@ -323,15 +313,13 @@ const SingleBattleView: React.FC = () => {
         judgmentReason: judgmentReason,
       };
 
-      const docSnapshot = await getDoc(backupRef); // ドキュメントの存在を確認
+      const docSnapshot = await getDoc(backupRef);
 
       if (docSnapshot.exists()) {
-        // ドキュメントが存在する場合、配列にデータを追加
         await updateDoc(backupRef, {
           backups: arrayUnion(backupData),
         });
       } else {
-        // ドキュメントが存在しない場合、新しく作成
         await setDoc(backupRef, {
           backups: [backupData],
         });
@@ -348,10 +336,10 @@ const SingleBattleView: React.FC = () => {
     }
   };
 
+  // チャットログの表示
+  // ※ トピック生成中 topicLoading が true のときはスピナーを表示
   const renderMessages = () => {
-    const filtered = messages.filter((msg) => msg.role !== "system");
-    if (filtered.length === 0) {
-      // メッセージがない場合
+    if (messages.length === 0) {
       return (
         <Box
           display="flex"
@@ -375,74 +363,150 @@ const SingleBattleView: React.FC = () => {
       );
     }
 
-    return filtered.map((msg, index) => {
-      const role = msg.role === "user" ? "user" : "assistant";
-      const backgroundColor =
-        role === "user" ? "rgba(33, 150, 243, 0.1)" : "rgba(255, 202, 40, 0.1)";
-      const avatarBgColor = role === "user" ? "#2196f3" : "#ffca28";
-      const primaryTextColor = role === "user" ? "#0d47a1" : "#ff6f00";
-      const displayName = role === "user" ? "あなた" : "CPU（相手）";
+    return messages.map((msg, index) => {
+      // system・user・assistant でスタイル分け
+      if (msg.role === "system") {
+        // システムメッセージ（話題など）
+        return (
+          <ListItem
+            key={index}
+            sx={{
+              alignItems: "flex-start",
+              backgroundColor: "#eeeeee",
+              borderRadius: 2,
+              mb: 1,
+              boxShadow: 1,
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar sx={{ backgroundColor: "#9e9e9e" }}>
+                <ForumIcon />
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: "bold",
+                    color: "#424242",
+                  }}
+                >
+                  システム
+                </Typography>
+              }
+              secondary={
+                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  {msg.content}
+                </Typography>
+              }
+            />
+          </ListItem>
+        );
+      } else if (msg.role === "user") {
+        // ユーザーメッセージ
+        const backgroundColor = "rgba(33, 150, 243, 0.1)";
+        const avatarBgColor = "#2196f3";
+        const primaryTextColor = "#0d47a1";
+        const displayName = "あなた";
 
-      let avatarIcon;
-      if (role === "user") {
-        avatarIcon =
-          user && user.photoURL ? (
-            <Avatar alt="User Avatar" src={user.photoURL} />
-          ) : (
-            <PersonIcon />
-          );
-      } else if (role === "assistant") {
-        avatarIcon = <SportsEsportsIcon />;
+        let avatarIcon;
+        if (user && user.photoURL) {
+          avatarIcon = <Avatar alt="User Avatar" src={user.photoURL} />;
+        } else {
+          avatarIcon = <PersonIcon />;
+        }
+
+        return (
+          <ListItem
+            key={index}
+            sx={{
+              alignItems: "flex-start",
+              backgroundColor: backgroundColor,
+              borderRadius: 2,
+              mb: 1,
+              boxShadow: 1,
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar sx={{ backgroundColor: avatarBgColor }}>
+                {avatarIcon}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: "bold",
+                    color: primaryTextColor,
+                  }}
+                >
+                  {displayName}
+                </Typography>
+              }
+              secondary={
+                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  {msg.content}
+                </Typography>
+              }
+            />
+          </ListItem>
+        );
+      } else {
+        // アシスタントメッセージ
+        const backgroundColor = "rgba(255, 202, 40, 0.1)";
+        const avatarBgColor = "#ffca28";
+        const primaryTextColor = "#ff6f00";
+        const displayName = "CPU（相手）";
+
+        return (
+          <ListItem
+            key={index}
+            sx={{
+              alignItems: "flex-start",
+              backgroundColor: backgroundColor,
+              borderRadius: 2,
+              mb: 1,
+              boxShadow: 1,
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar sx={{ backgroundColor: avatarBgColor }}>
+                <SportsEsportsIcon />
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: "bold",
+                    color: primaryTextColor,
+                  }}
+                >
+                  {displayName}
+                </Typography>
+              }
+              secondary={
+                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  {msg.content}
+                </Typography>
+              }
+            />
+          </ListItem>
+        );
       }
-
-      return (
-        <ListItem
-          key={index}
-          sx={{
-            alignItems: "flex-start",
-            backgroundColor: backgroundColor,
-            borderRadius: 2,
-            mb: 1,
-            boxShadow: 1,
-          }}
-        >
-          <ListItemAvatar>
-            <Avatar sx={{ backgroundColor: avatarBgColor }}>
-              {avatarIcon}
-            </Avatar>
-          </ListItemAvatar>
-          <ListItemText
-            primary={
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  fontWeight: "bold",
-                  color: primaryTextColor,
-                }}
-              >
-                {displayName}
-              </Typography>
-            }
-            secondary={
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                {msg.content}
-              </Typography>
-            }
-          />
-        </ListItem>
-      );
     });
   };
 
-  // 勝敗によるスタイル分岐
   const isWin = result === "勝利！";
   const resultBgColor = isWin
     ? theme.palette.success.main
     : theme.palette.info.main;
-  const resultEmoji = isWin ? "🎉" : "😢";
+  const resultEmoji = isWin ? "🏅" : "😢";
   const resultTextColor = "#ffffff";
 
-  // ボタン共通スタイル
   const buttonStyle = {
     mb: 2,
     borderRadius: 2,
@@ -469,7 +533,7 @@ const SingleBattleView: React.FC = () => {
         </Toolbar>
       </AppBar>
       <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* 難易度、トピック、残りターン数表示カード */}
+        {/* 難易度、勝利条件、残りターン数表示カード */}
         {!judgmentMade && !isJudging && !battleEnded && (
           <Card
             sx={{
@@ -489,21 +553,13 @@ const SingleBattleView: React.FC = () => {
                 </Typography>
               </Box>
 
-              {/* トピック */}
+              {/* 勝利条件 */}
               <Box display="flex" alignItems="center" mb={1} sx={{ mt: 2 }}>
                 <LightbulbOutlinedIcon sx={{ mr: 1, color: "#1976d2" }} />
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  {topicLoading ? (
-                    <>
-                      トピック生成中...　
-                      <CircularProgress
-                        size={20}
-                        sx={{ color: "text.primary" }}
-                      />
-                    </>
-                  ) : (
-                    topic
-                  )}
+                  {isHuman
+                    ? "手動モード勝利条件: CPU相手に「AI」と誤認させれば勝利"
+                    : "AIモード勝利条件: 人間相手に「人間」と誤認させれば勝利"}
                 </Typography>
               </Box>
 
@@ -538,6 +594,7 @@ const SingleBattleView: React.FC = () => {
             </Typography>
           </Paper>
 
+          {/* ここを修正してトピック読み込み中であればスピナーを表示 */}
           <Paper
             elevation={3}
             sx={{
@@ -550,40 +607,28 @@ const SingleBattleView: React.FC = () => {
             }}
           >
             <List sx={{ pb: 0, minHeight: 200 }}>
-              {Array.isArray(messages) ? (
-                renderMessages()
-              ) : (
-                <Box
-                  display="flex"
-                  flexDirection="column"
-                  alignItems="center"
-                  justifyContent="center"
-                  sx={{ py: 5 }}
-                >
-                  <ChatBubbleOutlineIcon
-                    sx={{ fontSize: 40, color: "#9e9e9e", mb: 2 }}
-                  />
-                  <Typography
-                    variant="body1"
-                    sx={{ color: "#757575", textAlign: "center" }}
-                  >
-                    まだメッセージはありません。
-                    <br />
-                    下の入力欄からチャットを開始しましょう！
-                  </Typography>
-                </Box>
-              )}
-              {isAIGenerating && (
+              {topicLoading ? (
+                // トピックがまだ読み込み中のときはスピナーを表示
                 <ListItem>
                   <CircularProgress size={24} />
+                  <Typography sx={{ ml: 2 }}>トピック生成中...</Typography>
                 </ListItem>
+              ) : (
+                <>
+                  {renderMessages()}
+                  {isAIGenerating && (
+                    <ListItem>
+                      <CircularProgress size={24} />
+                    </ListItem>
+                  )}
+                </>
               )}
               <div ref={chatEndRef} />
             </List>
           </Paper>
         </Box>
 
-        {/* isHuman === false の場合、生成ボタンと生成された回答表示 */}
+        {/* isHuman === false の場合(Bot操作側)に表示する生成ボタンとプレビュー */}
         {!judgmentMade && !isJudging && !isHuman && !battleEnded && (
           <Box mb={2}>
             {errorMessage && (
@@ -682,7 +727,7 @@ const SingleBattleView: React.FC = () => {
           </Box>
         )}
 
-        {/* 人間が操作する場合の入力欄 */}
+        {/* 人間操作側 */}
         {isHuman &&
           !judgmentMade &&
           !isJudging &&
@@ -714,7 +759,7 @@ const SingleBattleView: React.FC = () => {
             </Box>
           )}
 
-        {/* バトル終了時メッセージ */}
+        {/* バトル終了 */}
         {battleEnded && (
           <Fade in={battleEnded} timeout={500}>
             <Paper

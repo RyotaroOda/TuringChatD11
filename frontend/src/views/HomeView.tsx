@@ -636,7 +636,6 @@ const HomeView: React.FC = () => {
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    gap={6}
                   >
                     {photoURL ? (
                       <IconButton onClick={handleIconGenerator}>
@@ -653,7 +652,11 @@ const HomeView: React.FC = () => {
                         />
                       </IconButton>
                     )}
-                    <Typography variant="h4" color="text.primary">
+                    <Typography
+                      variant="h4"
+                      color="text.primary"
+                      sx={{ flexGrow: 1 }}
+                    >
                       {playerName}
                     </Typography>
 
@@ -680,7 +683,7 @@ const HomeView: React.FC = () => {
                       color="primary"
                       sx={{
                         px: 8,
-                        py: 1.5,
+                        py: 2,
                       }}
                       onClick={handleProfileEditClick}
                       startIcon={<EditNoteIcon />}
@@ -721,17 +724,17 @@ const HomeView: React.FC = () => {
                       display="flex"
                       alignItems="center"
                       justifyContent="center"
-                      gap={2}
                       sx={{ mt: 4 }}
                     >
                       <Button
                         variant="contained"
                         color="primary"
                         sx={{
-                          minWidth: 180,
+                          minWidth: 100,
                           py: 2.5,
                           fontWeight: "bold",
                           boxShadow: 2,
+                          flex: 1, // 各ボタンが均等に幅を取る
                         }}
                         onClick={handleOpenNote}
                         startIcon={<DescriptionIcon />}
@@ -742,10 +745,12 @@ const HomeView: React.FC = () => {
                         variant="contained"
                         color="primary"
                         sx={{
-                          minWidth: 180,
+                          minWidth: 100,
                           py: 2.5,
                           fontWeight: "bold",
                           boxShadow: 2,
+                          flex: 1, // 各ボタンが均等に幅を取る
+                          ml: 2, // ボタン間のマージンを設定
                         }}
                         onClick={handleOpenQuizSelection}
                         startIcon={<QuizIcon />}
