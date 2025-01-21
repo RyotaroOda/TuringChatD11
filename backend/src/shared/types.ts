@@ -148,12 +148,25 @@ export enum AIModel {
 
 //実験アンケート
 export type QuestionnaireData = {
-  fun: string;
-  difficulty: string;
-  experience: string;
-  understood: string;
-  reuse: string;
-  message: string;
+  q1: string; // 1. 名前（自由記述）
+  q2: string; // 2. 年齢（数字入力）
+  q3: string; // 3. 学部・学科
+  q4: string; // 4. 生成AI経験
+  q5: string; // 5. 操作方法の分かりやすさ
+  q6: string; // 6. インターフェースの使いやすさ
+  q7: string; // 7. チュートリアルの内容
+  q8: string; // 8. 生成AIの基本的操作方法理解
+  q9: string; // 9. 生成AIの基本的仕組み理解
+  q10: string; // 10. 生成AI成果物の特徴理解
+  q11: string; // 11. 目的に応じた生成AIのカスタマイズ理解
+  q12: string; // 12. 生成AI利用のリスク・倫理的課題理解
+  q13: string; // 13. ゲーム要素は学習意欲を高めるか
+  q14: string; // 14. 主体的に学習や操作に取り組めたか
+  q15: string; // 15. ツールを使用しない場合と比べて成績・理解度向上か
+  q16: string; // 16. 今後もAI活用ツールを使って学びたいか
+  q17: string; // 17. ツール全体の満足度
+  q18: string; // 18. 他の教科・学習活動にも活用できると思うか
+  q19: string; // 19. 自由記述欄
   timestamp: Timestamp;
 };
 

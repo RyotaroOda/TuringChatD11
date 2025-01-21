@@ -559,7 +559,7 @@ const SingleBattleView: React.FC = () => {
                 <Typography variant="h6" sx={{ fontWeight: "bold" }}>
                   {isHuman
                     ? "手動モード勝利条件: CPU相手に「AI」と誤認させれば勝利"
-                    : "AIモード勝利条件: 人間相手に「人間」と誤認させれば勝利"}
+                    : "AIモード勝利条件: 相手に「人間」と誤認させれば勝利"}
                 </Typography>
               </Box>
 

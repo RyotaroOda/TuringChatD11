@@ -45,7 +45,7 @@ const theme = createTheme({
 const Auth: React.FC = () => {
   //#region 状態管理
   const [activeStep, setActiveStep] = useState(0);
-  const steps = ["ようこそ", "名前設定", "アドレス登録", "開始"];
+  const steps = ["ようこそ", "名前設定", "開始"];
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -179,34 +179,8 @@ const Auth: React.FC = () => {
             />
           </Box>
         );
+
       case 2:
-        return (
-          <Box mt={4}>
-            <Typography variant="h6" gutterBottom>
-              メールアドレス登録
-            </Typography>
-            <Box mt={2}>
-              <TextField
-                fullWidth
-                label="メールアドレス"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                variant="outlined"
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="パスワード（6文字以上）"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                variant="outlined"
-              />
-            </Box>
-          </Box>
-        );
-      case 3:
         return (
           <Box mt={4} textAlign="center">
             <Typography variant="h5" gutterBottom>
@@ -226,7 +200,7 @@ const Auth: React.FC = () => {
   const handleNext = () => {
     setErrorMessage(null);
 
-    if (activeStep === 3) {
+    if (activeStep === 2) {
       // 最終ステップ「ゲーム開始」押下でトップへ
       navigate("/");
     } else {
@@ -349,7 +323,7 @@ const Auth: React.FC = () => {
           </Button>
         )}
 
-        {activeStep === 2 && (
+        {activeStep === 3 && (
           <>
             <Button
               variant="contained"
@@ -375,7 +349,7 @@ const Auth: React.FC = () => {
           </>
         )}
 
-        {activeStep === 3 && (
+        {activeStep === 2 && (
           <Button
             variant="contained"
             color="primary"
