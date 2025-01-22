@@ -187,10 +187,12 @@ const ResultView: React.FC = () => {
                         variant="body1"
                         sx={{
                           fontWeight: "bold",
-                          color: getCorrectTextColor(!!resultData.myCorrects),
+                          color: getCorrectTextColor(
+                            !resultData.opponentCorrects
+                          ),
                         }}
                       >
-                        {!resultData.myCorrects ? "正解" : "不正解"}
+                        {!resultData.opponentCorrects ? "正解" : "不正解"}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -242,12 +244,10 @@ const ResultView: React.FC = () => {
                         variant="body1"
                         sx={{
                           fontWeight: "bold",
-                          color: getCorrectTextColor(
-                            !resultData.opponentCorrects
-                          ),
+                          color: getCorrectTextColor(!resultData.myCorrects),
                         }}
                       >
-                        {!resultData.opponentCorrects ? "正解" : "不正解"}
+                        {!!resultData.myCorrects ? "正解" : "不正解"}
                       </Typography>
                     </Box>
                   </CardContent>
