@@ -192,7 +192,7 @@ const ResultView: React.FC = () => {
                           ),
                         }}
                       >
-                        {!resultData.opponentCorrects ? "正解" : "不正解"}
+                        {!!resultData.opponentCorrects ? "正解" : "不正解"}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -244,7 +244,7 @@ const ResultView: React.FC = () => {
                         variant="body1"
                         sx={{
                           fontWeight: "bold",
-                          color: getCorrectTextColor(!resultData.myCorrects),
+                          color: getCorrectTextColor(!!resultData.myCorrects),
                         }}
                       >
                         {!!resultData.myCorrects ? "正解" : "不正解"}

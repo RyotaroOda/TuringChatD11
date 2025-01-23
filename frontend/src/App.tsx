@@ -26,6 +26,7 @@ import IconGenerator from "./components/IconGenerator.tsx";
 import SingleBattleView from "./views/SingleBattleView.tsx";
 import QuizView from "./views/QuizView.tsx";
 import QuizSelection from "./views/QuizSelection.tsx";
+import TestView from "./views/test.tsx";
 
 export const variables = {
   experiment: true,
@@ -188,6 +189,7 @@ function App() {
             <Route path="/impression_edit" element={<ImpressionEdit />} />{" "}
             <Route path="/prompt_edit" element={<PromptEdit />} />{" "}
             <Route path="/how_to_play" element={<HowToPlay />} />{" "}
+            <Route path="/test" element={<TestView />} />{" "}
             {/* 認証済みでない場合のリダイレクト */}
             <Route
               path="*"
